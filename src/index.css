@@ -11,3 +11,19 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+/* src/index.css */
+
+
+nav {
+  background-color: #ff5a5f;
+}
+
+.brand-logo {
+  font-family: 'Arial', sans-serif;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+button.btn {
+  background-color: #ff5a5f;
+}

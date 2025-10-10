@@ -36,3 +36,28 @@
     transform: rotate(360deg);
   }
 }
+/* src/App.css */
+
+
+
+
+/* Footer styles */
+.page-footer.white {
+  background-color: #ffffff !important;
+  color: #ff6f00 !important;
+}
+
+.page-footer .container h5,
+.page-footer .container p,
+.page-footer .container a {
+  color: #ff6f00 !important;
+}
+
+.footer-copyright {
+  background-color: #ffffff !important;
+}
+
+.footer-copyright .container {
+  color: #ff6f00 !important;
+}
+

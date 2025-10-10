@@ -1,0 +1,188 @@
+/* ProductList.css */
+
+.product-list-container {
+  margin-top: 20px;
+  margin-bottom: 80px;
+}
+
+.product-list-title {
+  margin-bottom: 30px;
+  font-weight: 600;
+  font-size: 1.6rem;
+  letter-spacing: 0.5px;
+  color: #222;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 8px;
+}
+
+/* Tarjeta */
+.product-card-airbnb {
+  border-radius: 14px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card-airbnb:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Enlace */
+.product-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+/* Imagen */
+.product-card-image-wrapper {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4; /* Proporción uniforme */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+}
+
+.product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.4s ease;
+}
+
+.product-card-airbnb:hover .product-image {
+  transform: scale(1.07);
+}
+
+/* Contenido */
+.product-card-content {
+  padding: 16px !important;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Categoría */
+.product-category {
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+  color: #666;
+}
+
+/* Nombre del producto */
+.product-name {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 6px !important;
+  color: #222 !important;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* máximo 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  min-height: 2.6em; /* asegura altura pareja */
+}
+
+/* Precio */
+.product-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e60023; /* rojo tipo catálogo Zara */
+  margin-top: auto; /* empuja hacia abajo */
+  margin-bottom: 8px;
+}
+
+/* Tallas / Colores */
+.product-sizes,
+.product-colors {
+  font-size: 0.85rem;
+  color: #555;
+  margin: 2px 0;
+}
+
+/* Acciones */
+.product-card-actions {
+  padding: 10px 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-card-actions .btn,
+.product-card-actions .btn-flat {
+  font-size: 0.85rem;
+  padding: 0 12px;
+  border-radius: 20px;
+  text-transform: none;
+}
+
+.add-to-cart-btn {
+  background-color: #111 !important;
+  color: #fff !important;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #333 !important;
+}
+
+.chat-btn i {
+  font-size: 1.2rem;
+  vertical-align: middle;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .product-card-content {
+    padding: 14px !important;
+  }
+  .product-name {
+    font-size: 1rem !important;
+  }
+  .product-price {
+    font-size: 0.95rem;
+  }
+}
+
+
+/* Filtros */
+.filters {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filters .input-field {
+  flex: 1;
+  min-width: 180px;
+}
+
+.filters select,
+.filters input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #fff;
+  color: #333;
+  transition: border-color 0.2s ease;
+}
+
+.filters select:focus,
+.filters input:focus {
+  outline: none;
+  border-color: #e67e22; /* mismo naranja de tu logo */
+  box-shadow: 0 0 0 2px rgba(230, 126, 34, 0.2);
+}
+
