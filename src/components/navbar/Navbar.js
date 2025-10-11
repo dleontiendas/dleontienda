@@ -1,14 +1,22 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
 import { ProductsContext } from "../../context/ProductContext";
+import { ShoppingCart, Search } from "lucide-react";
 
 const Navbar = ({ onSearch }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const { cart } = useContext(CartContext);
-  const { products, loading } = useContext(ProductsContext);
+  const { products } = useContext(ProductsContext);
 
   const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  const filteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return products.filter((p) =>
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, products]);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -16,17 +24,10 @@ const Navbar = ({ onSearch }) => {
     if (onSearch) onSearch(value);
   };
 
-  const filteredProducts =
-    searchTerm.trim().length > 0
-      ? products.filter((p) =>
-          p.name?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : [];
-
   return (
     <nav
       style={{
-        background: "#fff",
+        backgroundColor: "#fff",
         borderBottom: "1px solid #eee",
         boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
         position: "sticky",
@@ -37,104 +38,90 @@ const Navbar = ({ onSearch }) => {
       <div
         className="container"
         style={{
-          display: "grid",
-          gridTemplateColumns: "150px 1fr 80px", // Logo | Buscador | Carrito
-          alignItems: "center", // 👈 centra verticalmente todo
-          padding: "0.3rem 1.5rem", // 👈 menos padding para que la navbar sea más baja
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0.6rem 1rem",
+          flexWrap: "wrap",
           gap: "1rem",
         }}
       >
-        {/* Logo */}
+        {/* 🔸 Brand / Logo */}
         <Link
           to="/"
           style={{
-            fontWeight: "bold",
-            fontSize: "2.4rem",
-            color: "#0e0d0dff",
+            fontWeight: "800",
+            fontSize: "2.5rem",
+            color: "#d4af37",
             textDecoration: "none",
-            letterSpacing: "0.5px",
-            lineHeight: "1", // 👈 evita que el texto se vea desfasado
+            fontFamily: "'Playfair Display', serif",
+            letterSpacing: "1px",
           }}
         >
-          D'LEON GOLD
+          D'LEON GOLD<span style={{ color: "#000" }}>  Store</span>
         </Link>
 
-        {/* Search Bar */}
+        {/* 🔍 Search Bar */}
         <div
           style={{
-            maxWidth: "500px",
-            margin: "0 auto",
-            width: "100%",
-            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            backgroundColor: "#f9f9f9",
+            border: "1px solid #ddd",
+            borderRadius: "8px",
+            padding: "0.4rem 0.8rem",
+            flex: "1 1 300px",
+            maxWidth: "350px",
+            maxHeight: "40px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
-          <div
+          <input
+            type="search"
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={handleSearchChange}
             style={{
-              display: "flex",
-              alignItems: "center",
-              backgroundColor: "#f9f9f9",
-              border: "1px solid #ddd",
-              borderRadius: "10px", // 👈 menos redondeado
-              padding: "0.5rem 0.90rem", // 👈 más compacto
-              height: "40px", // 👈 altura fija más pequeña
+              border: "none",
+              outline: "none",
+              flex: 1,
+              fontSize: "1.5rem",
+              background: "transparent",
+              color: "#333",
             }}
-          >
-            <input
-              type="search"
-              placeholder="Buscar productos..."
-              value={searchTerm}
-              onChange={handleSearchChange}
-              style={{
-                border: "none",
-                outline: "none",
-                flex: 1,
-                fontSize: "1.5rem", // 👈 texto un poco más chico
-                background: "transparent",
-                color: "#333",
-              }}
-            />
-            <i
-              className="material-icons"
-              style={{ color: "#ff6f00", cursor: "pointer", fontSize: "20px" }}
-            >
-              search
-            </i>
-          </div>
+          />
+          <Search size={20} color="#d4af37" style={{ cursor: "pointer" }} />
         </div>
 
-        {/* Cart */}
+        {/* 🛒 Cart Icon */}
         <Link
           to="/cart"
           style={{
             position: "relative",
             color: "#444",
             textDecoration: "none",
-            justifySelf: "end",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <i
-            className="material-icons"
-            style={{ fontSize: "1.6rem", color: "#ff6f00" }}
-          >
-            shopping_cart
-          </i>
+          <ShoppingCart size={26} color="#d4af37" />
           {totalItems > 0 && (
             <span
               style={{
                 position: "absolute",
-                top: "30px", // 👈 súbelo un poquito
-                right: "-6px", // 👈 pégalo más al ícono
+                top: "-4px",
+                right: "-6px",
                 background: "#ff5722",
                 color: "#fff",
-                borderRadius: "50%", // 👈 círculo perfecto
-                width: "18px", // 👈 tamaño fijo más pequeño
+                borderRadius: "50%",
+                width: "18px",
                 height: "18px",
-                display: "flex", // 👈 para centrar el número
+                display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "0.7rem", // 👈 texto más chico
+                fontSize: "0.7rem",
                 fontWeight: "bold",
-                lineHeight: "1",
               }}
             >
               {totalItems}
