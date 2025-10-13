@@ -10,7 +10,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../../Firebase";
 import {
-  Home,
   Package,
   ShoppingCart,
   Settings,
@@ -218,7 +217,7 @@ const Dashboard = () => {
 
         {/* =========================
             TAB: PRODUCTOS
-        ========================= */}
+            ========================= */}
         {activeTab === "productos" && (
           <>
             {/* Formulario */}

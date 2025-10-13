@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Twitter } from "lucide-react";
+import { Instagram, Facebook,  MessageCircle } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -29,12 +30,12 @@ const Footer = () => {
           <h5
             style={{
               fontWeight: "700",
-              color: "#fff",
+              color: "#d4af37",
               fontFamily: "'Playfair Display', serif",
               letterSpacing: "1px",
             }}
           >
-            DLEON <span style={{ color: "#d4af37" }}>Gold Store</span>
+            DLEON GOLD <span style={{ color: "white" }}> Store</span>
           </h5>
           <p
             style={{
@@ -99,14 +100,17 @@ const Footer = () => {
             Síguenos
           </h5>
           <div style={{ display: "flex", gap: "1rem" }}>
-            <a href="#" style={{ color: "#d4af37" }}>
-              <Instagram size={22} />
+            <a href="https://www.instagram.com/tiendadleon/" style={{ color: "#d4af37" }}>
+              <Instagram size={25} />
             </a>
-            <a href="#" style={{ color: "#d4af37" }}>
-              <Facebook size={22} />
+            <a href="https://www.facebook.com/dleongold?mibextid=ZbWKwL" style={{ color: "#d4af37" }}>
+              <Facebook size={25} />
             </a>
-            <a href="#" style={{ color: "#d4af37" }}>
-              <Twitter size={22} />
+            <a href="https://www.tiktok.com/@dleongold" style={{ color: "#d4af37" }}>
+              <FaTiktok size={25} />
+            </a>
+            <a href="https://chat.whatsapp.com/HjivrzlnGBY3Jwe5QQz5BZ" style={{ color: "#d4af37" }}>
+            <MessageCircle size={25} />
             </a>
           </div>
         </div>
