@@ -1,4 +1,3 @@
-// src/components/Cart.js
 import React, { useContext } from "react";
 import { CartContext } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
@@ -7,8 +6,9 @@ const Cart = () => {
   const { cart, removeFromCart, updateQuantity } = useContext(CartContext);
   const navigate = useNavigate();
 
+  // 🔹 Cálculo del total con los nuevos campos (en inglés)
   const total = cart.reduce(
-    (acc, item) => acc + (item["Precio (COL)"] || 0) * (item.quantity || 1),
+    (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
     0
   );
 
@@ -31,12 +31,17 @@ const Cart = () => {
                   }}
                 >
                   <div>
-                    <strong>{item.nombre}</strong>
+                    <strong>{item.name || "Producto sin nombre"}</strong>
+
                     <p style={{ margin: "4px 0" }}>
-                      Precio: ${item["Precio (COL)"] ? Number(item["Precio (COL)"]).toFixed(2) : "N/A"}
+                      Precio: $
+                      {item.price_cop
+                        ? Number(item.price_cop).toLocaleString("es-CO")
+                        : "N/A"}
                     </p>
+
                     <p style={{ margin: "4px 0" }}>
-                      Cantidad: 
+                      Cantidad:
                       <button
                         onClick={() =>
                           updateQuantity(item.id, Math.max((item.quantity || 1) - 1, 1))
@@ -48,19 +53,23 @@ const Cart = () => {
                       </button>
                       {item.quantity || 1}
                       <button
-                        onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+                        onClick={() =>
+                          updateQuantity(item.id, (item.quantity || 1) + 1)
+                        }
                         className="btn-small orange"
                         style={{ margin: "0 6px" }}
                       >
                         +
                       </button>
                     </p>
+
                     {item.selectedSize && (
                       <p style={{ margin: "4px 0" }}>Talla: {item.selectedSize}</p>
                     )}
                     {item.selectedColor && (
                       <p style={{ margin: "4px 0" }}>Color: {item.selectedColor}</p>
                     )}
+
                     <button
                       className="btn-small red"
                       onClick={() => removeFromCart(item.id)}
@@ -69,15 +78,21 @@ const Cart = () => {
                       Quitar
                     </button>
                   </div>
-                  {item.imagen && (
+
+                  {/* 🔸 Imagen del producto */}
+                  {item.images && item.images.length > 0 && (
                     <img
-                      src={item.imagen}
-                      alt={item.nombre}
+                      src={item.images[0]}
+                      alt={item.name}
                       style={{
                         width: "80px",
                         height: "80px",
                         objectFit: "cover",
                         borderRadius: "8px",
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://via.placeholder.com/80x80?text=No+Image";
                       }}
                     />
                   )}
@@ -86,7 +101,10 @@ const Cart = () => {
             ))}
           </ul>
 
-          <h4 className="right-align">Total: ${total.toFixed(2)}</h4>
+          {/* 🔹 Total */}
+          <h4 className="right-align">
+            Total: ${total.toLocaleString("es-CO")}
+          </h4>
 
           <button
             className="btn waves-effect waves-light"

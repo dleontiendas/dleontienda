@@ -1,4 +1,3 @@
-// src/components/Checkout.js
 import React, { useContext, useState } from "react";
 import { CartContext } from "../../context/CartContext";
 import { db } from "../../Firebase";
@@ -7,23 +6,24 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
   const [shipping, setShipping] = useState(15900);
-  const [paymentMethod, setPaymentMethod] = useState("contraentrega"); // 🔹 Nuevo estado
+  const [paymentMethod, setPaymentMethod] = useState("contraentrega");
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     email: "",
-    nombre: "",
-    apellido: "",
-    documento: "",
-    direccion: "",
-    ciudad: "",
-    provincia: "",
-    codigoPostal: "",
-    telefono: "",
+    first_name: "",
+    last_name: "",
+    document: "",
+    address: "",
+    city: "",
+    province: "",
+    postal_code: "",
+    phone: "",
   });
 
+  // 🔹 Totales con nueva estructura
   const subtotal = cart.reduce(
-    (acc, item) => acc + (item["Precio (COL)"] || 0) * (item.quantity || 1),
+    (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
     0
   );
   const total = subtotal + shipping;
@@ -43,43 +43,43 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      const pedido = {
-        cliente: formData,
+      const order = {
+        customer: formData,
         items: cart.map((item) => ({
           id: item.id,
-          nombre: item.nombre,
-          precio: item["Precio (COL)"],
-          cantidad: item.quantity,
+          name: item.name,
+          price: item.price_cop,
+          quantity: item.quantity,
         })),
         subtotal,
-        envio: shipping,
+        shipping,
         total,
-        metodoPago: paymentMethod,
-        estado: paymentMethod === "contraentrega" ? "Pendiente" : "Pagado",
-        fecha: serverTimestamp(),
+        paymentMethod,
+        status: paymentMethod === "contraentrega" ? "Pending" : "Paid",
+        date: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, "pedidos"), pedido);
+      const docRef = await addDoc(collection(db, "orders"), order);
 
       clearCart?.();
       alert(`✅ Pedido creado con éxito. ID: ${docRef.id}`);
 
       if (paymentMethod === "contraentrega") {
-        alert("Tu pedido será enviado y pagado al recibirlo. 🚚");
+        alert("Tu pedido será enviado y pagado al recibirlo. ");
       } else {
-        alert("Aquí iría la integración con la pasarela de pago (PayU, Stripe, etc.)");
+        alert("Aquí iría la integración con la pasarela de pago ");
       }
 
       setFormData({
         email: "",
-        nombre: "",
-        apellido: "",
-        documento: "",
-        direccion: "",
-        ciudad: "",
-        provincia: "",
-        codigoPostal: "",
-        telefono: "",
+        first_name: "",
+        last_name: "",
+        document: "",
+        address: "",
+        city: "",
+        province: "",
+        postal_code: "",
+        phone: "",
       });
     } catch (error) {
       console.error("Error al crear el pedido:", error);
@@ -87,6 +87,32 @@ const Checkout = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🔹 Enviar mensaje por WhatsApp
+  const handleWhatsAppOrder = () => {
+    const phoneNumber = "573104173201"; // 📞 Cambia este número por el tuyo (formato internacional)
+    const message = encodeURIComponent(
+      ` *Nuevo pedido desde la tienda DLEON GOLD*\n\n` +
+        ` *Cliente:*\n${formData.first_name} ${formData.last_name}\n📧 ${formData.email}\n ${formData.phone}\n ${formData.address}, ${formData.city}, ${formData.province}\n ${formData.document}\n\n` +
+        ` *Productos:*\n` +
+        cart
+          .map(
+            (item) =>
+              `• ${item.name} (${item.selectedColor || "N/A"} / ${
+                item.selectedSize || "N/A"
+              }) x${item.quantity} — $${Number(item.price_cop).toLocaleString()}`
+          )
+          .join("\n") +
+        `\n\n *Subtotal:* $${subtotal.toLocaleString()}\n *Envío:* $${shipping.toLocaleString()}\n *Total:* $${total.toLocaleString()}\n\n` +
+        ` *Método de pago:* ${
+          paymentMethod === "contraentrega"
+            ? "Pago contra entrega"
+            : "Pasarela de pago"
+        }`
+    );
+
+    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
   return (
@@ -97,6 +123,7 @@ const Checkout = () => {
         padding: "2rem",
         background: "#f9f9f9",
         fontFamily: "Arial, sans-serif",
+        flexWrap: "wrap",
       }}
     >
       {/* Formulario */}
@@ -104,6 +131,7 @@ const Checkout = () => {
         onSubmit={handleSubmit}
         style={{
           flex: 2,
+          minWidth: "320px",
           background: "#fff",
           padding: "2rem",
           borderRadius: "12px",
@@ -124,21 +152,21 @@ const Checkout = () => {
         />
 
         <h4 style={{ margin: "1rem 0 0.5rem" }}>Entrega</h4>
-        <div style={{ display: "flex", gap: "1rem" }}>
+        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
           <input
             type="text"
-            name="nombre"
+            name="first_name"
             placeholder="Nombre"
-            value={formData.nombre}
+            value={formData.first_name}
             onChange={handleChange}
             required
             style={styles.input}
           />
           <input
             type="text"
-            name="apellido"
+            name="last_name"
             placeholder="Apellidos"
-            value={formData.apellido}
+            value={formData.last_name}
             onChange={handleChange}
             required
             style={styles.input}
@@ -147,56 +175,56 @@ const Checkout = () => {
 
         <input
           type="text"
-          name="documento"
+          name="document"
           placeholder="Cédula o NIT"
-          value={formData.documento}
+          value={formData.document}
           onChange={handleChange}
           style={styles.input}
         />
         <input
           type="text"
-          name="direccion"
+          name="address"
           placeholder="Dirección"
-          value={formData.direccion}
+          value={formData.address}
           onChange={handleChange}
           required
           style={styles.input}
         />
         <input
           type="text"
-          name="ciudad"
+          name="city"
           placeholder="Ciudad"
-          value={formData.ciudad}
+          value={formData.city}
           onChange={handleChange}
           required
           style={styles.input}
         />
         <input
           type="text"
-          name="provincia"
+          name="province"
           placeholder="Provincia/Estado"
-          value={formData.provincia}
+          value={formData.province}
           onChange={handleChange}
           style={styles.input}
         />
         <input
           type="text"
-          name="codigoPostal"
+          name="postal_code"
           placeholder="Código Postal"
-          value={formData.codigoPostal}
+          value={formData.postal_code}
           onChange={handleChange}
           style={styles.input}
         />
         <input
           type="text"
-          name="telefono"
+          name="phone"
           placeholder="Teléfono"
-          value={formData.telefono}
+          value={formData.phone}
           onChange={handleChange}
           style={styles.input}
         />
 
-        <h4 style={{ margin: "1rem 0 0.5rem" }}>Métodos de envío</h4>
+        <h4 style={{ margin: "1rem 0 0.5rem" }}>Método de envío</h4>
         <label style={styles.radioLabel}>
           <input type="radio" name="envio" checked readOnly />
           Envío express a toda Colombia (1-2 días) —{" "}
@@ -228,22 +256,17 @@ const Checkout = () => {
         <button
           type="submit"
           disabled={loading}
-          style={{
-            background: "#ff6f00",
-            color: "#fff",
-            border: "none",
-            padding: "0.75rem",
-            borderRadius: "8px",
-            fontSize: "1rem",
-            fontWeight: "bold",
-            cursor: "pointer",
-            width: "100%",
-            marginTop: "1rem",
-            transition: "0.3s",
-            opacity: loading ? 0.6 : 1,
-          }}
+          style={styles.buttonPrimary}
         >
           {loading ? "Procesando..." : "Pagar ahora"}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleWhatsAppOrder}
+          style={styles.buttonWpp}
+        >
+          🟢 Comprar por WhatsApp
         </button>
       </form>
 
@@ -251,6 +274,7 @@ const Checkout = () => {
       <div
         style={{
           flex: 1,
+          minWidth: "300px",
           background: "#fff",
           padding: "2rem",
           borderRadius: "12px",
@@ -270,9 +294,9 @@ const Checkout = () => {
               }}
             >
               <span>
-                {item.nombre} x{item.quantity || 1}
+                {item.name} x{item.quantity || 1}
               </span>
-              <span>${Number(item["Precio (COL)"]).toLocaleString()}</span>
+              <span>${Number(item.price_cop).toLocaleString()}</span>
             </li>
           ))}
         </ul>
@@ -300,7 +324,6 @@ const styles = {
     borderRadius: "8px",
     fontSize: "0.95rem",
     outline: "none",
-    transition: "0.2s",
   },
   summaryText: {
     display: "flex",
@@ -315,6 +338,30 @@ const styles = {
     background: "#f3f3f3",
     borderRadius: "8px",
     marginBottom: "0.5rem",
+  },
+  buttonPrimary: {
+    background: "#ff6f00",
+    color: "#fff",
+    border: "none",
+    padding: "0.75rem",
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontWeight: "bold",
+    cursor: "pointer",
+    width: "100%",
+    marginTop: "1rem",
+  },
+  buttonWpp: {
+    background: "#25d366",
+    color: "#fff",
+    border: "none",
+    padding: "0.75rem",
+    borderRadius: "8px",
+    fontSize: "1rem",
+    fontWeight: "bold",
+    cursor: "pointer",
+    width: "100%",
+    marginTop: "0.75rem",
   },
 };
 

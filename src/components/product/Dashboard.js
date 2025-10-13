@@ -12,45 +12,42 @@ import { db } from "../../Firebase";
 import {
   Package,
   ShoppingCart,
+  BarChart2,
   Settings,
   Users,
-  BarChart2,
 } from "lucide-react";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("productos");
 
-  // Productos
+  // Datos
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Pedidos
   const [orders, setOrders] = useState([]);
+
+  const [loading, setLoading] = useState(false);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
-  const emptyProduct = {
-    Nombre: "",
-    Descripcion: "",
-    Departamento: "",
-    Categoria: "",
-    "Sub-Categoria": "",
-    Marca: "",
-    "Precio (COL)": "",
-    Inventario: "",
-    Talla: "",
-    Color: "",
-    "Imagen de producto 1": "",
-    "Imagen de producto 2": "",
-    Descuento: 0,
-    activo: true,
-  };
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    description: "",
+    category: "",
+    subcategory: "",
+    brand: "",
+    price_cop: "",
+    discount: 0,
+    stock: "",
+    size: "",
+    color: "",
+    image1: "",
+    image2: "",
+    active: true,
+  });
 
-  const [newProduct, setNewProduct] = useState(emptyProduct);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // =========================
-  // 🔹 Cargar productos
-  // =========================
+  // ===============================
+  // 🔹 Cargar productos (colección: productos)
+  // ===============================
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -61,8 +58,9 @@ const Dashboard = () => {
           ...doc.data(),
         }));
         setProducts(items);
+        console.log("✅ Productos cargados:", items);
       } catch (err) {
-        console.error("Error fetching products", err);
+        console.error("Error cargando productos:", err);
       } finally {
         setLoading(false);
       }
@@ -70,9 +68,9 @@ const Dashboard = () => {
     fetchProducts();
   }, []);
 
-  // =========================
+  // ===============================
   // 🔹 Cargar pedidos
-  // =========================
+  // ===============================
   useEffect(() => {
     if (activeTab !== "pedidos") return;
     const fetchOrders = async () => {
@@ -93,16 +91,40 @@ const Dashboard = () => {
     fetchOrders();
   }, [activeTab]);
 
-  // =========================
+  // ===============================
   // 🔹 CRUD Productos
-  // =========================
+  // ===============================
+  const handleChange = (e, editing = false) => {
+    const { name, value, type, checked } = e.target;
+    const val = type === "checkbox" ? checked : value;
+    if (editing) {
+      setEditingProduct({ ...editingProduct, [name]: val });
+    } else {
+      setNewProduct({ ...newProduct, [name]: val });
+    }
+  };
+
   const handleAddProduct = async () => {
     try {
       const docRef = await addDoc(collection(db, "productos"), newProduct);
       setProducts([...products, { id: docRef.id, ...newProduct }]);
-      setNewProduct(emptyProduct);
+      setNewProduct({
+        name: "",
+        description: "",
+        category: "",
+        subcategory: "",
+        brand: "",
+        price_cop: "",
+        discount: 0,
+        stock: "",
+        size: "",
+        color: "",
+        image1: "",
+        image2: "",
+        active: true,
+      });
     } catch (err) {
-      console.error("Error adding product:", err);
+      console.error("Error agregando producto:", err);
     }
   };
 
@@ -111,14 +133,12 @@ const Dashboard = () => {
     try {
       const productRef = doc(db, "productos", editingProduct.id);
       await updateDoc(productRef, editingProduct);
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id ? editingProduct : p
-        )
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editingProduct.id ? editingProduct : p))
       );
       setEditingProduct(null);
     } catch (err) {
-      console.error("Error updating product:", err);
+      console.error("Error actualizando producto:", err);
     }
   };
 
@@ -127,13 +147,13 @@ const Dashboard = () => {
       await deleteDoc(doc(db, "productos", id));
       setProducts(products.filter((p) => p.id !== id));
     } catch (err) {
-      console.error("Error deleting product:", err);
+      console.error("Error eliminando producto:", err);
     }
   };
 
-  // =========================
+  // ===============================
   // 🔹 Actualizar estado pedido
-  // =========================
+  // ===============================
   const handleUpdateOrderStatus = async (id, newStatus) => {
     try {
       const orderRef = doc(db, "pedidos", id);
@@ -143,19 +163,6 @@ const Dashboard = () => {
       );
     } catch (error) {
       console.error("Error actualizando pedido:", error);
-    }
-  };
-
-  // =========================
-  // 🔹 Manejo inputs productos
-  // =========================
-  const handleChange = (e, isEditing) => {
-    const { name, value, type, checked } = e.target;
-    const val = type === "checkbox" ? checked : value;
-    if (isEditing) {
-      setEditingProduct({ ...editingProduct, [name]: val });
-    } else {
-      setNewProduct({ ...newProduct, [name]: val });
     }
   };
 
@@ -207,59 +214,45 @@ const Dashboard = () => {
 
       {/* Contenido */}
       <main style={{ flex: 1, padding: "2rem", background: "#f5f6fa" }}>
-        <h2 style={{ marginBottom: "1rem" }}>
+        <h2>
           {activeTab === "productos" && "Gestión de Productos"}
           {activeTab === "pedidos" && "Gestión de Pedidos"}
-          {activeTab === "reportes" && "Reportes"}
-          {activeTab === "usuarios" && "Usuarios"}
-          {activeTab === "configuracion" && "Configuración"}
         </h2>
 
-        {/* =========================
+        {/* ===============================
             TAB: PRODUCTOS
-            ========================= */}
+        =============================== */}
         {activeTab === "productos" && (
           <>
-            {/* Formulario */}
             <div style={{ marginBottom: "1rem" }}>
-              {[
-                "Nombre",
-                "Descripcion",
-                "Departamento",
-                "Categoria",
-                "Sub-Categoria",
-                "Marca",
-                "Precio (COL)",
-                "Inventario",
-                "Talla",
-                "Color",
-                "Imagen de producto 1",
-                "Imagen de producto 2",
-              ].map((field) => (
-                <input
-                  key={field}
-                  type={
-                    field.includes("Precio") || field === "Inventario"
-                      ? "number"
-                      : "text"
-                  }
-                  name={field}
-                  placeholder={field}
-                  value={
-                    editingProduct
-                      ? editingProduct[field] || ""
-                      : newProduct[field] || ""
-                  }
-                  onChange={(e) => handleChange(e, !!editingProduct)}
-                  style={{ display: "block", margin: "6px 0", padding: "8px" }}
-                />
-              ))}
+              {Object.keys(newProduct).map((field) => {
+                if (field === "active" || field === "discount") return null;
+                return (
+                  <input
+                    key={field}
+                    name={field}
+                    placeholder={field}
+                    value={
+                      editingProduct
+                        ? editingProduct[field] || ""
+                        : newProduct[field] || ""
+                    }
+                    onChange={(e) => handleChange(e, !!editingProduct)}
+                    style={{
+                      display: "block",
+                      margin: "6px 0",
+                      padding: "8px",
+                      width: "100%",
+                    }}
+                  />
+                );
+              })}
 
-              <label>Descuento:</label>
+              <label>Discount:</label>
               <select
-                name="Descuento"
+                name="discount"
                 value={
-                  editingProduct ? editingProduct.Descuento : newProduct.Descuento
+                  editingProduct ? editingProduct.discount : newProduct.discount
                 }
                 onChange={(e) => handleChange(e, !!editingProduct)}
               >
@@ -273,86 +266,71 @@ const Dashboard = () => {
               <label style={{ display: "block", marginTop: "8px" }}>
                 <input
                   type="checkbox"
-                  name="activo"
-                  checked={editingProduct ? editingProduct.activo : newProduct.activo}
+                  name="active"
+                  checked={
+                    editingProduct ? editingProduct.active : newProduct.active
+                  }
                   onChange={(e) => handleChange(e, !!editingProduct)}
                 />
-                Activo (visible en la tienda)
+                Active (visible in store)
               </label>
 
               {editingProduct ? (
-                <button className="btn orange" onClick={handleUpdateProduct}>
-                  Actualizar
-                </button>
+                <button onClick={handleUpdateProduct}>Update</button>
               ) : (
-                <button className="btn orange" onClick={handleAddProduct}>
-                  Agregar
-                </button>
+                <button onClick={handleAddProduct}>Add Product</button>
               )}
             </div>
 
-            {/* Lista de productos */}
+            {/* Tabla */}
             {loading ? (
-              <p>Cargando productos...</p>
+              <p>Loading products...</p>
             ) : (
               <div style={{ overflowX: "auto" }}>
                 <table className="striped highlight responsive-table">
                   <thead>
                     <tr>
-                      <th>Nombre</th>
-                      <th>Descripción</th>
-                      <th>Departamento</th>
-                      <th>Categoría</th>
-                      <th>Sub-Categoría</th>
-                      <th>Marca</th>
-                      <th>Precio (COL)</th>
-                      <th>Inventario</th>
-                      <th>Talla</th>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Category</th>
+                      <th>Price (COP)</th>
+                      <th>Stock</th>
                       <th>Color</th>
-                      <th>Descuento</th>
-                      <th>Activo</th>
-                      <th>Acciones</th>
+                      <th>Size</th>
+                      <th>Discount</th>
+                      <th>Active</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {products.map((product) => (
                       <tr key={product.id}>
-                        <td>{product.Nombre}</td>
-                        <td>{product.Descripcion}</td>
-                        <td>{product.Departamento}</td>
-                        <td>{product.Categoria}</td>
-                        <td>{product["Sub-Categoria"]}</td>
-                        <td>{product.Marca}</td>
+                        <td>{product.name}</td>
+                        <td>{product.description}</td>
+                        <td>{product.category}</td>
+                        <td>${Number(product.price_cop).toLocaleString()}</td>
+                        <td>{product.stock}</td>
+                        <td>{product.color}</td>
+                        <td>{product.size}</td>
+                        <td>{product.discount}%</td>
                         <td>
-                          $
-                          {Number(product["Precio (COL)"] || 0).toLocaleString(
-                            "es-CO"
-                          )}
-                        </td>
-                        <td>{product.Inventario}</td>
-                        <td>{product.Talla}</td>
-                        <td>{product.Color}</td>
-                        <td>{product.Descuento ? `${product.Descuento}%` : "0%"}</td>
-                        <td>
-                          {product.activo ? (
-                            <span style={{ color: "green" }}>Sí</span>
+                          {product.active ? (
+                            <span style={{ color: "green" }}>Yes</span>
                           ) : (
                             <span style={{ color: "red" }}>No</span>
                           )}
                         </td>
                         <td>
                           <button
-                            className="btn-small orange"
-                            style={{ marginRight: "8px" }}
                             onClick={() => setEditingProduct(product)}
+                            style={{ marginRight: "8px" }}
                           >
-                            Editar
+                            Edit
                           </button>
                           <button
-                            className="btn-small red"
                             onClick={() => handleDeleteProduct(product.id)}
                           >
-                            Eliminar
+                            Delete
                           </button>
                         </td>
                       </tr>
@@ -364,63 +342,63 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* =========================
+        {/* ===============================
             TAB: PEDIDOS
-        ========================= */}
+        =============================== */}
         {activeTab === "pedidos" && (
           <>
             {loadingOrders ? (
-              <p>Cargando pedidos...</p>
+              <p>Loading orders...</p>
             ) : (
-              <div style={{ overflowX: "auto" }}>
-                <table className="striped highlight responsive-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Cliente</th>
-                      <th>Email</th>
-                      <th>Total</th>
-                      <th>Método de Pago</th>
-                      <th>Estado</th>
-                      <th>Fecha</th>
-                      <th>Acciones</th>
+              <table className="striped highlight responsive-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Email</th>
+                    <th>Total</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td>{order.id}</td>
+                      <td>
+                        {order.cliente?.nombre} {order.cliente?.apellido}
+                      </td>
+                      <td>{order.cliente?.email}</td>
+                      <td>${order.total?.toLocaleString()}</td>
+                      <td>{order.metodoPago}</td>
+                      <td>{order.estado}</td>
+                      <td>
+                        {order.fecha?.seconds
+                          ? new Date(order.fecha.seconds * 1000).toLocaleDateString()
+                          : "—"}
+                      </td>
+                      <td>
+                        <select
+                          value={order.estado}
+                          onChange={(e) =>
+                            handleUpdateOrderStatus(order.id, e.target.value)
+                          }
+                        >
+                          {["Pendiente", "Enviado", "Entregado", "Cancelado"].map(
+                            (s) => (
+                              <option key={s} value={s}>
+                                {s}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.cliente?.nombre} {order.cliente?.apellido}</td>
-                        <td>{order.cliente?.email}</td>
-                        <td>${Number(order.total).toLocaleString("es-CO")}</td>
-                        <td>{order.metodoPago}</td>
-                        <td>{order.estado}</td>
-                        <td>
-                          {order.fecha?.seconds
-                            ? new Date(order.fecha.seconds * 1000).toLocaleDateString()
-                            : "—"}
-                        </td>
-                        <td>
-                          <select
-                            value={order.estado}
-                            onChange={(e) =>
-                              handleUpdateOrderStatus(order.id, e.target.value)
-                            }
-                          >
-                            {["Pendiente", "Enviado", "Entregado", "Cancelado"].map(
-                              (estado) => (
-                                <option key={estado} value={estado}>
-                                  {estado}
-                                </option>
-                              )
-                            )}
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  ))}
+                </tbody>
+              </table>
             )}
           </>
         )}
@@ -429,7 +407,6 @@ const Dashboard = () => {
   );
 };
 
-// estilos de botones laterales
 const iconButton = (isActive) => ({
   background: "none",
   border: "none",

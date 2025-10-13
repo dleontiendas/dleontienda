@@ -5,7 +5,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../../Firebase";
 import "./ProductList.css";
 
-// 🔹 Normalizar links de Google Drive
+// 🔹 Normaliza los links de Google Drive
 const normalizeDriveLink = (url) => {
   if (!url) return null;
   const match =
@@ -16,19 +16,17 @@ const normalizeDriveLink = (url) => {
     : url;
 };
 
-// 🔹 Tarjeta de producto
+// 🔹 Tarjeta individual de producto
 const ProductCard = ({ product }) => {
-  const imageFields = [
-    product["Imagen de producto 1"],
-    product["Imagen de producto 2"],
-    product["Imagen de producto 3"],
-    product["Imagen de producto 4"],
-    product["Imagen de producto 5"],
-  ].filter(Boolean);
-
+  const imageFields = product.images || [];
   const displaySrc =
     normalizeDriveLink(imageFields[0]) ||
     "https://via.placeholder.com/400x400?text=No+Image";
+
+  const availableColors = product.variants?.map((v) => v.color).join(", ") || "N/A";
+  const availableSizes = product.variants
+    ?.map((v) => v.sizes?.map((s) => s.size).join(", "))
+    .join(", ") || "N/A";
 
   return (
     <div className="col s12 m6 l4 xl3">
@@ -37,7 +35,7 @@ const ProductCard = ({ product }) => {
           <div className="card-image product-card-image-wrapper">
             <img
               src={displaySrc}
-              alt={product["nombre"] || "Sin nombre"}
+              alt={product.name || "Sin nombre"}
               className="product-image"
               onError={(e) => {
                 e.currentTarget.src =
@@ -47,23 +45,19 @@ const ProductCard = ({ product }) => {
           </div>
           <div className="card-content product-card-content">
             <h6 className="product-name">
-              {product["nombre"] || "Producto sin nombre"}
+              {product.name || "Producto sin nombre"}
             </h6>
             <p className="product-price">
-              {product["Precio (COL)"]
-                ? `$${Number(product["Precio (COL)"]).toLocaleString("es-CO")}`
+              {product.price_cop
+                ? `$${Number(product.price_cop).toLocaleString("es-CO")}`
                 : "Precio no disponible"}
             </p>
-            {product["Talla"] && (
-              <p className="product-sizes">
-                <small>Talla: {product["Talla"]}</small>
-              </p>
-            )}
-            {product["Color"] && (
-              <p className="product-colors">
-                <small>Color: {product["Color"]}</small>
-              </p>
-            )}
+            <p className="product-sizes">
+              <small>Tallas: {availableSizes}</small>
+            </p>
+            <p className="product-colors">
+              <small>Colores: {availableColors}</small>
+            </p>
           </div>
         </Link>
       </div>
@@ -71,18 +65,19 @@ const ProductCard = ({ product }) => {
   );
 };
 
-// 🔹 Lista de productos con filtros
+// 🔹 Lista de productos con filtros dinámicos
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // estados de filtros
+  // Filtros
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
 
+  // 🔸 Obtener productos de Firestore
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -93,8 +88,8 @@ const ProductList = () => {
         }));
         setProducts(items);
       } catch (err) {
-        setError("Error al cargar productos");
         console.error(err);
+        setError("Error al cargar productos");
       } finally {
         setLoading(false);
       }
@@ -102,20 +97,35 @@ const ProductList = () => {
     fetchProducts();
   }, []);
 
-  // valores únicos para filtros
-  const categories = [...new Set(products.map((p) => p["Categoria"]).filter(Boolean))];
-  const subCategories = [...new Set(products.map((p) => p["Sub-Categoria"]).filter(Boolean))];
-  const colors = [...new Set(products.map((p) => p["Color"]).filter(Boolean))];
-  const sizes = [...new Set(products.map((p) => p["Talla"]).filter(Boolean))];
+  // 🔸 Crear listas únicas de filtros
+  const categories = [...new Set(products.map((p) => p.category).filter(Boolean))];
+  const subCategories = [...new Set(products.map((p) => p.subcategory).filter(Boolean))];
 
-  // filtrar dinámicamente
+  const allColors = products.flatMap((p) =>
+    p.variants?.map((v) => v.color) || []
+  );
+  const colors = [...new Set(allColors)];
+
+  const allSizes = products.flatMap((p) =>
+    p.variants?.flatMap((v) => v.sizes?.map((s) => s.size)) || []
+  );
+  const sizes = [...new Set(allSizes)];
+
+  // 🔸 Filtrar productos dinámicamente
   const filteredProducts = products.filter((p) => {
-    return (
-      (!selectedCategory || p["Categoria"] === selectedCategory) &&
-      (!selectedSubCategory || p["Sub-Categoria"] === selectedSubCategory) &&
-      (!selectedColor || p["Color"] === selectedColor) &&
-      (!selectedSize || p["Talla"] === selectedSize)
-    );
+    const matchesCategory = !selectedCategory || p.category === selectedCategory;
+    const matchesSubCategory =
+      !selectedSubCategory || p.subcategory === selectedSubCategory;
+    const matchesColor =
+      !selectedColor ||
+      p.variants?.some((v) => v.color === selectedColor);
+    const matchesSize =
+      !selectedSize ||
+      p.variants?.some((v) =>
+        v.sizes?.some((s) => s.size === selectedSize)
+      );
+
+    return matchesCategory && matchesSubCategory && matchesColor && matchesSize;
   });
 
   if (loading) return <p className="center-align">Cargando productos...</p>;
@@ -125,7 +135,7 @@ const ProductList = () => {
     <div className="container product-list-container">
       <h4 className="left-align product-list-title">PRODUCTOS</h4>
 
-      {/* Filtros */}
+      {/* 🔹 Filtros */}
       <div className="filters row">
         <div className="input-field col s12 m6 l3">
           <select
@@ -138,12 +148,11 @@ const ProductList = () => {
           >
             <option value="">Todas las categorías</option>
             {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+              <option key={cat}>{cat}</option>
             ))}
           </select>
         </div>
+
         <div className="input-field col s12 m6 l3">
           <select
             className="browser-default"
@@ -152,12 +161,11 @@ const ProductList = () => {
           >
             <option value="">Todas las subcategorías</option>
             {subCategories.map((sub) => (
-              <option key={sub} value={sub}>
-                {sub}
-              </option>
+              <option key={sub}>{sub}</option>
             ))}
           </select>
         </div>
+
         <div className="input-field col s12 m6 l3">
           <select
             className="browser-default"
@@ -166,12 +174,11 @@ const ProductList = () => {
           >
             <option value="">Todos los colores</option>
             {colors.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
+              <option key={c}>{c}</option>
             ))}
           </select>
         </div>
+
         <div className="input-field col s12 m6 l3">
           <select
             className="browser-default"
@@ -180,15 +187,13 @@ const ProductList = () => {
           >
             <option value="">Todas las tallas</option>
             {sizes.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
+              <option key={s}>{s}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Lista de productos */}
+      {/* 🔹 Lista de productos */}
       <div className="row">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (

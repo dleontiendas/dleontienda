@@ -83,4 +83,19 @@
     max-width: 100%;
     margin: 0 auto 20px;
   }
+
+
+  .whatsapp-btn {
+  background-color: #25d366;
+  color: white;
+  font-weight: 600;
+  margin-top: 10px;
+  width: 100%;
+  transition: background 0.3s;
+}
+
+.whatsapp-btn:hover {
+  background-color: #1ebe5d;
+}
+
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Instagram, Facebook,  MessageCircle } from "lucide-react";
-import { FaTiktok } from "react-icons/fa";
+import { Instagram, Facebook } from "lucide-react";
+import { FaTiktok, FaWhatsapp } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -35,7 +35,7 @@ const Footer = () => {
               letterSpacing: "1px",
             }}
           >
-            DLEON GOLD <span style={{ color: "white" }}> Store</span>
+            D'LEON GOLD 
           </h5>
           <p
             style={{
@@ -45,8 +45,7 @@ const Footer = () => {
               lineHeight: "1.6",
             }}
           >
-            Joyas y accesorios exclusivos.  
-            Tu lugar para encontrar elegancia y estilo.
+           Tienda de Ropa y Accesorios especializada en ofrecer las Mejores Marcas en todos sus productos y servicios. Ropa para Damas, Caballeros, Niños y Toda una Miscelánea de Productos para el hogar y uso cotidiano de todas las personas.
           </p>
         </div>
 
@@ -110,7 +109,7 @@ const Footer = () => {
               <FaTiktok size={25} />
             </a>
             <a href="https://chat.whatsapp.com/HjivrzlnGBY3Jwe5QQz5BZ" style={{ color: "#d4af37" }}>
-            <MessageCircle size={25} />
+            <FaWhatsapp size={25} />
             </a>
           </div>
         </div>
