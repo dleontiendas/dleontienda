@@ -1,119 +1,132 @@
 import React, { useContext } from "react";
 import { CartContext } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import "./Cart.css";
 
 const Cart = () => {
   const { cart, removeFromCart, updateQuantity } = useContext(CartContext);
   const navigate = useNavigate();
 
-  // 🔹 Cálculo del total con los nuevos campos (en inglés)
-  const total = cart.reduce(
+  const subtotal = cart.reduce(
     (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
     0
   );
 
+  const discount = subtotal * 0.1;
+  const total = subtotal - discount;
+
+  if (cart.length === 0)
+    return (
+      <div className="cart-container center">
+        <h5>Tu carrito está vacío 🛒</h5>
+      </div>
+    );
+
   return (
-    <div className="container">
-      <h2 className="center-align">Carrito</h2>
+    <div className="cart-page container">
+      <h4 className="cart-title center-align">Carrito de compras</h4>
 
-      {cart.length === 0 ? (
-        <p className="center-align">Tu carrito está vacío</p>
-      ) : (
-        <>
-          <ul className="collection">
+      <div className="cart-content">
+        {/* 🧾 Lista de productos */}
+        <div className="cart-products">
+          <div className="cart-card">
             {cart.map((item, index) => (
-              <li className="collection-item" key={`${item.id}-${index}`}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <div>
-                    <strong>{item.name || "Producto sin nombre"}</strong>
-
-                    <p style={{ margin: "4px 0" }}>
-                      Precio: $
-                      {item.price_cop
-                        ? Number(item.price_cop).toLocaleString("es-CO")
-                        : "N/A"}
-                    </p>
-
-                    <p style={{ margin: "4px 0" }}>
-                      Cantidad:
-                      <button
-                        onClick={() =>
-                          updateQuantity(item.id, Math.max((item.quantity || 1) - 1, 1))
-                        }
-                        className="btn-small orange"
-                        style={{ margin: "0 6px" }}
-                      >
-                        -
-                      </button>
-                      {item.quantity || 1}
-                      <button
-                        onClick={() =>
-                          updateQuantity(item.id, (item.quantity || 1) + 1)
-                        }
-                        className="btn-small orange"
-                        style={{ margin: "0 6px" }}
-                      >
-                        +
-                      </button>
-                    </p>
-
-                    {item.selectedSize && (
-                      <p style={{ margin: "4px 0" }}>Talla: {item.selectedSize}</p>
-                    )}
+              <div key={index} className="cart-item">
+                <div className="cart-item-left">
+                  <img
+                    src={
+                      (item.images && item.images[0]) ||
+                      "https://via.placeholder.com/80x80?text=No+Image"
+                    }
+                    alt={item.name}
+                    className="cart-item-img"
+                  />
+                  <div className="cart-item-info">
+                    <p className="cart-item-brand">{item.brand || "Producto"}</p>
+                    <p className="cart-item-name">{item.name}</p>
                     {item.selectedColor && (
-                      <p style={{ margin: "4px 0" }}>Color: {item.selectedColor}</p>
+                      <p className="cart-variant">Color: {item.selectedColor}</p>
                     )}
+                    {item.selectedSize && (
+                      <p className="cart-variant">Talla: {item.selectedSize}</p>
+                    )}
+                  </div>
+                </div>
 
+                <div className="cart-item-right">
+                  <p className="cart-item-price">
+                    ${Number(item.price_cop).toLocaleString("es-CO")}
+                  </p>
+
+                  <div className="cart-qty-control">
                     <button
-                      className="btn-small red"
-                      onClick={() => removeFromCart(item.id)}
-                      style={{ marginTop: "6px" }}
+                      className="qty-btn"
+                      onClick={() =>
+                        updateQuantity(
+                          item.id,
+                          Math.max((item.quantity || 1) - 1, 1)
+                        )
+                      }
                     >
-                      Quitar
+                      −
+                    </button>
+                    <span>{item.quantity || 1}</span>
+                    <button
+                      className="qty-btn"
+                      onClick={() =>
+                        updateQuantity(item.id, (item.quantity || 1) + 1)
+                      }
+                    >
+                      +
                     </button>
                   </div>
 
-                  {/* 🔸 Imagen del producto */}
-                  {item.images && item.images.length > 0 && (
-                    <img
-                      src={item.images[0]}
-                      alt={item.name}
-                      style={{
-                        width: "80px",
-                        height: "80px",
-                        objectFit: "cover",
-                        borderRadius: "8px",
-                      }}
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "https://via.placeholder.com/80x80?text=No+Image";
-                      }}
-                    />
-                  )}
+                  <button
+                    className="remove-btn"
+                    onClick={() => removeFromCart(item.id)}
+                  >
+                    ✕
+                  </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
 
-          {/* 🔹 Total */}
-          <h4 className="right-align">
-            Total: ${total.toLocaleString("es-CO")}
-          </h4>
+        {/* 💰 Resumen lateral */}
+        <div className="cart-summary">
+          <div className="summary-card">
+            <h6>Resumen de compra</h6>
 
-          <button
-            className="btn waves-effect waves-light"
-            onClick={() => navigate("/checkout")}
-          >
-            Proceder al Pago
-          </button>
-        </>
-      )}
+            <div className="summary-row">
+              <span>Subtotal:</span>
+              <span>${subtotal.toLocaleString("es-CO")}</span>
+            </div>
+            <div className="summary-row discount">
+              <span>Descuento:</span>
+              <span>- ${discount.toLocaleString("es-CO")}</span>
+            </div>
+            <div className="summary-total">
+              <span>Total:</span>
+              <span>${total.toLocaleString("es-CO")}</span>
+            </div>
+
+            <button
+              className="btn orange darken-2 w-100"
+              onClick={() => navigate("/checkout")}
+            >
+              Ir a pagar 
+            </button>
+
+            <button
+              className="btn-flat blue-text w-100"
+              onClick={() => navigate("/")}
+            >
+              Seguir comprando
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
