@@ -1,7 +1,10 @@
 // src/components/ProductList.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collectionGroup,
+  getDocs,
+} from "firebase/firestore";
 import { db } from "../../Firebase";
 import "./ProductList.css";
 
@@ -23,10 +26,12 @@ const ProductCard = ({ product }) => {
     normalizeDriveLink(imageFields[0]) ||
     "https://via.placeholder.com/400x400?text=No+Image";
 
-  const availableColors = product.variants?.map((v) => v.color).join(", ") || "N/A";
-  const availableSizes = product.variants
-    ?.map((v) => v.sizes?.map((s) => s.size).join(", "))
-    .join(", ") || "N/A";
+  const availableColors =
+    product.variants?.map((v) => v.color).join(", ") || "N/A";
+  const availableSizes =
+    product.variants
+      ?.map((v) => v.sizes?.map((s) => s.size).join(", "))
+      .join(", ") || "N/A";
 
   return (
     <div className="col s12 m6 l4 xl3">
@@ -78,23 +83,29 @@ const ProductList = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
 
-  // 🔸 Obtener productos de Firestore
+  // 🔸 Obtener productos desde TODAS las subcolecciones "items"
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
       try {
-        const querySnapshot = await getDocs(collection(db, "productos"));
+        console.log("📦 Cargando productos desde subcolecciones 'items'...");
+        const querySnapshot = await getDocs(collectionGroup(db, "items"));
+
         const items = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
+
+        console.log(`✅ ${items.length} productos encontrados`);
         setProducts(items);
       } catch (err) {
-        console.error(err);
+        console.error("❌ Error cargando productos:", err);
         setError("Error al cargar productos");
       } finally {
         setLoading(false);
       }
     };
+
     fetchProducts();
   }, []);
 
@@ -119,14 +130,12 @@ const ProductList = () => {
     const matchesSubCategory =
       !selectedSubCategory || p.subcategory === selectedSubCategory;
     const matchesColor =
-      !selectedColor ||
-      p.variants?.some((v) => v.color === selectedColor);
+      !selectedColor || p.variants?.some((v) => v.color === selectedColor);
     const matchesSize =
       !selectedSize ||
       p.variants?.some((v) =>
         v.sizes?.some((s) => s.size === selectedSize)
       );
-
     return matchesCategory && matchesSubCategory && matchesColor && matchesSize;
   });
 
@@ -135,7 +144,7 @@ const ProductList = () => {
 
   return (
     <div className="container product-list-container">
-      <h4 className="left-align product-list-title">Moda</h4>
+      <h4 className="left-align product-list-title">Productos</h4>
 
       {/* 🔹 Filtros */}
       <div className="filters row">
@@ -193,8 +202,6 @@ const ProductList = () => {
             ))}
           </select>
         </div>
-
-       
 
         <div className="input-field col s12 m6 l3">
           <select

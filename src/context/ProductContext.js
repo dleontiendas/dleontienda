@@ -1,7 +1,7 @@
 // context/ProductsContext.js
 import React, { createContext, useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "../Firebase"; // asegúrate de que tienes configurado firebase.js
+import { db } from "../Firebase";
 
 export const ProductsContext = createContext();
 
@@ -10,24 +10,50 @@ export const ProductsProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      // 👇 cambia "products" por "productos"
-      const querySnapshot = await getDocs(collection(db, "productos"));
-      const productsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setProducts(productsData);
-    } catch (error) {
-      console.error("Error cargando productos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchProducts = async () => {
+      console.log("🔍 Iniciando carga de productos desde subcolecciones...");
+      setLoading(true);
 
-  fetchProducts();
-}, []);
+      try {
+        // Obtiene todas las categorías (documentos dentro de "productos")
+        const categoriasSnapshot = await getDocs(collection(db, "productos"));
+        console.log(`📦 Categorías encontradas: ${categoriasSnapshot.size}`);
+
+        const allProducts = [];
+
+        // Recorre cada categoría y busca los productos en "items"
+        for (const categoriaDoc of categoriasSnapshot.docs) {
+          const categoriaId = categoriaDoc.id;
+          console.log(`📂 Buscando productos en categoría: ${categoriaId}`);
+
+          const itemsRef = collection(db, "productos", categoriaId, "items");
+          const itemsSnapshot = await getDocs(itemsRef);
+
+          itemsSnapshot.forEach((itemDoc) => {
+            const data = itemDoc.data();
+            allProducts.push({
+              id: itemDoc.id,
+              category: categoriaId,
+              ...data,
+            });
+          });
+
+          console.log(
+            `✅ ${itemsSnapshot.size} productos cargados desde ${categoriaId}`
+          );
+        }
+
+        setProducts(allProducts);
+        console.log(`🎉 Total productos cargados: ${allProducts.length}`);
+      } catch (error) {
+        console.error("❌ Error cargando productos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <ProductsContext.Provider value={{ products, loading }}>
