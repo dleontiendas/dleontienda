@@ -76,6 +76,7 @@ const ProductList = () => {
   const [selectedSubCategory, setSelectedSubCategory] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   // 🔸 Obtener productos de Firestore
   useEffect(() => {
@@ -100,6 +101,7 @@ const ProductList = () => {
   // 🔸 Crear listas únicas de filtros
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))];
   const subCategories = [...new Set(products.map((p) => p.subcategory).filter(Boolean))];
+  const departments = [...new Set(products.map((p) => p.department).filter(Boolean))];
 
   const allColors = products.flatMap((p) =>
     p.variants?.map((v) => v.color) || []
@@ -133,7 +135,7 @@ const ProductList = () => {
 
   return (
     <div className="container product-list-container">
-      <h4 className="left-align product-list-title">PRODUCTOS</h4>
+      <h4 className="left-align product-list-title">Moda</h4>
 
       {/* 🔹 Filtros */}
       <div className="filters row">
@@ -149,6 +151,19 @@ const ProductList = () => {
             <option value="">Todas las categorías</option>
             {categories.map((cat) => (
               <option key={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="input-field col s12 m6 l3">
+          <select
+            className="browser-default"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+          >
+            <option value="">Todos los departamentos</option>
+            {departments.map((dept) => (
+              <option key={dept}>{dept}</option>
             ))}
           </select>
         </div>
@@ -178,6 +193,8 @@ const ProductList = () => {
             ))}
           </select>
         </div>
+
+       
 
         <div className="input-field col s12 m6 l3">
           <select

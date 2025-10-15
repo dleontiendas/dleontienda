@@ -1,101 +1,32 @@
-.product-detail-container {
-  margin-top: 30px;
-  margin-bottom: 50px;
-}
-
-.product-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 40px;
-  align-items: start;
-}
-
-/* Imagen */
-.product-detail-image img {
-  width: 100%;
-  max-width: 450px;
-  border-radius: 8px;
-  border: 1px solid #eee;
-  object-fit: cover;
-}
-
-/* Info */
-.product-detail-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.product-detail-title {
-  font-size: 2rem;
+.product-detail .gold-text {
+  color: #d4af37;
   font-weight: 600;
+}
+
+.product-detail .price-text {
+  color: #2e7d32;
+  font-weight: 700;
   margin-bottom: 10px;
-  color: #111;
 }
 
-.product-detail-description {
-  font-size: 1rem;
-  color: #555;
-  margin-bottom: 20px;
+.product-thumbs {
+  border: none !important;
 }
 
-.product-detail-price {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #e60023; /* Rojo estilo moda */
-  margin-bottom: 20px;
+.product-thumbs li {
+  padding: 5px;
+  cursor: pointer;
 }
 
-/* Opciones */
-.product-detail-option {
-  margin-bottom: 15px;
+.product-thumbs li.active-thumb {
+  border: 2px solid #d4af37;
 }
 
-.product-detail-option label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
+.product-thumbs img {
+  border-radius: 6px;
+  transition: transform 0.2s;
 }
 
-/* Botones */
-.product-detail-actions {
-  margin-top: 20px;
-  display: flex;
-  gap: 15px;
-}
-
-.add-to-cart-btn {
-  background-color: #3483fa !important; /* Azul Mercado Libre */
-  color: #fff !important;
-}
-
-.buy-now-btn {
-  background-color: #00a650 !important; /* Verde compra inmediata */
-  color: #fff !important;
-}
-
-/* Responsivo */
-@media (max-width: 768px) {
-  .product-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .product-detail-image img {
-    max-width: 100%;
-    margin: 0 auto 20px;
-  }
-
-
-  .whatsapp-btn {
-  background-color: #25d366;
-  color: white;
-  font-weight: 600;
-  margin-top: 10px;
-  width: 100%;
-  transition: background 0.3s;
-}
-
-.whatsapp-btn:hover {
-  background-color: #1ebe5d;
-}
-
+.product-thumbs img:hover {
+  transform: scale(1.05);
 }

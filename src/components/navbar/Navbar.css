@@ -1,147 +1,105 @@
-.navbar {
-  background-color: #000;
-  border-bottom: 1px solid #222;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
+/* 🔶 Barra superior */
+.navbar-top {
+  height: 64px;
+  display: flex;
+  align-items: center;
 }
 
-.navbar-container {
+.navbar-top-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.6rem 1.2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-/* 🔸 Logo */
-.navbar-logo {
-  font-weight: 800;
-  font-size: 2.2rem;
-  color: #d4af37;
-  text-decoration: none;
-  font-family: "Playfair Display", serif;
-  letter-spacing: 1px;
-  transition: color 0.2s ease;
-}
-
-.navbar-logo:hover {
-  color: #fff;
-}
-
-.navbar-store {
-  color: #fff;
-}
-
-/* 🔍 Search bar */
-.navbar-search {
+.navbar-left {
   display: flex;
   align-items: center;
-  background-color: #111;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 0.4rem 0.8rem;
-  flex: 1 1 400px;
-  min-width: 250px;
-  max-width: 500px;
-  height: 42px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  gap: 15px;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #000 !important;
+}
+
+.brand-logo-img {
+  height: 36px;
+}
+
+.navbar-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin: 0 20px;
 }
 
 .navbar-input {
+  width: 100%;
   border: none;
-  outline: none;
-  flex: 1;
-  font-size: 1.4rem;
-  background: transparent;
-  color: #eee;
-}
-
-.navbar-input::placeholder {
-  color: #aaa;
-  font-size: 1.3rem;
+  border-radius: 6px;
+  padding: 8px 35px 8px 12px;
+  background-color: #fff;
+  font-size: 15px;
 }
 
 .navbar-search-icon {
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.navbar-search-icon:hover {
-  transform: scale(1.1);
-}
-
-/* 🛒 Cart */
-.navbar-cart {
-  position: relative;
-  color: #d4af37;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.navbar-cart-badge {
   position: absolute;
-  top: -4px;
-  right: -6px;
-  background: #ff5722;
-  color: #fff;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
+  right: 10px;
+  cursor: pointer;
+}
+
+.navbar-right {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: bold;
+  gap: 18px;
 }
 
-/* 📱 RESPONSIVE BREAKPOINTS */
-@media (max-width: 900px) {
-  .navbar-container {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.8rem;
-    padding: 0.8rem 1rem;
-  }
-
-  .navbar-logo {
-    text-align: center;
-    font-size: 2rem;
-  }
-
-  .navbar-search {
-    flex: 1 1 auto;
-    width: 100%;
-    margin: 0 auto;
-  }
-
-  .navbar-cart {
-    align-self: center;
-  }
+.nav-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #000;
+  font-size: 12px;
+  position: relative;
+  text-decoration: none;
 }
 
-@media (max-width: 480px) {
-  .navbar-container {
-    padding: 0.6rem;
-  }
+.cart-badge {
+  position: absolute;
+  top: -5px;
+  right: 12px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  font-size: 10px;
+  padding: 2px 5px;
+}
 
-  .navbar-logo {
-    font-size: 1.8rem;
-  }
+/* ⚪ Subbarra gris */
+.navbar-bottom {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
 
-  .navbar-input {
-    font-size: 1.2rem;
-  }
+.navbar-bottom-content {
+  display: flex;
+  gap: 25px;
+  font-size: 14px;
+  font-weight: 500;
+}
 
-  .navbar-search {
-    height: 38px;
-    padding: 0.3rem 0.6rem;
-  }
+.nav-link {
+  color: #000;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: #d4af37;
 }

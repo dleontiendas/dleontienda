@@ -253,21 +253,7 @@ const Checkout = () => {
           Tarjeta / Pasarela de pago 💳
         </label>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={styles.buttonPrimary}
-        >
-          {loading ? "Procesando..." : "Pagar ahora"}
-        </button>
-
-        <button
-          type="button"
-          onClick={handleWhatsAppOrder}
-          style={styles.buttonWpp}
-        >
-          🟢 Comprar por WhatsApp
-        </button>
+       
       </form>
 
       {/* Resumen */}
@@ -310,6 +296,22 @@ const Checkout = () => {
         <h5 style={{ marginTop: "1rem", color: "#222" }}>
           Total: ${total.toLocaleString()}
         </h5>
+
+         <button
+          type="submit"
+          disabled={loading}
+          style={styles.buttonPrimary}
+        >
+          {loading ? "Procesando..." : "Pagar ahora"}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleWhatsAppOrder}
+          style={styles.buttonWpp}
+        >
+          🟢 Comprar por WhatsApp
+        </button>
       </div>
     </div>
   );
