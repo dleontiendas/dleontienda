@@ -1,0 +1,147 @@
+.checkout-page {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+  background: #f8f8f8;
+  flex-wrap: wrap;
+  font-family: "Inter", Arial, sans-serif;
+}
+
+/* ===== FORMULARIO ===== */
+.checkout-form {
+  flex: 2;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.checkout-form h3 {
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+.checkout-form h4 {
+  margin-top: 1.5rem;
+  color: #333;
+}
+
+.checkout-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.checkout-form label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-top: 1rem;
+}
+
+.checkout-form input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 0.25rem;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.checkout-form input:focus {
+  border-color: #ff6f00;
+}
+
+/* ===== SECCIONES ===== */
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f3f3f3;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+/* ===== BOTONES ===== */
+.btn-primary {
+  background: #ff6f00;
+  color: #fff;
+  border: none;
+  padding: 0.9rem;
+  width: 100%;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 1rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-primary:hover {
+  background: #e65c00;
+}
+
+.btn-whatsapp {
+  background: #25d366;
+  color: white;
+  border: none;
+  padding: 0.9rem;
+  width: 100%;
+  border-radius: 10px;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-whatsapp:hover {
+  background: #1ebe57;
+}
+
+/* ===== RESUMEN ===== */
+.checkout-summary {
+  flex: 1;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  min-width: 300px;
+  height: fit-content;
+}
+
+.checkout-summary h3 {
+  margin-bottom: 1rem;
+  color: #222;
+}
+
+.checkout-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.checkout-summary li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #555;
+}
+
+.checkout-summary hr {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid #eee;
+}
+
+.checkout-summary h4 {
+  color: #000;
+  margin-top: 1rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .checkout-page {
+    flex-direction: column;
+  }
+}

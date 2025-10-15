@@ -28,7 +28,7 @@ const Navbar = ({ onSearch }) => {
 
   return (
     <header>
-      {/* 🔶 Barra superior amarilla */}
+      {/* 🔶 Barra superior  */}
       <div className="navbar-top grey lighten-2 z-depth-1">
         <div className="container navbar-top-content">
           <div className="navbar-left">
@@ -38,9 +38,10 @@ const Navbar = ({ onSearch }) => {
             </button>*/}
             <Link to="/" className="navbar-logo">
               <img
-                src="/logo.png"
+                src="/logodleon.png"
                 alt="D'Leon Gold"
                 className="brand-logo-img"
+                style={{ height: "115px" }}
               />
             </Link>
           </div>
@@ -59,8 +60,11 @@ const Navbar = ({ onSearch }) => {
 
           {/* 🧾 Acciones */}
           <div className="navbar-right">
-            
-            <Link to="/cart" className="nav-icon tooltipped" data-tooltip="Carrito">
+            <Link
+              to="/cart"
+              className="nav-icon tooltipped"
+              data-tooltip="Carrito"
+            >
               <ShoppingCart size={24} color="#000" />
               {totalItems > 0 && (
                 <span className="cart-badge">{totalItems}</span>
@@ -74,10 +78,18 @@ const Navbar = ({ onSearch }) => {
       {/* ⚪ Subbarra gris con categorías */}
       <div className="navbar-bottom grey lighten-3 z-depth-1">
         <div className="container navbar-bottom-content">
-          <Link to="/inicio" className="nav-link active">Inicio</Link>
-          <Link to="/" className="nav-link">Moda</Link>
-          <Link to="/tecnologia" className="nav-link">Tecnología</Link>
-          <Link to="/ofertas" className="nav-link">Ofertas</Link>
+          <Link to="/inicio" className="nav-link active">
+            Inicio
+          </Link>
+          <Link to="/" className="nav-link">
+            Moda
+          </Link>
+          <Link to="/tecnologia" className="nav-link">
+            Tecnología
+          </Link>
+          <Link to="/ofertas" className="nav-link">
+            Ofertas
+          </Link>
         </div>
       </div>
     </header>

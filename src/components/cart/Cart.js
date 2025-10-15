@@ -12,7 +12,7 @@ const Cart = () => {
     0
   );
 
-  const discount = subtotal * 0.1;
+  const discount = subtotal * 0; //0.1; // Ejemplo: 10% de descuento
   const total = subtotal - discount;
 
   if (cart.length === 0)
