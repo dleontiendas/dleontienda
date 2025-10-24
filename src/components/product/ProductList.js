@@ -1,4 +1,3 @@
-// src/components/ProductList.jsx
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -70,7 +69,7 @@ const ProductCard = ({ product }) => {
   );
 };
 
-// 🔹 Lista de productos con filtros dinámicos
+//  Lista de productos con filtros dinámicos
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +82,7 @@ const ProductList = () => {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("");
 
-  // 🔸 Obtener productos desde TODAS las subcolecciones "items"
+  //  Obtener productos desde TODAS las subcolecciones "items"
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -124,7 +123,7 @@ const ProductList = () => {
   );
   const sizes = [...new Set(allSizes)];
 
-  // 🔸 Filtrar productos dinámicamente
+  //  Filtrar productos dinámicamente
   const filteredProducts = products.filter((p) => {
     const matchesCategory = !selectedCategory || p.category === selectedCategory;
     const matchesSubCategory =
@@ -146,7 +145,7 @@ const ProductList = () => {
     <div className="container product-list-container">
       <h4 className="left-align product-list-title">Productos</h4>
 
-      {/* 🔹 Filtros */}
+      {/*  Filtros */}
       <div className="filters row">
         <div className="input-field col s12 m6 l3">
           <select

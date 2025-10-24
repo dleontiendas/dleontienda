@@ -67,7 +67,7 @@ const Checkout = () => {
   };
 
   const handleWhatsAppOrder = () => {
-    const phoneNumber = "573104173201";
+    const phoneNumber = process.env.REACT_APP_WHATSAPP_NUMBER;
     const message = encodeURIComponent(
       ` *Nuevo pedido desde D'LEON GOLD*\n\n` +
         ` ${formData.first_name} ${formData.last_name}\n ${formData.email}\n ${formData.phone}\n ${formData.address}, ${formData.city}\n\n` +

@@ -6,7 +6,8 @@ import { CartContext } from "../../context/CartContext";
 import "materialize-css/dist/css/materialize.min.css";
 import "./ProductDetail.css";
 
-const WHATSAPP_NUMBER = "570000000000"; // tu número sin '+'
+const WHATSAPP_NUMBER = process.env.REACT_APP_WHATSAPP_NUMBER;
+
 
 // 🔹 Normalizar imágenes de Drive
 const normalizeDriveLink = (url) => {

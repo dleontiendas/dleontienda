@@ -17,8 +17,8 @@ const Login = () => {
       });
       
       if (response.status === 200) {
-        const user = response.data; // Suponemos que `response.data` contiene el nombre del usuario
-        localStorage.setItem('user', JSON.stringify(user)); // Guarda el usuario en localStorage
+        const user = response.data; 
+        localStorage.setItem('user', JSON.stringify(user)); 
         
         alert('Logged in successfully');
         setEmail('');

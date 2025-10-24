@@ -25,7 +25,7 @@ const Footer = () => {
           textAlign: "left",
         }}
       >
-        {/* 🔹 Empresa */}
+        {/*  Empresa */}
         <div>
           <h5
             style={{
@@ -49,7 +49,7 @@ const Footer = () => {
           </p>
         </div>
 
-        {/* 🔹 Enlaces */}
+        {/*  Enlaces */}
         <div>
           <h5
             style={{
@@ -87,7 +87,7 @@ const Footer = () => {
           </ul>
         </div>
 
-        {/* 🔹 Redes sociales */}
+        {/*  Redes sociales */}
         <div>
           <h5
             style={{
@@ -115,7 +115,7 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* 🔹 Línea inferior */}
+      {/*  Línea inferior */}
       <div
         style={{
           textAlign: "center",

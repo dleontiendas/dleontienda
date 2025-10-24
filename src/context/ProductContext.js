@@ -1,4 +1,3 @@
-// context/ProductsContext.js
 import React, { createContext, useState, useEffect } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../Firebase";

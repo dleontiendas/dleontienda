@@ -1,4 +1,3 @@
-// src/components/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import {
   collection,
@@ -45,9 +44,9 @@ const Dashboard = () => {
 
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // ===============================
-  // 🔹 Cargar productos (colección: productos)
-  // ===============================
+ 
+  // Cargar productos (colección: productos)
+  
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
@@ -58,7 +57,7 @@ const Dashboard = () => {
           ...doc.data(),
         }));
         setProducts(items);
-        console.log("✅ Productos cargados:", items);
+        console.log(" Productos cargados:", items);
       } catch (err) {
         console.error("Error cargando productos:", err);
       } finally {
@@ -68,9 +67,9 @@ const Dashboard = () => {
     fetchProducts();
   }, []);
 
-  // ===============================
-  // 🔹 Cargar pedidos
-  // ===============================
+
+  //  Cargar pedidos
+
   useEffect(() => {
     if (activeTab !== "pedidos") return;
     const fetchOrders = async () => {
@@ -91,9 +90,8 @@ const Dashboard = () => {
     fetchOrders();
   }, [activeTab]);
 
-  // ===============================
-  // 🔹 CRUD Productos
-  // ===============================
+  //  CRUD Productos
+  
   const handleChange = (e, editing = false) => {
     const { name, value, type, checked } = e.target;
     const val = type === "checkbox" ? checked : value;
@@ -151,9 +149,9 @@ const Dashboard = () => {
     }
   };
 
-  // ===============================
-  // 🔹 Actualizar estado pedido
-  // ===============================
+ 
+  //  Actualizar estado pedido
+
   const handleUpdateOrderStatus = async (id, newStatus) => {
     try {
       const orderRef = doc(db, "pedidos", id);
@@ -219,9 +217,9 @@ const Dashboard = () => {
           {activeTab === "pedidos" && "Gestión de Pedidos"}
         </h2>
 
-        {/* ===============================
-            TAB: PRODUCTOS
-        =============================== */}
+        {/* 
+            //TAB: PRODUCTOS
+        */}
         {activeTab === "productos" && (
           <>
             <div style={{ marginBottom: "1rem" }}>
@@ -342,9 +340,7 @@ const Dashboard = () => {
           </>
         )}
 
-        {/* ===============================
-            TAB: PEDIDOS
-        =============================== */}
+        {/* TAB: PEDIDOS */}
         {activeTab === "pedidos" && (
           <>
             {loadingOrders ? (

@@ -27,7 +27,7 @@ const Cart = () => {
       <h4 className="cart-title center-align">Carrito de compras</h4>
 
       <div className="cart-content">
-        {/* 🧾 Lista de productos */}
+        {/*  Lista de productos */}
         <div className="cart-products">
           <div className="cart-card">
             {cart.map((item, index) => (
@@ -93,7 +93,7 @@ const Cart = () => {
           </div>
         </div>
 
-        {/* 💰 Resumen lateral */}
+        {/*  Resumen lateral */}
         <div className="cart-summary">
           <div className="summary-card">
             <h6>Resumen de compra</h6>

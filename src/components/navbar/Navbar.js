@@ -28,7 +28,7 @@ const Navbar = ({ onSearch }) => {
 
   return (
     <header>
-      {/* 🔶 Barra superior  */}
+      {/*  Barra superior  */}
       <div className="navbar-top grey lighten-2 z-depth-1">
         <div className="container navbar-top-content">
           <div className="navbar-left">
@@ -46,7 +46,7 @@ const Navbar = ({ onSearch }) => {
             </Link>
           </div>
 
-          {/* 🔍 Buscador */}
+          {/*  Buscador */}
           <div className="navbar-search">
             <input
               type="search"
@@ -58,7 +58,7 @@ const Navbar = ({ onSearch }) => {
             <Search size={20} color="#555" className="navbar-search-icon" />
           </div>
 
-          {/* 🧾 Acciones */}
+          {/*  Acciones */}
           <div className="navbar-right">
             <Link
               to="/cart"
@@ -75,7 +75,7 @@ const Navbar = ({ onSearch }) => {
         </div>
       </div>
 
-      {/* ⚪ Subbarra gris con categorías */}
+      {/*  Subbarra gris con categorías */}
       <div className="navbar-bottom grey lighten-3 z-depth-1">
         <div className="container navbar-bottom-content">
           <Link to="/inicio" className="nav-link active">
