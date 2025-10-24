@@ -2,7 +2,7 @@ import React, { useState, useContext, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
 import { ProductsContext } from "../../context/ProductContext";
-import { ShoppingCart, Bell, User, Menu, Search } from "lucide-react";
+import { ShoppingCart,/* Bell, User, Menu,*/ Search } from "lucide-react";
 import "materialize-css/dist/css/materialize.min.css";
 import "./Navbar.css";
 
@@ -77,11 +77,11 @@ const Navbar = ({ onSearch }) => {
 
       {/*  Subbarra gris con categorías */}
       <div className="navbar-bottom grey lighten-3 z-depth-1">
-        <div className="container navbar-bottom-content">
-          <Link to="/inicio" className="nav-link active">
+        <div className="container navbar-bottom-content flex gap-4">
+          <Link to="/" className="nav-link active">
             Inicio
           </Link>
-          <Link to="/" className="nav-link">
+          <Link to="/moda" className="nav-link">
             Moda
           </Link>
           <Link to="/tecnologia" className="nav-link">
