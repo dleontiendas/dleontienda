@@ -8,7 +8,7 @@ import Cart from './components/cart/Cart';
 import Checkout from './components/checkout/Checkout';
 import Footer from './components/footer/Footer';
 import { CartProvider } from './context/CartContext';
-import Dashboard from './components/product/Dashboard';
+import Dashboard from './components/dashboard/Dashboard';
 import { ProductsProvider } from './context/ProductContext';
 import './App.css';
 

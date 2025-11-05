@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  collectionGroup,
-  getDocs,
-} from "firebase/firestore";
+import { collectionGroup, getDocs } from "firebase/firestore";
 import { db } from "../../Firebase";
 import "./ProductList.css";
 
-// 🔹 Normaliza los links de Google Drive
+/* ----------------------- Helpers ----------------------- */
 const normalizeDriveLink = (url) => {
   if (!url) return null;
   const match =
@@ -18,7 +15,7 @@ const normalizeDriveLink = (url) => {
     : url;
 };
 
-// 🔹 Tarjeta individual de producto
+/* -------------------- Product Card -------------------- */
 const ProductCard = ({ product }) => {
   const imageFields = product.images || [];
   const displaySrc =
@@ -41,16 +38,14 @@ const ProductCard = ({ product }) => {
               src={displaySrc}
               alt={product.name || "Sin nombre"}
               className="product-image"
-              onError={(e) => {
-                e.currentTarget.src =
-                  "https://via.placeholder.com/400x400?text=No+Image";
-              }}
+              onError={(e) =>
+                (e.currentTarget.src =
+                  "https://via.placeholder.com/400x400?text=No+Image")
+              }
             />
           </div>
           <div className="card-content product-card-content">
-            <h6 className="product-name">
-              {product.name || "Producto sin nombre"}
-            </h6>
+            <h6 className="product-name">{product.name || "Sin nombre"}</h6>
             <p className="product-price">
               {product.price_cop
                 ? `$${Number(product.price_cop).toLocaleString("es-CO")}`
@@ -69,154 +64,137 @@ const ProductCard = ({ product }) => {
   );
 };
 
-//  Lista de productos con filtros dinámicos
+/* -------------------- Product List -------------------- */
 const ProductList = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [filters, setFilters] = useState({
+    category: "",
+    subCategory: "",
+    color: "",
+    size: "",
+    department: "",
+  });
+  const [status, setStatus] = useState({ loading: true, error: null });
 
-  // Filtros
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedSubCategory, setSelectedSubCategory] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("");
-
-  //  Obtener productos desde TODAS las subcolecciones "items"
   useEffect(() => {
     const fetchProducts = async () => {
-      setLoading(true);
+      setStatus({ loading: true, error: null });
       try {
-        console.log("📦 Cargando productos desde subcolecciones 'items'...");
-        const querySnapshot = await getDocs(collectionGroup(db, "items"));
+        if (!db) throw new Error("Firestore no inicializado correctamente");
 
+        console.log("📦 Cargando productos desde 'items'...");
+        const querySnapshot = await getDocs(collectionGroup(db, "items"));
         const items = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        console.log(`✅ ${items.length} productos encontrados`);
+        console.log(`✅ ${items.length} productos cargados`);
         setProducts(items);
       } catch (err) {
-        console.error("❌ Error cargando productos:", err);
-        setError("Error al cargar productos");
+        console.error("❌ Error al cargar productos:", err.message);
+        setStatus({ loading: false, error: err.message });
       } finally {
-        setLoading(false);
+        setStatus((prev) => ({ ...prev, loading: false }));
       }
     };
-
     fetchProducts();
   }, []);
 
-  // 🔸 Crear listas únicas de filtros
-  const categories = [...new Set(products.map((p) => p.category).filter(Boolean))];
-  const subCategories = [...new Set(products.map((p) => p.subcategory).filter(Boolean))];
-  const departments = [...new Set(products.map((p) => p.department).filter(Boolean))];
-
-  const allColors = products.flatMap((p) =>
-    p.variants?.map((v) => v.color) || []
+  /* ---------- Generar listas únicas de filtros ---------- */
+  const categories = useMemo(
+    () => [...new Set(products.map((p) => p.category).filter(Boolean))],
+    [products]
   );
-  const colors = [...new Set(allColors)];
-
-  const allSizes = products.flatMap((p) =>
-    p.variants?.flatMap((v) => v.sizes?.map((s) => s.size)) || []
+  const subCategories = useMemo(
+    () => [...new Set(products.map((p) => p.subcategory).filter(Boolean))],
+    [products]
   );
-  const sizes = [...new Set(allSizes)];
+  const departments = useMemo(
+    () => [...new Set(products.map((p) => p.department).filter(Boolean))],
+    [products]
+  );
+  const colors = useMemo(
+    () => [...new Set(products.flatMap((p) => p.variants?.map((v) => v.color) || []))],
+    [products]
+  );
+  const sizes = useMemo(
+    () =>
+      [
+        ...new Set(
+          products.flatMap((p) =>
+            p.variants?.flatMap((v) => v.sizes?.map((s) => s.size)) || []
+          )
+        ),
+      ],
+    [products]
+  );
 
-  //  Filtrar productos dinámicamente
-  const filteredProducts = products.filter((p) => {
-    const matchesCategory = !selectedCategory || p.category === selectedCategory;
-    const matchesSubCategory =
-      !selectedSubCategory || p.subcategory === selectedSubCategory;
-    const matchesColor =
-      !selectedColor || p.variants?.some((v) => v.color === selectedColor);
-    const matchesSize =
-      !selectedSize ||
-      p.variants?.some((v) =>
-        v.sizes?.some((s) => s.size === selectedSize)
-      );
-    return matchesCategory && matchesSubCategory && matchesColor && matchesSize;
-  });
+  /* -------------------- Aplicar filtros -------------------- */
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((p) => {
+        const f = filters;
+        const matchesCategory = !f.category || p.category === f.category;
+        const matchesSub = !f.subCategory || p.subcategory === f.subCategory;
+        const matchesDept = !f.department || p.department === f.department;
+        const matchesColor =
+          !f.color || p.variants?.some((v) => v.color === f.color);
+        const matchesSize =
+          !f.size ||
+          p.variants?.some((v) => v.sizes?.some((s) => s.size === f.size));
+        return (
+          matchesCategory &&
+          matchesSub &&
+          matchesColor &&
+          matchesSize &&
+          matchesDept
+        );
+      }),
+    [filters, products]
+  );
 
-  if (loading) return <p className="center-align">Cargando productos...</p>;
-  if (error) return <p className="center-align red-text">{error}</p>;
+  /* -------------------- UI -------------------- */
+  if (status.loading)
+    return <p className="center-align">Cargando productos...</p>;
+  if (status.error)
+    return (
+      <p className="center-align red-text">
+        Error al cargar productos: {status.error}
+      </p>
+    );
 
   return (
     <div className="container product-list-container">
       <h4 className="left-align product-list-title">Productos</h4>
 
-      {/*  Filtros */}
+      {/* ---------- Filtros ---------- */}
       <div className="filters row">
-        <div className="input-field col s12 m6 l3">
-          <select
-            className="browser-default"
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setSelectedSubCategory("");
-            }}
-          >
-            <option value="">Todas las categorías</option>
-            {categories.map((cat) => (
-              <option key={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="input-field col s12 m6 l3">
-          <select
-            className="browser-default"
-            value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
-          >
-            <option value="">Todos los departamentos</option>
-            {departments.map((dept) => (
-              <option key={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="input-field col s12 m6 l3">
-          <select
-            className="browser-default"
-            value={selectedSubCategory}
-            onChange={(e) => setSelectedSubCategory(e.target.value)}
-          >
-            <option value="">Todas las subcategorías</option>
-            {subCategories.map((sub) => (
-              <option key={sub}>{sub}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="input-field col s12 m6 l3">
-          <select
-            className="browser-default"
-            value={selectedColor}
-            onChange={(e) => setSelectedColor(e.target.value)}
-          >
-            <option value="">Todos los colores</option>
-            {colors.map((c) => (
-              <option key={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="input-field col s12 m6 l3">
-          <select
-            className="browser-default"
-            value={selectedSize}
-            onChange={(e) => setSelectedSize(e.target.value)}
-          >
-            <option value="">Todas las tallas</option>
-            {sizes.map((s) => (
-              <option key={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+        {[
+          { key: "category", label: "Categoría", options: categories },
+          { key: "department", label: "Departamento", options: departments },
+          { key: "subCategory", label: "Subcategoría", options: subCategories },
+          { key: "color", label: "Color", options: colors },
+          { key: "size", label: "Talla", options: sizes },
+        ].map(({ key, label, options }) => (
+          <div key={key} className="input-field col s12 m6 l3">
+            <select
+              className="browser-default"
+              value={filters[key]}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, [key]: e.target.value }))
+              }
+            >
+              <option value="">Todas las {label.toLowerCase()}s</option>
+              {options.map((opt) => (
+                <option key={opt}>{opt}</option>
+              ))}
+            </select>
+          </div>
+        ))}
       </div>
 
-      {/* 🔹 Lista de productos */}
+      {/* ---------- Lista de productos ---------- */}
       <div className="row">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
