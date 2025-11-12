@@ -7,8 +7,8 @@ const Footer = () => {
   return (
     <footer
       style={{
-        backgroundColor: "#111",
-        color: "#d4af37",
+        backgroundColor: "#ffffffff",
+        color: "#000000ff",
         paddingTop: "2rem",
         paddingBottom: "1rem",
         borderTop: "1px solid rgba(255,255,255,0.1)",
@@ -30,7 +30,7 @@ const Footer = () => {
           <h5
             style={{
               fontWeight: "700",
-              color: "#d4af37",
+              color: "#0f0f0fff",
               fontFamily: "'Playfair Display', serif",
               letterSpacing: "1px",
             }}
@@ -39,7 +39,7 @@ const Footer = () => {
           </h5>
           <p
             style={{
-              color: "#ccc",
+              color: "#2e2d2bff",
               fontSize: "0.95rem",
               marginTop: "0.5rem",
               lineHeight: "1.6",
@@ -53,7 +53,7 @@ const Footer = () => {
         <div>
           <h5
             style={{
-              color: "#d4af37",
+              color: "#2e2d2bff",
               fontWeight: "600",
               marginBottom: "0.8rem",
             }}
@@ -73,12 +73,12 @@ const Footer = () => {
                 <Link
                   to={link.path}
                   style={{
-                    color: "#ccc",
+                    color: "#2e2d2bff",
                     textDecoration: "none",
                     transition: "color 0.2s",
                   }}
-                  onMouseOver={(e) => (e.target.style.color = "#d4af37")}
-                  onMouseOut={(e) => (e.target.style.color = "#ccc")}
+                  onMouseOver={(e) => (e.target.style.color = "#cca936ff")}
+                  onMouseOut={(e) => (e.target.style.color = "#2e2d2bff")}
                 >
                   {link.name}
                 </Link>
@@ -91,7 +91,7 @@ const Footer = () => {
         <div>
           <h5
             style={{
-              color: "#d4af37",
+              color: "#131212ff",
               fontWeight: "600",
               marginBottom: "0.8rem",
             }}
@@ -123,7 +123,7 @@ const Footer = () => {
           borderTop: "1px solid rgba(255,255,255,0.1)",
           paddingTop: "1rem",
           fontSize: "0.9rem",
-          color: "#aaa",
+          color: "#777777ff",
         }}
       >
         © 2025 DLEON Gold Store — Todos los derechos reservados.

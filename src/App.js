@@ -22,8 +22,12 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/moda" element={<ProductList />} />
-              <Route path="/products/:productId" element={<ProductDetail />} />
-              <Route path="/cart" element={<Cart />} />
+ <Route path="/products" element={<ProductList />} />
+          {/* ✅ Ruta principal: category + productId */}
+          <Route path="/products/:category/:productId" element={<ProductDetail />} />
+          {/* ✅ Ruta legacy: solo productId (usa fallback por sku) */}
+          <Route path="/products/:productId" element={<ProductDetail />} />
+          {/* 404 */}              <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/dashboard" element={<Dashboard />} />
             </Routes>

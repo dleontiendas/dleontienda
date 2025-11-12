@@ -1,61 +1,44 @@
-import React, { createContext, useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
+// src/context/ProductsContext.jsx
+import React, { createContext, useCallback, useEffect, useState } from "react";
+import { collectionGroup, getDocs } from "firebase/firestore";
 import { db } from "../Firebase";
 
-export const ProductsContext = createContext();
+export const ProductsContext = createContext({
+  products: [],
+  loading: true,
+  error: null,
+  refresh: async () => {},
+});
 
 export const ProductsProvider = ({ children }) => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      console.log("🔍 Iniciando carga de productos desde subcolecciones...");
-      setLoading(true);
-
-      try {
-        // Obtiene todas las categorías (documentos dentro de "productos")
-        const categoriasSnapshot = await getDocs(collection(db, "productos"));
-        console.log(`📦 Categorías encontradas: ${categoriasSnapshot.size}`);
-
-        const allProducts = [];
-
-        // Recorre cada categoría y busca los productos en "items"
-        for (const categoriaDoc of categoriasSnapshot.docs) {
-          const categoriaId = categoriaDoc.id;
-          console.log(`📂 Buscando productos en categoría: ${categoriaId}`);
-
-          const itemsRef = collection(db, "productos", categoriaId, "items");
-          const itemsSnapshot = await getDocs(itemsRef);
-
-          itemsSnapshot.forEach((itemDoc) => {
-            const data = itemDoc.data();
-            allProducts.push({
-              id: itemDoc.id,
-              category: categoriaId,
-              ...data,
-            });
-          });
-
-          console.log(
-            `✅ ${itemsSnapshot.size} productos cargados desde ${categoriaId}`
-          );
-        }
-
-        setProducts(allProducts);
-        console.log(`🎉 Total productos cargados: ${allProducts.length}`);
-      } catch (error) {
-        console.error("❌ Error cargando productos:", error);
-      } finally {
-        setLoading(false);
+  const fetchAll = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      const snap = await getDocs(collectionGroup(db, "items"));
+      const items = snap.docs.map((doc) => {
+        const catSlug = doc.ref.parent?.parent?.id || "sin_categoria"; // ← slug (id de colección)
+        return { id: doc.id, catSlug, ...doc.data() };
+      });
+      setProducts(items);
+      if (items[0]) {
+        const { id, catSlug, name, price_cop } = items[0];
+        console.log("🧪 Primer producto:", { id, category: catSlug, name, price_cop });
       }
-    };
-
-    fetchProducts();
+    } catch (e) {
+      setError(e?.message || "Error desconocido");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
   return (
-    <ProductsContext.Provider value={{ products, loading }}>
+    <ProductsContext.Provider value={{ products, loading, error, refresh: fetchAll }}>
       {children}
     </ProductsContext.Provider>
   );
