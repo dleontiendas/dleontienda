@@ -1,6 +1,7 @@
 // src/Firebase.js
 import { initializeApp, getApps } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const env = (vite, cra) =>
   (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[vite]) ||
@@ -32,6 +33,9 @@ if (missing.length) {
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+
+export const auth = getAuth(app);
+
 // Debug
 // @ts-ignore
 console.log("🧭 projectId(web):", app.options?.projectId || "(desconocido)");

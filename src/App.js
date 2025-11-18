@@ -1,3 +1,4 @@
+// src/App.js  (usa .js en imports; NO .jsx)
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Navbar from './components/navbar/Navbar';
@@ -8,34 +9,48 @@ import Cart from './components/cart/Cart';
 import Checkout from './components/checkout/Checkout';
 import Footer from './components/footer/Footer';
 import { CartProvider } from './context/CartContext';
-import Dashboard from './components/dashboard/Dashboard';
 import { ProductsProvider } from './context/ProductContext';
+import { AuthProvider } from './context/AuthContext';      // <- .js
+import RequireAuth from './components/auth/RequireAuth';   // <- .js
+import Dashboard from './components/dashboard/Dashboard';
+import Login from './components/login/Login';
+import Register from './components/register/Register';
 import './App.css';
 
 const App = () => {
   return (
-    <CartProvider>
-      <ProductsProvider>
-        <div className="App">
-          <Navbar />
-          <div className="App-content">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/moda" element={<ProductList />} />
- <Route path="/products" element={<ProductList />} />
-          {/* ✅ Ruta principal: category + productId */}
-          <Route path="/products/:category/:productId" element={<ProductDetail />} />
-          {/* ✅ Ruta legacy: solo productId (usa fallback por sku) */}
-          <Route path="/products/:productId" element={<ProductDetail />} />
-          {/* 404 */}              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-            </Routes>
+    <AuthProvider>
+      <CartProvider>
+        <ProductsProvider>
+          <div className="App">
+            <Navbar />
+            <div className="App-content">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/moda" element={<ProductList />} />
+                <Route path="/products" element={<ProductList />} />
+                <Route path="/products/:category/:productId" element={<ProductDetail />} />
+                <Route path="/products/:productId" element={<ProductDetail />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                <Route
+                  path="/dashboard"
+                  element={
+                    <RequireAuth /* role="admin" */>
+                      <Dashboard />
+                    </RequireAuth>
+                  }
+                />
+              </Routes>
+            </div>
+            <Footer />
           </div>
-          <Footer />
-        </div>
-      </ProductsProvider>
-    </CartProvider>
+        </ProductsProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 };
 

@@ -1,31 +1,65 @@
-import React, { createContext, useState, useEffect } from 'react';
+// src/context/AuthContext.js  (JS puro)
+import React, { createContext, useEffect, useMemo, useState } from "react";
+import { auth, db } from "../Firebase";
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);   // { uid, email, displayName, role, profile }
+  const [loading, setLoading] = useState(true);
 
-  // Verificar si el usuario está guardado en localStorage al cargar la app
+  // Hidrata desde localStorage mientras llega Firebase
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user'));
-    if (storedUser) {
-      setUser(storedUser);
-    }
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setUser(JSON.parse(raw));
+    } catch (_) {}
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-  };
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      try {
+        if (!u) {
+          setUser(null);
+          localStorage.removeItem("user");
+          return;
+        }
+        let role = "customer";
+        let profile = null;
+        try {
+          const snap = await getDoc(doc(db, "users", u.uid));
+          if (snap.exists()) {
+            profile = snap.data();
+            if (profile && profile.role) role = profile.role;
+          }
+        } catch (_) {}
+        const compact = {
+          uid: u.uid,
+          email: u.email || "",
+          displayName: u.displayName || "",
+          role,
+          profile,
+        };
+        setUser(compact);
+        localStorage.setItem("user", JSON.stringify(compact));
+      } finally {
+        setLoading(false);
+      }
+    });
+    return () => unsub();
+  }, []);
 
-  const logout = () => {
+  const loginEmail = async (email, password) =>
+    signInWithEmailAndPassword(auth, String(email).trim(), password);
+
+  const logout = async () => {
+    await signOut(auth);
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem("user");
   };
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo(() => ({ user, loading, loginEmail, logout }), [user, loading]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

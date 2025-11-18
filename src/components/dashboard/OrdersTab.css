@@ -1,0 +1,80 @@
+:root{
+  --gold:#d4af37;
+  --gold-600:#b9922c;
+  --ink:#111;
+  --muted:#eee;
+  --paper:#fff;
+  --ring: rgba(212,175,55,.22);
+}
+
+.od-wrap{ padding:18px; }
+.od-header{ display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:12px; }
+.od-controls{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+
+.od-search{ min-width:320px; padding:10px 12px; border-radius:10px; border:1px solid #ddd; }
+.od-select,.od-date{
+  padding:10px 12px; border-radius:10px; border:1px solid #ddd; background:#fff;
+}
+.od-search:focus,.od-select:focus,.od-date:focus{ border-color:var(--gold); box-shadow:0 0 0 3px var(--ring); outline:none; }
+
+.od-table{ border:1px solid var(--muted); border-radius:12px; overflow:hidden; }
+.od-thead, .od-row{ display:grid; grid-template-columns: 1.1fr 1.4fr .9fr .9fr .9fr .9fr 1.2fr; }
+.od-thead{ position:sticky; top:0; background:#fafafa; padding:10px 12px; font-weight:800; border-bottom:1px solid var(--muted); z-index:1; }
+.od-tbody .od-row{ border-bottom:1px solid var(--muted); padding:8px 12px; align-items:center; }
+.od-row > div{ padding:4px 6px; display:flex; align-items:center; gap:6px; }
+.od-customer .od-name{ font-weight:800; }
+.od-customer .od-sub{ color:#666; font-size:.9rem; }
+.od-total{ font-weight:800; }
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+.od-actions{ display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+.od-quick{ display:flex; gap:6px; flex-wrap:wrap; }
+
+.od-btn{ border:1px solid var(--gold); background:#fff; color:#000; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700; }
+.od-btn:hover{ background:#fff6cc; }
+.od-btn:disabled{ opacity:.6; cursor:not-allowed; }
+.od-btn--ghost{ border-color:#bbb; }
+
+.od-chip{
+  border:1px solid #ddd; border-radius:999px; padding:4px 10px; background:#fff; font-weight:700; font-size:.82rem; cursor:pointer;
+}
+.od-chip.active{ border-color:var(--gold); background:#fff6cc; }
+
+.od-badge{ padding:2px 8px; border-radius:999px; font-weight:800; font-size:.8rem; }
+.od-badge.pendiente{ background:#fff3e0; color:#ef6c00; }
+.od-badge.pagado{ background:#e8f5e9; color:#2e7d32; }
+.od-badge.en-preparación, .od-badge.en-preparacion{ background:#e3f2fd; color:#1565c0; }
+.od-badge.enviado{ background:#ede7f6; color:#6a1b9a; }
+.od-badge.entregado{ background:#f1f8e9; color:#33691e; }
+.od-badge.cancelado{ background:#ffebee; color:#c62828; }
+
+.od-pager{ display:flex; justify-content:center; align-items:center; gap:10px; padding:12px; }
+.od-empty{ padding:24px; text-align:center; color:#666; }
+
+/* Modal */
+.od-modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:50; }
+.od-modal{ width:min(980px, 94vw); background:#fff; border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.2); overflow:hidden; }
+.od-modal-head{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--muted); }
+.od-modal-body{ padding:14px; max-height:72vh; overflow:auto; }
+.od-modal-foot{ padding:12px 14px; border-top:1px solid var(--muted); display:flex; gap:8px; justify-content:flex-end; }
+.od-icon-btn{ border:none; background:transparent; font-size:1.2rem; cursor:pointer; }
+
+.od-detail .od-section{ margin-bottom:12px; }
+.od-detail .od-section h4{ margin:0 0 6px; font-weight:800; }
+
+.od-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+.od-grid .span-2{ grid-column: span 2; }
+
+.od-lines{ border:1px solid var(--muted); border-radius:10px; overflow:hidden; }
+.od-lines-head,.od-line{ display:grid; grid-template-columns: 2fr 1.1fr .6fr .8fr .9fr; }
+.od-lines-head{ background:#fafafa; font-weight:800; padding:8px 10px; border-bottom:1px solid var(--muted); }
+.od-lines-body .od-line{ padding:8px 10px; border-bottom:1px solid var(--muted); }
+.od-ellipsis{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.od-notes{ background:#f7f7f7; border-radius:10px; padding:10px; }
+
+@media (max-width: 900px){
+  .od-thead, .od-row{ grid-template-columns: 1.2fr 1.6fr .9fr .9fr .9fr .9fr 1.2fr; }
+  .od-grid{ grid-template-columns: 1fr; }
+  .od-lines-head,.od-line{ grid-template-columns: 2fr 1fr .6fr .8fr .9fr; }
+}
