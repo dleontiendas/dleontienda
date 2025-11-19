@@ -1,32 +1,39 @@
-/* ---------- tarjetas ---------- */
+/* src/components/home/Home.css */
+/* layout alineado con navbar */
+:root{
+  --container-max: 1200px;     /* ajústalo para que coincida con tu navbar */
+  --container-px: 16px;
+}
+
+.page{ padding-top: 12px; }
+.site-container{ max-width: var(--container-max); margin: 0 auto; padding: 0 var(--container-px); }
+.page-title{ margin: 12px 0 16px; font-weight: 700; font-size: 2rem; }
+
+/* grid */
+.banner-grid{ display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 768px){ .banner-grid{ grid-template-columns: repeat(2,1fr); } }
+@media (min-width: 1024px){ .banner-grid{ grid-template-columns: repeat(3,1fr); } }
+
+/* tarjetas (reutiliza lo que ya tenías) */
 .banner-card {
   display: block;
   background: white;
   border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,.12);
+  transition: box-shadow .3s ease, transform .3s ease;
 }
-
 .banner-card:hover {
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 22px rgba(0,0,0,.18);
   transform: translateY(-2px);
 }
 
-/* ---------- imagen ---------- */
-.banner-img {
-  position: relative;
-  height: 180px; /* tamaño pequeño tipo banner */
-  overflow: hidden;
-}
+.banner-img { position: relative; height: 220px; overflow: hidden; }
+@media (min-width: 992px){ .banner-img{ height: 260px; } }
 
-.banner-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.4s ease;
-}
+.banner-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+.banner-card:hover .banner-img img { transform: scale(1.07); }
 
-.banner-card:hover .banner-img img {
-  transform: scale(1.07);
-}
+.banner-body{ padding: 12px 14px 16px; }
+.banner-title{ margin: 0 0 6px; font-weight: 700; }
+.banner-desc{ margin: 0; color: #555; font-size: .95rem; }

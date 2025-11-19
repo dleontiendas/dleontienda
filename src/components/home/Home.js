@@ -1,6 +1,7 @@
-// src/pages/Home.jsx
+// src/components/home/Home.js  (puede llamarse .jsx si prefieres)
+import React from "react";
 import { Link } from "react-router-dom";
-import "./Home.css"; // <-- Importa el CSS
+import "./Home.css";
 
 export default function Home() {
   const categorias = [
@@ -28,29 +29,31 @@ export default function Home() {
   ];
 
   return (
-    <section className="max-w-5xl mx-auto px-4 my-12">
-      <h2 className="text-2xl font-semibold mb-8 text-center">
-        Explora por Categorías
-      </h2>
+    <main className="page">
+      <div className="site-container">
+        <h2 className="page-title center-align">Explora por Categorías</h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {categorias.map((cat) => (
-          <Link
-            key={cat.nombre}
-            to={cat.ruta}
-            className="banner-card"
-          >
-            <div className="banner-img">
-              <img src={cat.imagen} alt={cat.nombre} />
-            </div>
-
-            <div className="p-3">
-              <h3 className="text-lg font-bold">{cat.nombre}</h3>
-              <p className="text-gray-600 text-sm">{cat.descripcion}</p>
-            </div>
-          </Link>
-        ))}
+        <div className="banner-grid">
+          {categorias.map((cat) => (
+            <Link key={cat.nombre} to={cat.ruta} className="banner-card">
+              <div className="banner-img">
+                <img
+                  src={cat.imagen}
+                  alt={cat.nombre}
+                  onError={(e) => {
+                    e.currentTarget.src =
+                      "https://placehold.co/800x400?text=Imagen+no+disponible";
+                  }}
+                />
+              </div>
+              <div className="banner-body">
+                <h3 className="banner-title">{cat.nombre}</h3>
+                <p className="banner-desc">{cat.descripcion}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
-    </section>
+    </main>
   );
 }
