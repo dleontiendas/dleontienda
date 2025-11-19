@@ -19,7 +19,7 @@ const firebaseConfig = {
 
 const missing = Object.entries(firebaseConfig).filter(([, v]) => !v).map(([k]) => k);
 if (missing.length) {
-  console.warn("⚠️ Variables Firebase faltantes:", missing, "→ usando fallback público.");
+  console.warn(" Variables Firebase faltantes:", missing, "→ usando fallback público.");
   Object.assign(firebaseConfig, {
     apiKey: "AIzaSyD26x4nTZphJdqGmDjJHV8UpMw1C3KUSpo",
     authDomain: "dleongold-10de3.firebaseapp.com",
@@ -36,6 +36,4 @@ export const db = getFirestore(app);
 
 export const auth = getAuth(app);
 
-// Debug
-// @ts-ignore
-console.log("🧭 projectId(web):", app.options?.projectId || "(desconocido)");
+
