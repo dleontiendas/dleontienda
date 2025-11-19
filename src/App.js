@@ -15,6 +15,15 @@ import RequireAuth from './components/auth/RequireAuth';   // <- .js
 import Dashboard from './components/dashboard/Dashboard';
 import Login from './components/login/Login';
 import Register from './components/register/Register';
+
+
+import Terminos from "./components/legales/Terminos";
+import Privacidad from "./components/legales//Privacidad";
+import Garantias from "./components/legales/Garantias";
+import Envios from "./components/legales/Envios";
+
+import AvisoLegal from "./components/legales/AvisoLegal";
+
 import './App.css';
 
 const App = () => {
@@ -35,6 +44,14 @@ const App = () => {
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+
+
+                
+<Route path="/terminos" element={<Terminos />} />
+<Route path="/privacidad" element={<Privacidad />} />
+<Route path="/garantias" element={<Garantias />} />
+<Route path="/envios" element={<Envios />} />
+<Route path="/aviso-legal" element={<AvisoLegal />} />
 
                 <Route
                   path="/dashboard"

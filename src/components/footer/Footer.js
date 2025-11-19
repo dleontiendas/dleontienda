@@ -50,6 +50,19 @@ const Footer = () => {
         </div>
 
         {/*  Enlaces */}
+
+<div>
+  <h5 className="font-semibold mb-3">Información legal</h5>
+  <ul className="space-y-1 text-sm text-gray-300">
+    <li><Link to="/terminos">Términos y condiciones</Link></li>
+    <li><Link to="/privacidad">Política de privacidad</Link></li>
+    <li><Link to="/garantias">Política de garantías</Link></li>
+    <li><Link to="/envios">Política de envíos</Link></li>
+    <li><Link to="/cookies">Política de cookies</Link></li>
+    <li><Link to="/aviso-legal">Aviso legal</Link></li>
+  </ul>
+</div>
+
         <div>
           <h5
             style={{
@@ -128,6 +141,8 @@ const Footer = () => {
       >
         © 2025 DLEON Gold Store — Todos los derechos reservados.
       </div>
+
+
     </footer>
   );
 };
