@@ -1,4 +1,4 @@
-// src/components/auth/RequireAuth.js  (JS puro)
+// ======================= src/components/auth/RequireAuth.js =======================
 import React, { useContext } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";

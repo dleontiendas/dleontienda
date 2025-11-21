@@ -1,4 +1,3 @@
-// ======================= src/pages/auth/Register.js =======================
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../../Firebase";
@@ -11,11 +10,12 @@ const Register = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const onChange = (e) =>
-    setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
+  const onChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
 
   const mapAuthErr = (code) => {
     switch (code) {
+      case "auth/configuration-not-found":
+        return "Config de Auth inválida: habilita Email/Password y autoriza tu dominio en Firebase.";
       case "auth/email-already-in-use":
         return "El correo ya está registrado.";
       case "auth/invalid-email":
@@ -39,19 +39,16 @@ const Register = () => {
     try {
       setLoading(true);
 
-      // 1) Crear cuenta
       const cred = await createUserWithEmailAndPassword(
         auth,
         String(form.email).trim(),
         form.password
       );
 
-      // 2) Nombre visible (opcional)
       if (form.name) {
         await updateProfile(cred.user, { displayName: String(form.name).trim() });
       }
 
-      // 3) Perfil en Firestore
       await setDoc(doc(db, "users", cred.user.uid), {
         uid: cred.user.uid,
         email: cred.user.email,
@@ -62,12 +59,11 @@ const Register = () => {
         updatedAt: serverTimestamp(),
       });
 
-      // 4) Limpia + redirige (AuthContext se actualizará por onAuthStateChanged)
       setForm({ email: "", password: "", name: "" });
-      navigate("/"); // o "/dashboard" si prefieres
+      navigate("/");
     } catch (err) {
-      setError(mapAuthErr(err?.code));
       console.error("Register error:", err);
+      setError(mapAuthErr(err?.code));
     } finally {
       setLoading(false);
     }
@@ -78,46 +74,20 @@ const Register = () => {
       <h4>Crear cuenta</h4>
       <form onSubmit={handleSubmit}>
         <div className="input-field">
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={form.name}
-            onChange={onChange}
-            placeholder="Tu nombre (opcional)"
-          />
+          <input id="name" name="name" type="text" value={form.name} onChange={onChange} placeholder="Tu nombre (opcional)" />
           <label className="active" htmlFor="name">Nombre</label>
         </div>
-
         <div className="input-field">
-          <input
-            id="email"
-            name="email"
-            type="email"
-            value={form.email}
-            onChange={onChange}
-            required
-          />
+          <input id="email" name="email" type="email" value={form.email} onChange={onChange} required />
           <label className="active" htmlFor="email">Email</label>
         </div>
-
         <div className="input-field">
-          <input
-            id="password"
-            name="password"
-            type="password"
-            value={form.password}
-            onChange={onChange}
-            required
-            minLength={6}
-          />
+          <input id="password" name="password" type="password" value={form.password} onChange={onChange} required minLength={6} />
           <label className="active" htmlFor="password">Password</label>
         </div>
-
         <button className="btn waves-effect waves-light" type="submit" disabled={loading}>
           {loading ? "Creando..." : "Registrarme"}
         </button>
-
         {error && <p className="red-text" style={{ marginTop: 8 }}>{error}</p>}
       </form>
     </div>
