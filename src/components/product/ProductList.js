@@ -72,10 +72,38 @@ const ProductCard = ({ product }) => {
           <div className="card-content product-card-content">
             <h6 className="product-name">{product.name || "Sin nombre"}</h6>
             <p className="product-price">
-              {product.price_cop
-                ? `$${Number(product.price_cop).toLocaleString("es-CO")}`
-                : "Precio no disponible"}
-            </p>
+  {Number(product?.price_cop) > 0 ? (
+    <>
+      {(() => {
+        const price = Number(product.price_cop) || 0;
+        const old   = Number(product.price_old) || 0;
+        const pct   =
+          product?.discount != null
+            ? Number(product.discount)
+            : old > price
+              ? Math.round((1 - price / old) * 100)
+              : null;
+
+        return (
+          <>
+            <span className="price-pill">
+              <span className="currency">$</span>
+              <span className="amount">{price.toLocaleString("es-CO")}</span>
+              {pct > 0 && <span className="save">AHORRA {pct}%</span>}
+            </span>
+            {old > price && (
+              <span className="price-strike">
+                ${old.toLocaleString("es-CO")}
+              </span>
+            )}
+          </>
+        );
+      })()}
+    </>
+  ) : (
+    "Precio no disponible"
+  )}
+</p>
             <p className="product-sizes">
               <small>Tallas: {sizes.length ? sizes.join(", ") : "N/A"}</small>
             </p>

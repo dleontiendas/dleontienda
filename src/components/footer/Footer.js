@@ -1,115 +1,155 @@
+// src/components/footer/Footer.js
 import React from "react";
 import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { FaTiktok, FaWhatsapp } from "react-icons/fa";
+import "./Footer.css"; // estilos externos
 
-const Footer = () => {
+const year = new Date().getFullYear();
+
+export default function Footer() {
   return (
-    <footer
-      style={{
-        backgroundColor: "#ffffffff",
-        color: "#000000ff",
-        paddingTop: "2rem",
-        paddingBottom: "1rem",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-        marginTop: "3rem",
-      }}
-    >
-      <div
-        className="container"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "2rem",
-          alignItems: "start",
-          textAlign: "left",
-        }}
-      >
-        {/* Empresa */}
+    <footer className="footer-wrap">
+      <div className="footer-container">
+        {/* Marca */}
         <div>
-          <h5
-            style={{
-              fontWeight: "700",
-              color: "#0f0f0fff",
-              fontFamily: "'Playfair Display', serif",
-              letterSpacing: "1px",
-            }}
-          >
-            D'LEON GOLD
-          </h5>
-
-          <p
-            style={{
-              color: "#2e2d2bff",
-              fontSize: "0.95rem",
-              marginTop: "0.5rem",
-              lineHeight: "1.6",
-            }}
-          >
-            Tienda de Ropa y Accesorios especializada en ofrecer las Mejores
-            Marcas en todos sus productos y servicios. Ropa para Damas,
-            Caballeros, Niños y Toda una Miscelánea de Productos para el hogar
-            y uso cotidiano de todas las personas.
+          <h5 className="footer-brand">D’LEON GOLD</h5>
+          <p className="footer-text">
+            Moda urbana y tecnología. Marcas seleccionadas para damas,
+            caballeros e infantil. También accesorios y básicos del día a día.
           </p>
+
+          <a
+            className="footer-cta"
+            href="https://wa.me/573104173201?text=Hola%20D%E2%80%99LEON%20GOLD%2C%20quiero%20m%C3%A1s%20informaci%C3%B3n"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Contactar por WhatsApp"
+          >
+            <FaWhatsapp size={18} />
+            <span>Chatea con un asesor</span>
+          </a>
         </div>
 
-        {/* Información legal */}
+        {/* Explorar */}
         <div>
-          <h5 className="font-semibold mb-3">Información legal</h5>
-          <ul className="space-y-1 text-sm text-gray-300">
-            <li><Link to="/terminos">Términos y condiciones</Link></li>
-            <li><Link to="/privacidad">Política de privacidad</Link></li>
-            <li><Link to="/garantias">Política de garantías</Link></li>
-            <li><Link to="/envios">Política de envíos</Link></li>
-            <li><Link to="/cookies">Política de cookies</Link></li>
-            <li><Link to="/aviso-legal">Aviso legal</Link></li>
+          <h6 className="footer-heading">Explorar</h6>
+          <ul className="footer-list">
+            <li>
+              <Link to="/moda" className="footer-link">
+                Moda
+              </Link>
+            </li>
+            <li>
+              <Link to="/tecnologia" className="footer-link">
+                Tecnología
+              </Link>
+            </li>
+            <li>
+              <Link to="/ofertas" className="footer-link">
+                Ofertas
+              </Link>
+            </li>
+            <li>
+              <Link to="/products" className="footer-link">
+                Todos los productos
+              </Link>
+            </li>
           </ul>
         </div>
 
-        {/* Redes sociales */}
+        {/* Legales */}
         <div>
-          <h5
-            style={{
-              color: "#131212ff",
-              fontWeight: "600",
-              marginBottom: "0.8rem",
-            }}
-          >
-            Síguenos
-          </h5>
+          <h6 className="footer-heading">Legales</h6>
+          <ul className="footer-list">
+            <li>
+              <Link to="/terminos" className="footer-link">
+                Términos y condiciones
+              </Link>
+            </li>
+            <li>
+              <Link to="/privacidad" className="footer-link">
+                Política de privacidad
+              </Link>
+            </li>
+            <li>
+              <Link to="/garantias" className="footer-link">
+                Garantías
+              </Link>
+            </li>
+            <li>
+              <Link to="/envios" className="footer-link">
+                Envíos y devoluciones
+              </Link>
+            </li>
+            <li>
+              <Link to="/cookies" className="footer-link">
+                Cookies
+              </Link>
+            </li>
+            <li>
+              <Link to="/aviso-legal" className="footer-link">
+                Aviso legal
+              </Link>
+            </li>
+          </ul>
+        </div>
 
-          <div style={{ display: "flex", gap: "1rem" }}>
-            <a href="https://www.instagram.com/tiendadleon/" style={{ color: "#d4af37" }}>
-              <Instagram size={25} />
+        {/* Contacto */}
+        <div>
+          <h6 className="footer-heading">Contacto</h6>
+          <ul className="footer-list">
+            <li>
+              <span className="footer-muted">Email:</span> soporte@dleongold.com
+            </li>
+            <li>
+              <span className="footer-muted">Tel:</span> +57 310 417 3201
+            </li>
+            <li>
+              <span className="footer-muted">Horario:</span> Lun–Sáb 9:00–19:00
+            </li>
+          </ul>
+
+          <div className="footer-social">
+            <a
+              className="footer-social-btn"
+              href="https://www.instagram.com/tiendadleon/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Instagram size={22} />
             </a>
-            <a href="https://www.facebook.com/dleongold?mibextid=ZbWKwL" style={{ color: "#d4af37" }}>
-              <Facebook size={25} />
+            <a
+              className="footer-social-btn"
+              href="https://www.facebook.com/dleongold?mibextid=ZbWKwL"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Facebook size={22} />
             </a>
-            <a href="https://www.tiktok.com/@dleongold" style={{ color: "#d4af37" }}>
-              <FaTiktok size={25} />
+            <a
+              className="footer-social-btn"
+              href="https://www.tiktok.com/@dleongold"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaTiktok size={20} />
             </a>
-            <a href="https://chat.whatsapp.com/HjivrzlnGBY3Jwe5QQz5BZ" style={{ color: "#d4af37" }}>
-              <FaWhatsapp size={25} />
+            <a
+              className="footer-social-btn"
+              href="https://chat.whatsapp.com/HjivrzlnGBY3Jwe5QQz5BZ"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FaWhatsapp size={20} />
             </a>
           </div>
         </div>
       </div>
 
-      {/* Línea inferior */}
-      <div
-        style={{
-          textAlign: "center",
-          marginTop: "2rem",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          paddingTop: "1rem",
-          fontSize: "0.9rem",
-          color: "#777777ff",
-        }}
-      >
-        © 2025 DLEON Gold Store — Todos los derechos reservados.
+      <div className="footer-bottom">
+        <p>© {year} D’LEON GOLD — Todos los derechos reservados.</p>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

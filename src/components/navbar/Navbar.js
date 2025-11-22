@@ -46,7 +46,7 @@ const Navbar = ({ onSearch }) => {
             </Link>
           </div>
 
-          {/*  Buscador */}
+          {/*  Buscador 
           <div className="navbar-search">
             <input
               type="search"
@@ -56,7 +56,7 @@ const Navbar = ({ onSearch }) => {
               className="browser-default navbar-input"
             />
             <Search size={20} color="#555" className="navbar-search-icon" />
-          </div>
+          </div>*/}
 
           {/*  Acciones */}
           <div className="navbar-right">
