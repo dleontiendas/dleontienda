@@ -14,7 +14,7 @@ import RequireAuth from "./components/auth/RequireAuth";
 import Dashboard from "./components/dashboard/Dashboard";
 import Login from "./components/login/Login";
 import Register from "./components/register/Register";
-
+import PromoBar from "./components/PromoBar"; // <-- import
 import Terminos from "./components/legales/Terminos";
 import Privacidad from "./components/legales//Privacidad";
 import Garantias from "./components/legales/Garantias";
@@ -30,6 +30,7 @@ const App = () => {
       <CartProvider>
         <ProductsProvider>
           <div className="App">
+            <PromoBar />
             <Navbar />
             <div className="App-content">
               <Routes>

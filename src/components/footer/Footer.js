@@ -100,13 +100,16 @@ export default function Footer() {
           <h6 className="footer-heading">Contacto</h6>
           <ul className="footer-list">
             <li>
-              <span className="footer-muted">Email:</span> soporte@dleongold.com
+              <span className="footer-muted">Email:</span> tiendasdleongold@gmail.com
             </li>
             <li>
               <span className="footer-muted">Tel:</span> +57 310 417 3201
             </li>
             <li>
-              <span className="footer-muted">Horario:</span> Lun–Sáb 9:00–19:00
+              <span className="footer-muted">Horario:</span> Lunes a Domingo 8:00 AM – 9:00 PM
+            </li>
+            <li>
+              <span className="footer-muted">Dirección:</span> Cra. 49 #48-31, Segovia, Antioquia, Colombia
             </li>
           </ul>
 

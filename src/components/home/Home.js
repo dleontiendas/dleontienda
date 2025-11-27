@@ -1,7 +1,8 @@
 // src/components/home/Home.js
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
+
 
 /* Helpers Drive */
 const parseDriveId = (s = "") =>
@@ -13,9 +14,7 @@ const driveView = (id) =>
   `https://drive.google.com/uc?export=view&id=${parseDriveId(id)}`;
 
 const driveThumb = (id, w = 1920) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
-    id
-  )}`;
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(id)}`;
 
 const driveLH3 = (id, w = 1920) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(id)}=w${w}`;
@@ -47,7 +46,6 @@ export default function Home() {
     },
   ];
 
-  /* Fallbacks */
   const DESKTOP_SRCS = [
     driveThumb(
       "https://drive.google.com/file/d/1Gbhzt5qPIeJLlHnnOAHEPCbCXRq5WFLu/view?usp=drive_link",
@@ -59,35 +57,25 @@ export default function Home() {
     ),
   ];
 
-  const MOBILE_SRCS = [
-    driveThumb(HERO_ID, 1080),
-    driveLH3(HERO_ID, 1080)
-  ];
+  const MOBILE_SRCS = [driveThumb(HERO_ID, 1080), driveLH3(HERO_ID, 1080)];
 
-  /* Fallback Loader */
   const [heroIdx, setHeroIdx] = useState(0);
   const onHeroError = () =>
     setHeroIdx((i) => (i < DESKTOP_SRCS.length - 1 ? i + 1 : i));
 
-  /* Carousel */
   const [currentIdx, setCurrentIdx] = useState(0);
-
   const nextSlide = () =>
     setCurrentIdx((prev) => (prev + 1) % DESKTOP_SRCS.length);
-
   const prevSlide = () =>
-    setCurrentIdx(
-      (prev) => (prev - 1 + DESKTOP_SRCS.length) % DESKTOP_SRCS.length
-    );
+    setCurrentIdx((prev) => (prev - 1 + DESKTOP_SRCS.length) % DESKTOP_SRCS.length);
 
-  // Autoplay
   useEffect(() => {
     const t = setInterval(() => nextSlide(), 5000);
     return () => clearInterval(t);
   }, []);
 
   return (
-    <main className="page">
+    <main className="page">    
       {/* ===== HERO CAROUSEL ===== */}
       <section className="hero-carousel">
         <div
@@ -109,15 +97,9 @@ export default function Home() {
           ))}
         </div>
 
-        {/* Botones */}
-        <button className="nav-btn prev" onClick={prevSlide}>
-          ‹
-        </button>
-        <button className="nav-btn next" onClick={nextSlide}>
-          ›
-        </button>
+        <button className="nav-btn prev" onClick={prevSlide}>‹</button>
+        <button className="nav-btn next" onClick={nextSlide}>›</button>
 
-        {/* Dots */}
         <div className="carousel-dots">
           {DESKTOP_SRCS.map((_, i) => (
             <button
