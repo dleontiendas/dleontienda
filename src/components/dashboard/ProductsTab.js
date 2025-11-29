@@ -748,7 +748,7 @@ export default function AdminProducts() {
                       {r.brand || "—"} · {r.department || "—"} · {r.category || "—"}
                       {r.subcategory ? ` / ${r.subcategory}` : ""}
                     </div>
-                  </div>https://chatgpt.com/c/6925fc7b-1b00-8326-816b-8285d6610509
+                  </div>
                   <div className="ap-cell mono">{r.sku || "—"}</div>
                   <div className="ap-cell">{r.catSlug || r.category || "—"}</div>
                   <div className="ap-cell">{currencyCO(r.price_cop)}</div>
