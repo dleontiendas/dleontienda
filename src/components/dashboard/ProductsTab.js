@@ -7,7 +7,11 @@ import {
   deleteDoc,
   addDoc,
   collection,
+  writeBatch,
+  setDoc,
+  doc,
 } from "firebase/firestore";
+import * as XLSX from "xlsx"; // <-- para leer Excel/CSV en el navegador
 import { db } from "../../Firebase";
 import "./ProductsTab.css";
 
@@ -36,6 +40,28 @@ const emptyProduct = (over = {}) => ({
   variants: [], // [{color, tallas:[{size, stock}]}]
   ...over,
 });
+
+/* ---------- Normalizadores (compatibles con subirProductos.js) ---------- */
+const toStr = (v) => (v === undefined || v === null ? "" : String(v).trim());
+const toNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+const sanitizeId = (s) =>
+  toStr(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "_")
+    .toLowerCase()
+    .slice(0, 120);
+const normalizeDriveLink = (url) => {
+  const u = toStr(url);
+  if (!u) return null;
+  const m = u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  const id = m ? m[1] : null;
+  return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}` : u;
+};
 
 /* ---------- Modal ---------- */
 function Modal({ open, title, onClose, children, footer }) {
@@ -77,8 +103,7 @@ function VariantsEditor({ value = [], onChange }) {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? [...next[i].tallas] : [];
     const row = { ...(tallas[j] || { size: "", stock: 0 }), [field]: v };
-    // sanitiza
-    if (field === "stock") row.stock = Math.max(0, Number(v || 0));
+    if (field === "stock") row.stock = Math.max(0, Number(v || 0)); // why: sanitiza
     tallas[j] = row;
     next[i] = { ...next[i], tallas };
     setAll(next);
@@ -268,6 +293,254 @@ function ProductForm({ value, onChange }) {
   );
 }
 
+/* ---------- Modal: Carga por lotes ---------- */
+function BatchUploadModal({ open, onClose, onMergeRows }) {
+  const [parsed, setParsed] = useState([]); // productos construidos
+  const [rawCount, setRawCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [log, setLog] = useState([]);
+
+  const appendLog = (m) => setLog((prev) => [...prev, m]);
+
+  const handleFile = async (file) => {
+    if (!file) return;
+    setLoading(true);
+    setParsed([]);
+    setLog([]);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const sheet = wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { defval: "" });
+      setRawCount(rows.length);
+
+      // Agrupación por SKU
+      const acc = new Map();
+      for (const r of rows) {
+        const sku = toStr(r["COD Ref SKU"]);
+        if (!sku) {
+          appendLog("Fila sin SKU, se omite.");
+          continue;
+        }
+        const nombre = toStr(r["Nombre"]);
+        const marca = toStr(r["Marca"]);
+        const categoria = toStr(r["Categoría"]);
+        const subcat = toStr(r["Sub-Categoría"]);
+        const depto = toStr(r["Departamento"]);
+        const desc = toStr(r["Descripción"]);
+        const materiales = toStr(r["Materiales y composición"]);
+        const cuidados = toStr(r["Cuidados y lavado"]);
+        const garantia = toStr(r["Garantía"]);
+        const precio = toNum(r["Precio (COL)"]);
+        const peso = toNum(r["Peso (Gr)"]);
+
+        const imgPrincipal = normalizeDriveLink(r["Imagen Principal"]);
+        const img1 = normalizeDriveLink(r["Imagen1"]);
+        const img2 = normalizeDriveLink(r["Imagen2"]);
+
+        const color = toStr(r["Color"]);
+        const talla = toStr(r["Talla"]);
+        const cantidad = toNum(r["Cantidad"]);
+
+        if (!acc.has(sku)) {
+          acc.set(sku, {
+            base: {
+              sku,
+              name: nombre,
+              brand: marca,
+              category: categoria,
+              subcategory: subcat,
+              department: depto,
+              description: desc,
+              materials: materiales,
+              care_instructions: cuidados,
+              warranty: garantia,
+              price_cop: precio,
+              weight_grams: peso,
+            },
+            variantes: [],
+            imgs: [],
+          });
+        }
+        const entry = acc.get(sku);
+        if (nombre && !entry.base.name) entry.base.name = nombre;
+        if (marca && !entry.base.brand) entry.base.brand = marca;
+        if (categoria && !entry.base.category) entry.base.category = categoria;
+        if (subcat && !entry.base.subcategory) entry.base.subcategory = subcat;
+        if (depto && !entry.base.department) entry.base.department = depto;
+        if (desc && !entry.base.description) entry.base.description = desc;
+        if (materiales && !entry.base.materials) entry.base.materials = materiales;
+        if (cuidados && !entry.base.care_instructions) entry.base.care_instructions = cuidados;
+        if (garantia && !entry.base.warranty) entry.base.warranty = garantia;
+        if (precio && !entry.base.price_cop) entry.base.price_cop = precio;
+        if (peso && !entry.base.weight_grams) entry.base.weight_grams = peso;
+
+        [imgPrincipal, img1, img2].forEach((u) => {
+          if (u && !entry.imgs.includes(u)) entry.imgs.push(u);
+        });
+
+        if (color || talla || Number.isFinite(cantidad)) {
+          entry.variantes.push({
+            color,
+            talla,
+            cantidad: Math.max(0, Math.trunc(cantidad || 0)),
+          });
+        }
+      }
+
+      // Construcción final
+      const productos = [];
+      for (const { base, variantes, imgs } of acc.values()) {
+        const porColor = {};
+        for (const v of variantes) {
+          const key = v.color || "sin_color";
+          if (!porColor[key]) porColor[key] = { color: key, tallas: [] };
+          if (v.talla) porColor[key].tallas.push({ size: v.talla, stock: v.cantidad || 0 });
+        }
+
+        const producto = {
+          sku: toStr(base.sku),
+          name: toStr(base.name),
+          brand: toStr(base.brand),
+          category: toStr(base.category),
+          subcategory: toStr(base.subcategory),
+          department: toStr(base.department),
+          description: toStr(base.description),
+          materials: toStr(base.materials),
+          care_instructions: toStr(base.care_instructions),
+          warranty: toStr(base.warranty),
+          price_cop: toNum(base.price_cop),
+          weight_grams: toNum(base.weight_grams),
+          images: imgs.filter(Boolean),
+          variants: Object.values(porColor),
+          active: true,
+          updated_at: new Date(),
+          created_at: new Date(),
+        };
+
+        if (!producto.sku) {
+          appendLog("Producto sin SKU, se omite.");
+          continue;
+        }
+        productos.push(producto);
+      }
+
+      setParsed(productos);
+      appendLog(`Leídas ${rows.length} filas → ${productos.length} productos únicos por SKU.`);
+    } catch (err) {
+      console.error(err);
+      appendLog(`❌ Error leyendo archivo: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadAll = async () => {
+    if (!parsed.length) return;
+    setLoading(true);
+    try {
+      const chunkSize = 450;
+      for (let i = 0; i < parsed.length; i += chunkSize) {
+        const batch = writeBatch(db);
+        const slice = parsed.slice(i, i + chunkSize);
+        slice.forEach((p) => {
+          const categoriaId = sanitizeId(p.category || "sin_categoria");
+          const ref = doc(db, "productos", categoriaId, "items", p.sku);
+          setDoc(ref, {
+            ...p,
+            updated_at: new Date(),
+            // created_at: solo si no existe, pero desde cliente no sabemos; dejamos ambos
+          }, { merge: true });
+        });
+        await batch.commit();
+        appendLog(`✅ Subido: ${Math.min(i + slice.length, parsed.length)}/${parsed.length}`);
+      }
+      onMergeRows(parsed); // actualiza la tabla local
+      appendLog("🎉 Finalizado.");
+    } catch (err) {
+      console.error(err);
+      appendLog(`❌ Error subiendo: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) return null;
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Carga por lotes (Excel)"
+      footer={
+        <>
+          <button className="ap-btn" onClick={onClose} disabled={loading}>Cerrar</button>
+          <button
+            className="ap-btn ap-btn--primary"
+            onClick={uploadAll}
+            disabled={!parsed.length || loading}
+            title={!parsed.length ? "Sube un archivo primero" : "Subir a Firestore"}
+          >
+            {loading ? "Procesando…" : `Subir ${parsed.length} productos`}
+          </button>
+        </>
+      }
+    >
+      <div className="ap-form-grid">
+        <label className="span-2">
+          Archivo (.xlsx, .xls, .csv)
+          <input
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+            disabled={loading}
+          />
+        </label>
+
+        <div className="ap-hint">
+          Columnas esperadas (como tu script): <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
+        </div>
+
+        <div className="ap-summary">
+          {rawCount ? `Filas leídas: ${rawCount}. ` : ""}{parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
+        </div>
+
+        {parsed.length > 0 && (
+          <div className="ap-table preview">
+            <div className="ap-thead">
+              <div>SKU</div>
+              <div>Nombre</div>
+              <div>Categoría</div>
+              <div>Precio</div>
+              <div>Variantes</div>
+              <div>Imágenes</div>
+            </div>
+            <div className="ap-tbody">
+              {parsed.slice(0, 20).map((p) => (
+                <div key={p.sku} className="ap-row">
+                  <div className="ap-cell mono">{p.sku}</div>
+                  <div className="ap-cell">{p.name}</div>
+                  <div className="ap-cell">{p.category || "—"}</div>
+                  <div className="ap-cell">{currencyCO(p.price_cop)}</div>
+                  <div className="ap-cell">
+                    {p.variants?.map((v) => `${v.color}(${v.tallas?.length || 0})`).join(", ")}
+                  </div>
+                  <div className="ap-cell">{p.images?.length || 0}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="ap-log">
+          {log.map((l, i) => (
+            <div key={i} className="ap-log-line">{l}</div>
+          ))}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 /* ---------- Main ---------- */
 export default function AdminProducts() {
   const [rows, setRows] = useState([]);
@@ -280,6 +553,11 @@ export default function AdminProducts() {
   const [draft, setDraft] = useState(emptyProduct());
   const [creating, setCreating] = useState(false);
   const [catForCreate, setCatForCreate] = useState("ropa");
+
+  // Modal de carga por lotes
+  const [batchOpen, setBatchOpen] = useState(false);
+  const openBatch = () => setBatchOpen(true);
+  const closeBatch = () => setBatchOpen(false);
 
   useEffect(() => {
     (async () => {
@@ -335,7 +613,6 @@ export default function AdminProducts() {
 
   const onSave = async () => {
     try {
-      // sanea variantes: elimina filas vacías o con talla vacía
       const variantsClean = (draft.variants || [])
         .map((v) => ({
           color: String(v.color || "").trim(),
@@ -394,6 +671,26 @@ export default function AdminProducts() {
     }
   };
 
+  // Merge local de los productos subidos por lotes
+  const mergeUploadedRows = (uploaded) => {
+    setRows((prev) => {
+      const byKey = new Map(prev.map((r) => [`${r.catSlug}-${r.id}`, r]));
+      uploaded.forEach((p) => {
+        const catSlug = sanitizeId(p.category || "sin_categoria");
+        const key = `${catSlug}-${p.sku}`;
+        const ref = doc(db, "productos", catSlug, "items", p.sku);
+        const base = {
+          id: p.sku,
+          ref,
+          catSlug,
+          ...p,
+        };
+        byKey.set(key, { ...(byKey.get(key) || {}), ...base });
+      });
+      return Array.from(byKey.values());
+    });
+  };
+
   return (
     <div className="ap-wrap">
       <header className="ap-header">
@@ -408,6 +705,13 @@ export default function AdminProducts() {
               setPage(1);
             }}
           />
+          <button
+            className="ap-btn"
+            onClick={() => setBatchOpen(true)}
+            title="Cargar productos desde Excel"
+          >
+            Añadir por lotes
+          </button>
           <button
             className="ap-btn ap-btn--primary"
             onClick={() => {
@@ -444,7 +748,7 @@ export default function AdminProducts() {
                       {r.brand || "—"} · {r.department || "—"} · {r.category || "—"}
                       {r.subcategory ? ` / ${r.subcategory}` : ""}
                     </div>
-                  </div>
+                  </div>https://chatgpt.com/c/6925fc7b-1b00-8326-816b-8285d6610509
                   <div className="ap-cell mono">{r.sku || "—"}</div>
                   <div className="ap-cell">{r.catSlug || r.category || "—"}</div>
                   <div className="ap-cell">{currencyCO(r.price_cop)}</div>
@@ -494,6 +798,17 @@ export default function AdminProducts() {
         </>
       )}
 
+      {/* Modal: Carga por lotes */}
+      <BatchUploadModal
+        open={batchOpen}
+        onClose={() => setBatchOpen(false)}
+        onMergeRows={(uploaded) => {
+          mergeUploadedRows(uploaded);
+          setBatchOpen(false);
+        }}
+      />
+
+      {/* Modal de edición / creación */}
       <Modal
         open={!!editing || creating}
         title={creating ? "Nuevo producto" : "Editar producto"}
