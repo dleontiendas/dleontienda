@@ -1,17 +1,17 @@
-// src/admin/ProductsTab.jsx
+// ========================= src/admin/ProductsTab.jsx =========================
 import React, { useEffect, useMemo, useState } from "react";
 import {
   collectionGroup,
   getDocs,
   updateDoc,
   deleteDoc,
-  addDoc,
+  addDoc, // (aún importado por compat, ya no lo usamos para crear)
   collection,
   writeBatch,
   setDoc,
   doc,
 } from "firebase/firestore";
-import * as XLSX from "xlsx"; // <-- para leer Excel/CSV en el navegador
+import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
 import "./ProductsTab.css";
 
@@ -19,7 +19,7 @@ import "./ProductsTab.css";
 const toCsv = (arr) => (Array.isArray(arr) ? arr.join(", ") : "");
 const fromCsv = (s) =>
   String(s || "")
-    .split(",")
+    .split(/[\n,]+/) // coma o salto de línea
     .map((x) => x.trim())
     .filter(Boolean);
 const currencyCO = (n) =>
@@ -38,10 +38,14 @@ const emptyProduct = (over = {}) => ({
   images: [],
   active: true,
   variants: [], // [{color, tallas:[{size, stock}]}]
+  weight_grams: 0,
+  warranty: "",
+  care_instructions: "",
+  materials: "",
   ...over,
 });
 
-/* ---------- Normalizadores (compatibles con subirProductos.js) ---------- */
+/* ---------- Normalizadores ---------- */
 const toStr = (v) => (v === undefined || v === null ? "" : String(v).trim());
 const toNum = (v) => {
   const n = Number(v);
@@ -58,17 +62,31 @@ const sanitizeId = (s) =>
 const normalizeDriveLink = (url) => {
   const u = toStr(url);
   if (!u) return null;
-  const m = u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  const m =
+    u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
   const id = m ? m[1] : null;
-  return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}` : u;
+  return id
+    ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}`
+    : u;
 };
 
-/* ---------- Modal ---------- */
+/* ---------- Modal (no cierra por clic fuera) ---------- */
 function Modal({ open, title, onClose, children, footer }) {
   if (!open) return null;
   return (
-    <div className="ap-modal-backdrop" onClick={onClose}>
-      <div className="ap-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="ap-modal-backdrop"
+      onClick={() => {
+        // Intencionalmente NO cerramos al clicar fuera
+      }}
+    >
+      <div
+        className="ap-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
         <div className="ap-modal-header">
           <h3>{title}</h3>
           <button className="ap-icon-btn" onClick={onClose} title="Cerrar">
@@ -103,7 +121,7 @@ function VariantsEditor({ value = [], onChange }) {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? [...next[i].tallas] : [];
     const row = { ...(tallas[j] || { size: "", stock: 0 }), [field]: v };
-    if (field === "stock") row.stock = Math.max(0, Number(v || 0)); // why: sanitiza
+    if (field === "stock") row.stock = Math.max(0, Number(v || 0)); // por sanidad
     tallas[j] = row;
     next[i] = { ...next[i], tallas };
     setAll(next);
@@ -111,7 +129,10 @@ function VariantsEditor({ value = [], onChange }) {
   const removeSizeRow = (i, j) => {
     const next = [...value];
     const tallas = (next[i].tallas || []).filter((_, idx) => idx !== j);
-    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", stock: 0 }] };
+    next[i] = {
+      ...next[i],
+      tallas: tallas.length ? tallas : [{ size: "", stock: 0 }],
+    };
     setAll(next);
   };
 
@@ -119,7 +140,11 @@ function VariantsEditor({ value = [], onChange }) {
     <div className="var-wrap">
       <div className="var-head">
         <h4>Variantes (Color / Tallas y stock)</h4>
-        <button type="button" className="ap-btn ap-btn--primary" onClick={addColor}>
+        <button
+          type="button"
+          className="ap-btn ap-btn--primary"
+          onClick={addColor}
+        >
           + Color
         </button>
       </div>
@@ -170,7 +195,9 @@ function VariantsEditor({ value = [], onChange }) {
                       step="1"
                       className="stock-input"
                       value={Number(s.stock || 0)}
-                      onChange={(e) => setSizeRow(i, j, "stock", e.target.value)}
+                      onChange={(e) =>
+                        setSizeRow(i, j, "stock", e.target.value)
+                      }
                     />
                     <button
                       type="button"
@@ -185,7 +212,11 @@ function VariantsEditor({ value = [], onChange }) {
             </div>
 
             <div className="var-actions">
-              <button type="button" className="ap-btn" onClick={() => addSize(i)}>
+              <button
+                type="button"
+                className="ap-btn"
+                onClick={() => addSize(i)}
+              >
                 + Añadir talla
               </button>
             </div>
@@ -196,7 +227,7 @@ function VariantsEditor({ value = [], onChange }) {
   );
 }
 
-/* ---------- Editor principal ---------- */
+/* ---------- Editor principal (sin backdrop interno) ---------- */
 function ProductForm({ value, onChange }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
 
@@ -209,6 +240,7 @@ function ProductForm({ value, onChange }) {
             value={value.sku || ""}
             onChange={(e) => set("sku", e.target.value)}
             placeholder="JNS210"
+            required
           />
         </label>
         <label className="span-2">
@@ -261,13 +293,78 @@ function ProductForm({ value, onChange }) {
             onChange={(e) => set("price_cop", Number(e.target.value))}
           />
         </label>
-        <label className="span-2">
-          Imágenes (CSV)
+
+        {/* NUEVOS CAMPOS */}
+        <label>
+          Peso (Gr)
           <input
-            value={toCsv(value.images)}
-            onChange={(e) => set("images", fromCsv(e.target.value))}
-            placeholder="https://..., https://..."
+            type="number"
+            min="0"
+            step="1"
+            value={value.weight_grams ?? 0}
+            onChange={(e) => set("weight_grams", Number(e.target.value))}
+            placeholder="0"
           />
+        </label>
+        <label>
+          Garantía
+          <input
+            value={value.warranty || ""}
+            onChange={(e) => set("warranty", e.target.value)}
+            placeholder="30 días por defectos de fábrica"
+          />
+        </label>
+        <label className="span-2">
+          Cuidados y lavado
+          <input
+            value={value.care_instructions || ""}
+            onChange={(e) => set("care_instructions", e.target.value)}
+            placeholder="Lavar a mano, no usar cloro…"
+          />
+        </label>
+
+        <label className="span-2">
+          Materiales y composición
+          <input
+            value={value.materials || ""}
+            onChange={(e) => set("materials", e.target.value)}
+            placeholder="Algodón, poliéster…"
+          />
+        </label>
+
+        <label className="span-2">
+          Imágenes (CSV o una por línea)
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <textarea
+              rows={3}
+              style={{ flex: 1 }}
+              value={toCsv(value.images)} // sigue mostrando como CSV
+              onChange={(e) => set("images", fromCsv(e.target.value))}
+              placeholder={`https://...,\nhttps://...\n(o una por línea)`}
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button
+                type="button"
+                className="ap-btn"
+                onClick={() => {
+                  const url = window.prompt("Pega la URL de la imagen:");
+                  if (!url) return;
+                  const trimmed = String(url).trim();
+                  if (!trimmed) return;
+                  const next = Array.isArray(value.images)
+                    ? [...value.images, trimmed]
+                    : [trimmed];
+                  set("images", next);
+                }}
+                title="Añadir una URL sin escribir el CSV"
+              >
+                + Añadir imagen
+              </button>
+              <small style={{ opacity: 0.8, textAlign: "center" }}>
+                {Array.isArray(value.images) ? value.images.length : 0} img
+              </small>
+            </div>
+          </div>
         </label>
         <label className="span-2">
           Descripción
@@ -288,14 +385,17 @@ function ProductForm({ value, onChange }) {
       </div>
 
       {/* Variantes */}
-      <VariantsEditor value={value.variants || []} onChange={(v) => set("variants", v)} />
+      <VariantsEditor
+        value={value.variants || []}
+        onChange={(v) => set("variants", v)}
+      />
     </>
   );
 }
 
 /* ---------- Modal: Carga por lotes ---------- */
 function BatchUploadModal({ open, onClose, onMergeRows }) {
-  const [parsed, setParsed] = useState([]); // productos construidos
+  const [parsed, setParsed] = useState([]);
   const [rawCount, setRawCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [log, setLog] = useState([]);
@@ -314,7 +414,6 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { defval: "" });
       setRawCount(rows.length);
 
-      // Agrupación por SKU
       const acc = new Map();
       for (const r of rows) {
         const sku = toStr(r["COD Ref SKU"]);
@@ -388,14 +487,17 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         }
       }
 
-      // Construcción final
       const productos = [];
       for (const { base, variantes, imgs } of acc.values()) {
         const porColor = {};
         for (const v of variantes) {
           const key = v.color || "sin_color";
           if (!porColor[key]) porColor[key] = { color: key, tallas: [] };
-          if (v.talla) porColor[key].tallas.push({ size: v.talla, stock: v.cantidad || 0 });
+          if (v.talla)
+            porColor[key].tallas.push({
+              size: v.talla,
+              stock: v.cantidad || 0,
+            });
         }
 
         const producto = {
@@ -446,21 +548,14 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         slice.forEach((p) => {
           const categoriaId = sanitizeId(p.category || "sin_categoria");
           const ref = doc(db, "productos", categoriaId, "items", p.sku);
-          setDoc(ref, {
-            ...p,
-            updated_at: new Date(),
-            // created_at: solo si no existe, pero desde cliente no sabemos; dejamos ambos
-          }, { merge: true });
+          setDoc(ref, { ...p, updated_at: new Date() }, { merge: true });
         });
         await batch.commit();
-        appendLog(`✅ Subido: ${Math.min(i + slice.length, parsed.length)}/${parsed.length}`);
       }
-      onMergeRows(parsed); // actualiza la tabla local
-      appendLog("🎉 Finalizado.");
+      onMergeRows(parsed);
+      setLoading(false);
     } catch (err) {
       console.error(err);
-      appendLog(`❌ Error subiendo: ${err.message}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -473,7 +568,9 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       title="Carga por lotes (Excel)"
       footer={
         <>
-          <button className="ap-btn" onClick={onClose} disabled={loading}>Cerrar</button>
+          <button className="ap-btn" onClick={onClose} disabled={loading}>
+            Cerrar
+          </button>
           <button
             className="ap-btn ap-btn--primary"
             onClick={uploadAll}
@@ -497,11 +594,12 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas (como tu script): <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
+          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
         </div>
 
         <div className="ap-summary">
-          {rawCount ? `Filas leídas: ${rawCount}. ` : ""}{parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
+          {rawCount ? `Filas leídas: ${rawCount}. ` : ""}
+          {parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
         </div>
 
         {parsed.length > 0 && (
@@ -554,10 +652,7 @@ export default function AdminProducts() {
   const [creating, setCreating] = useState(false);
   const [catForCreate, setCatForCreate] = useState("ropa");
 
-  // Modal de carga por lotes
   const [batchOpen, setBatchOpen] = useState(false);
-  const openBatch = () => setBatchOpen(true);
-  const closeBatch = () => setBatchOpen(false);
 
   useEffect(() => {
     (async () => {
@@ -602,6 +697,10 @@ export default function AdminProducts() {
         ...row,
         images: Array.isArray(row.images) ? row.images : fromCsv(row.images),
         variants: Array.isArray(row.variants) ? row.variants : [],
+        weight_grams: Number(row.weight_grams || 0),
+        warranty: row.warranty || "",
+        care_instructions: row.care_instructions || "",
+        materials: row.materials || "",
       })
     );
   };
@@ -613,6 +712,15 @@ export default function AdminProducts() {
 
   const onSave = async () => {
     try {
+      if (!toStr(draft.sku)) {
+        alert("El SKU es obligatorio.");
+        return;
+      }
+      if (!toStr(draft.name)) {
+        alert("El nombre es obligatorio.");
+        return;
+      }
+
       const variantsClean = (draft.variants || [])
         .map((v) => ({
           color: String(v.color || "").trim(),
@@ -626,26 +734,36 @@ export default function AdminProducts() {
         .filter((v) => v.color && v.tallas.length);
 
       const payload = {
-        sku: draft.sku || editing?.sku || "",
-        name: draft.name || "",
-        brand: draft.brand || "",
-        department: draft.department || "",
-        category: draft.category || "",
-        subcategory: draft.subcategory || "",
-        description: draft.description || "",
+        sku: toStr(draft.sku) || editing?.sku || "",
+        name: toStr(draft.name),
+        brand: toStr(draft.brand),
+        department: toStr(draft.department),
+        category: toStr(draft.category),
+        subcategory: toStr(draft.subcategory),
+        description: toStr(draft.description),
         price_cop: Number(draft.price_cop || 0),
         images: draft.images || [],
         active: !!draft.active,
         variants: variantsClean,
+        weight_grams: Number(draft.weight_grams || 0),
+        warranty: toStr(draft.warranty),
+        care_instructions: toStr(draft.care_instructions),
+        materials: toStr(draft.materials),
         updated_at: new Date(),
       };
 
       if (creating) {
-        const refCol = collection(db, "productos", catForCreate, "items");
-        const added = await addDoc(refCol, { ...payload, created_at: new Date() });
+        const categoriaId = sanitizeId(payload.category || "sin_categoria");
+        const ref = doc(db, "productos", categoriaId, "items", payload.sku); // ID = SKU
+        await setDoc(ref, { ...payload, created_at: new Date() }, { merge: true });
         setRows((prev) => [
           ...prev,
-          { id: added.id, ref: added, catSlug: catForCreate, ...payload },
+          {
+            id: payload.sku,
+            ref,
+            catSlug: categoriaId,
+            ...payload,
+          },
         ]);
       } else if (editing?.ref) {
         await updateDoc(editing.ref, payload);
@@ -671,7 +789,6 @@ export default function AdminProducts() {
     }
   };
 
-  // Merge local de los productos subidos por lotes
   const mergeUploadedRows = (uploaded) => {
     setRows((prev) => {
       const byKey = new Map(prev.map((r) => [`${r.catSlug}-${r.id}`, r]));
@@ -679,12 +796,7 @@ export default function AdminProducts() {
         const catSlug = sanitizeId(p.category || "sin_categoria");
         const key = `${catSlug}-${p.sku}`;
         const ref = doc(db, "productos", catSlug, "items", p.sku);
-        const base = {
-          id: p.sku,
-          ref,
-          catSlug,
-          ...p,
-        };
+        const base = { id: p.sku, ref, catSlug, ...p };
         byKey.set(key, { ...(byKey.get(key) || {}), ...base });
       });
       return Array.from(byKey.values());
@@ -766,7 +878,7 @@ export default function AdminProducts() {
                     </button>
                     <a
                       className="ap-btn ap-btn--link"
-                      href={`/products/${r.catSlug}/${r.id}`}
+                      href={`https://dleongold.com/products/${r.catSlug}/${r.sku || r.id}`}
                       target="_blank"
                       rel="noreferrer"
                     >
@@ -808,14 +920,16 @@ export default function AdminProducts() {
         }}
       />
 
-      {/* Modal de edición / creación */}
+      {/* Modal de edición / creación (no cierra por fuera) */}
       <Modal
         open={!!editing || creating}
         title={creating ? "Nuevo producto" : "Editar producto"}
         onClose={onCloseModal}
         footer={
           <>
-            <button className="ap-btn" onClick={onCloseModal}>Cancelar</button>
+            <button className="ap-btn" onClick={onCloseModal}>
+              Cancelar
+            </button>
             {creating && (
               <div className="ap-cat-select">
                 <span>Guardar en:</span>
@@ -831,7 +945,9 @@ export default function AdminProducts() {
                 </select>
               </div>
             )}
-            <button className="ap-btn ap-btn--primary" onClick={onSave}>Guardar</button>
+            <button className="ap-btn ap-btn--primary" onClick={onSave}>
+              Guardar
+            </button>
           </>
         }
       >

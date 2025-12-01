@@ -1,4 +1,4 @@
-/* ======================= AdminProducts.css ======================= */
+/* ======================= src/admin/ProductsTab.css ======================= */
 .ap-wrap{ padding:18px; }
 .ap-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
 .ap-controls{ display:flex; gap:8px; }
@@ -38,15 +38,25 @@
 
 /* Modal */
 .ap-modal-backdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:999;
+  position:fixed; inset:0; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; z-index:999;
+  padding:24px; /* margen en pantallas pequeñas */
 }
 .ap-modal{
-  width:min(880px, 92vw); background:#fff; border-radius:16px; box-shadow:0 12px 32px rgba(0,0,0,.22); overflow:hidden;
+  width:min(880px, 92vw); background:#fff; border-radius:16px;
+  box-shadow:0 12px 32px rgba(0,0,0,.22); overflow:hidden;
+  display:flex; flex-direction:column; max-height:calc(100vh - 48px);
 }
-.ap-modal-header{ display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #eee; }
+.ap-modal-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 14px; border-bottom:1px solid #eee; background:#fff;
+}
 .ap-icon-btn{ border:none; background:transparent; font-size:1.2rem; cursor:pointer; }
-.ap-modal-body{ padding:14px; max-height:70vh; overflow:auto; }
-.ap-modal-footer{ padding:12px 14px; border-top:1px solid #eee; display:flex; gap:8px; align-items:center; justify-content:flex-end; }
+.ap-modal-body{ padding:14px; overflow:auto; background:#fff; }
+.ap-modal-footer{
+  padding:12px 14px; border-top:1px solid #eee; display:flex; gap:8px;
+  align-items:center; justify-content:flex-end; background:#fff;
+}
 .ap-cat-select{ margin-right:auto; display:flex; align-items:center; gap:8px; }
 
 /* Form */
