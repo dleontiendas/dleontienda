@@ -7,20 +7,46 @@ import "./ProductList.css";
 /* ---------- Helpers ---------- */
 const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
 
-const normalizeDriveLink = (url) => {
-  if (!url) return null;
+/* --- Google Drive helpers --- */
+const parseDriveId = (urlOrId = "") => {
+  const s = String(urlOrId).trim();
   const m =
-    url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
-  const id = m ? m[1] : null;
-  return id
-    ? `https://drive.google.com/thumbnail?authuser=0&sz=w800&id=${id}`
-    : url;
+    s.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
+    s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+
+  return m ? m[1] : s;
+};
+
+const driveView = (urlOrId) =>
+  `https://drive.google.com/uc?export=view&id=${parseDriveId(urlOrId)}`;
+
+const driveThumb = (urlOrId, w = 1600) =>
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
+    urlOrId
+  )}`;
+
+const driveLH3 = (urlOrId, w = 1600) =>
+  `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
+
+/* URLs a probar en orden */
+const driveFallbackSrc = (urlOrId) => {
+  const id = parseDriveId(urlOrId);
+  return [
+    driveLH3(id),     // #1 funciona mejor en iPhone
+    driveThumb(id),   // #2 Google thumbnail
+    driveView(id)     // #3 clásico uc?export=view
+  ];
 };
 
 const resolveImage = (img) => {
   if (!img) return null;
-  if (/drive\.google\.com/.test(img)) return normalizeDriveLink(img);
-  if (isHttp(img)) return img;
+
+  if (/drive\.google\.com/.test(img)) {
+    return driveFallbackSrc(img); // ahora devuelve 3 URLs posibles
+  }
+
+  if (isHttp(img)) return [img];
+
   return null;
 };
 
@@ -56,14 +82,31 @@ const getPrice = (p) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-/* ---------- Product Card ---------- */
 const ProductCard = ({ product }) => {
-  const displaySrc =
+  const fallbackImages =
     resolveImage((product.images || [])[0]) ||
-    "https://placehold.co/600x800?text=Sin+Imagen";
+    ["https://placehold.co/600x800?text=Sin+Imagen"];
 
-  const sizes = sizesOf(product.variants);
-  const colors = colorsOf(product.variants);
+  const [src, setSrc] = useState(fallbackImages[0]);
+
+  const handleError = () => {
+    const idx = fallbackImages.indexOf(src);
+    const next = idx + 1;
+
+    if (next < fallbackImages.length) {
+      setSrc(fallbackImages[next]); // prueba siguiente URL
+    } else {
+      setSrc("https://placehold.co/600x800?text=Sin+Imagen");
+    }
+  };
+
+  // Deduplicar tallas
+  const rawSizes = sizesOf(product.variants);
+  const sizes = [...new Set(rawSizes)];
+
+  // Deduplicar colores
+  const rawColors = colorsOf(product.variants);
+  const colors = [...new Set(rawColors)];
 
   return (
     <div className="col s12 m6 l4 xl3">
@@ -74,17 +117,16 @@ const ProductCard = ({ product }) => {
         >
           <div className="card-image product-card-image-wrapper">
             <img
-              src={displaySrc}
+              src={src}
               alt={product.name || "Sin nombre"}
               className="product-image"
-              onError={(e) => {
-                e.currentTarget.src =
-                  "https://placehold.co/600x800?text=Sin+Imagen";
-              }}
+              onError={handleError}
             />
           </div>
+
           <div className="card-content product-card-content">
             <h6 className="product-name">{product.name || "Sin nombre"}</h6>
+
             <p className="product-price">
               {getPrice(product) !== null ? (
                 <>
@@ -303,9 +345,7 @@ export default function ProductList() {
                           className={`subcat-link ${
                             subFilter === s ? "active" : ""
                           }`}
-                          onClick={() =>
-                            setSubFilter(subFilter === s ? "" : s)
-                          }
+                          onClick={() => setSubFilter(subFilter === s ? "" : s)}
                         >
                           {s}
                         </button>
@@ -320,7 +360,7 @@ export default function ProductList() {
       )}
 
       {/* Grilla */}
-      <div className="row">
+      <div className="product-grid">
         {sorted.length ? (
           sorted.map((p) => (
             <ProductCard key={`${p.catSlug}-${p.id}`} product={p} />

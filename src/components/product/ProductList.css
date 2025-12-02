@@ -71,7 +71,7 @@
 .subcat-card {
   background: var(--paper);
   border-radius: 14px;
-  padding: 14px 14px 8px;
+  padding: 14px 14px 16px;
   box-shadow: var(--shadow-sm);
   height: 100%;
 }
@@ -186,7 +186,13 @@
   color: #0b0b0b;
   background: linear-gradient(135deg, #ffe082, #ffd54f);
 }
-
+/* Reemplaza el sistema de columnas por una grilla moderna */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+  align-items: stretch;
+}
 /* Contenido */
 .product-card-content {
   padding: 14px 14px 16px !important;
