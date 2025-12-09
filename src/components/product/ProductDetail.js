@@ -5,6 +5,7 @@ import { db } from "../../Firebase";
 import { CartContext } from "../../context/CartContext";
 import "materialize-css/dist/css/materialize.min.css";
 import "./ProductDetail.css";
+import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
 
 const env = (vite, cra) =>
   (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[vite]) ||
@@ -157,7 +158,6 @@ export default function ProductDetail() {
       setMainImage(first.primary);
       setMainFallbackList(first.fallbacks);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedColor, thumbItems]);
 
   const variants = useMemo(() => getVariants(product), [product]);
@@ -345,7 +345,7 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* TIP */}
+          
           <div className="tip-card">
             <div className="tip-emoji">🧍‍♀️</div>
             <div>
@@ -376,6 +376,7 @@ export default function ProductDetail() {
           </tbody>
         </table>
       </section>
+      <RandomProductsCarousel title="También te puede gustar" limit={10} />
     </div>
   );
 }
