@@ -1,4 +1,3 @@
-// src/components/product/ProductDetail.jsx
 import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, collectionGroup, getDocs, query, where } from "firebase/firestore";
@@ -14,7 +13,7 @@ const env = (vite, cra) =>
 const WHATSAPP_NUMBER =
   env("VITE_WPP_NUMBER_STORE", "REACT_APP_WHATSAPP_NUMBER") || "573104173201";
 
-/* --- Google Drive helpers (versión mejorada, compatible iPhone/Safari) --- */
+
 const parseDriveId = (urlOrId = "") => {
   const s = String(urlOrId).trim();
   const m =
@@ -27,24 +26,17 @@ const driveView = (urlOrId) =>
   `https://drive.google.com/uc?export=view&id=${parseDriveId(urlOrId)}`;
 
 const driveThumb = (urlOrId, w = 1600) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
-    urlOrId
-  )}`;
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(urlOrId)}`;
 
 const driveLH3 = (urlOrId, w = 1600) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
 
-/* Devuelve array de fallbacks */
+
 const resolveDriveImage = (img) => {
   if (!img) return null;
   if (!/drive\.google\.com/.test(img)) return [img];
-
   const id = parseDriveId(img);
-  return [
-    driveLH3(id),     // #1 mejor para iPhone/Safari
-    driveThumb(id),   // #2 calidad media
-    driveView(id)     // #3 vista pública estándar
-  ];
+  return [driveLH3(id), driveThumb(id), driveView(id)];
 };
 
 const getVariants = (p) => (Array.isArray(p?.variants) ? p.variants : []);
@@ -52,6 +44,14 @@ const getSizesArr = (v) =>
   (Array.isArray(v?.tallas) ? v.tallas : Array.isArray(v?.sizes) ? v.sizes : []) || [];
 const firstAvailable = (sizes) =>
   sizes.find((s) => Number(s?.stock) > 0) || sizes[0] || null;
+
+
+const getVariantImagesForColor = (product, color) => {
+  if (!product || !color) return [];
+  const v = getVariants(product).find((x) => (x?.color || "") === color);
+  const arr = Array.isArray(v?.images) ? v.images : [];
+  return arr.filter(Boolean);
+};
 
 export default function ProductDetail() {
   const { category, productId } = useParams();
@@ -66,7 +66,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  /* --- Load product --- */
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -93,8 +93,9 @@ export default function ProductDetail() {
 
         setProduct(data);
 
+        const firstGeneral = (data.images || [])[0];
         const fallbackArr =
-          resolveDriveImage((data.images || [])[0]) ||
+          resolveDriveImage(firstGeneral) ||
           ["https://placehold.co/800x1000?text=Sin+Imagen"];
 
         setMainFallbackList(fallbackArr);
@@ -123,12 +124,41 @@ export default function ProductDetail() {
     };
   }, [category, productId]);
 
-  /* --- All images for thumbnails --- */
-  const images = useMemo(() => {
-    return (product?.images || [])
-      .map((img) => resolveDriveImage(img)?.[0])
-      .filter(Boolean);
-  }, [product]);
+ 
+  const thumbItems = useMemo(() => {
+    if (!product) return [];
+    const variantImgs = getVariantImagesForColor(product, selectedColor);
+    const generalImgs = Array.isArray(product.images) ? product.images : [];
+    const ordered = [...variantImgs, ...generalImgs];
+
+    const seen = new Set();
+    const items = [];
+    for (const raw of ordered) {
+      const fall = resolveDriveImage(raw);
+      if (!fall || !fall.length) continue;
+      const primary = fall[0];
+      if (seen.has(primary)) continue;
+      seen.add(primary);
+      items.push({ primary, fallbacks: fall });
+    }
+    if (!items.length) {
+      items.push({
+        primary: "https://placehold.co/800x1000?text=Sin+Imagen",
+        fallbacks: ["https://placehold.co/800x1000?text=Sin+Imagen"],
+      });
+    }
+    return items;
+  }, [product, selectedColor]);
+
+  useEffect(() => {
+    if (!thumbItems.length) return;
+    const first = thumbItems[0];
+    if (first.primary !== mainImage) {
+      setMainImage(first.primary);
+      setMainFallbackList(first.fallbacks);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor, thumbItems]);
 
   const variants = useMemo(() => getVariants(product), [product]);
 
@@ -149,7 +179,7 @@ export default function ProductDetail() {
   if (error) return <p className="red-text center">{error}</p>;
   if (!product) return null;
 
-  /* --- Handlers --- */
+ 
   const handleAddToCart = () => {
     if (!selectedColor || !selectedSize) return;
     addToCart(product, 1, selectedSize, selectedColor);
@@ -175,23 +205,33 @@ export default function ProductDetail() {
   return (
     <div className="container section product-detail">
       <div className="row">
-
-        {/* Thumbnails */}
+     
+      <nav className="crumbs-bar">
+        <span>{product?.department || "—"}</span>
+        <span className="sep">/</span>
+        <span>{product?.category || "—"}</span>
+        <span className="sep">/</span>
+        <span className="current">{product?.name}</span>
+      </nav>
+    
         <div className="col s2 hide-on-small-only">
           <ul className="collection product-thumbs">
-            {images.map((img, i) => (
+            {thumbItems.map((t, i) => (
               <li
-                key={i}
-                className={`collection-item ${mainImage === img ? "active-thumb" : ""}`}
-                onClick={() => setMainImage(img)}
+                key={t.primary + i}
+                className={`collection-item ${mainImage === t.primary ? "active-thumb" : ""}`}
+                onClick={() => {
+                  setMainImage(t.primary);
+                  setMainFallbackList(t.fallbacks);
+                }}
               >
-                <img src={img} alt={`thumb-${i}`} className="responsive-img" />
+                <img src={t.primary} alt={`thumb-${i}`} className="responsive-img" />
               </li>
             ))}
           </ul>
         </div>
 
-        {/* Main image */}
+
         <div className="col s12 m5 center">
           <img
             src={mainImage}
@@ -209,22 +249,15 @@ export default function ProductDetail() {
           />
         </div>
 
-        {/* Right Panel */}
+    
         <div className="col s12 m5 pd-panel">
-          <nav className="crumbs hide-on-small-only">
-            <span>{product.department || "—"}</span>
-            <span> / </span>
-            <span>{product.category || "—"}</span>
-            <span> / </span>
-            <span>{product.name}</span>
-          </nav>
-
+         
           <h5 className="pd-title">{product.name}</h5>
           <div className="pd-price">
             ${Number(product.price_cop).toLocaleString("es-CO")}
           </div>
 
-          {/* COLOR */}
+     
           {colorCards.length > 0 && (
             <>
               <div className="pd-label">COLOR</div>
@@ -253,7 +286,7 @@ export default function ProductDetail() {
             </>
           )}
 
-          {/* TALLAS */}
+     
           {sizesForColor.length > 0 && (
             <>
               <div className="pd-label size-label">
@@ -270,9 +303,7 @@ export default function ProductDetail() {
                   return (
                     <button
                       key={s.size}
-                      className={`size-pill ${
-                        isSel ? "selected" : ""
-                      } ${disabled ? "disabled" : ""}`}
+                      className={`size-pill ${isSel ? "selected" : ""} ${disabled ? "disabled" : ""}`}
                       onClick={() => !disabled && setSelectedSize(s.size)}
                       disabled={disabled}
                       type="button"
@@ -286,7 +317,7 @@ export default function ProductDetail() {
             </>
           )}
 
-          {/* CTA */}
+       
           <div className="cta-stack">
             <button
               className="btn-cta"
@@ -325,30 +356,26 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          {/* DESCRIPCIÓN */}
+       
           <p className="pd-desc">{product.description}</p>
-
-          {/* FIT BAR 
-          <div className="fit-scale">
-            <span>Ajustado</span>
-            <div className="fit-track">
-              <div className="fit-dot" />
-            </div>
-            <span>Amplio</span>
-          </div>*/}
-
-          {/* DETALLES */}
-          <ul className="spec-list">
-            <li><b>Marca:</b> {product.brand || "—"}</li>
-            <li><b>Categoría:</b> {product.category || "—"}</li>
-            <li><b>Subcategoría:</b> {product.subcategory || "—"}</li>
-            <li><b>Peso:</b> {product.weight_grams || "—"} g</li>
-            <li><b>Garantía:</b> {product.warranty || "—"}</li>
-            <li><b>Materiales:</b> {product.materials || "—"}</li>
-            <li><b>Cuidados:</b> {product.care_instructions || "—"}</li>
-          </ul>
         </div>
       </div>
+
+      
+      <section className="pd-specs">
+        <table className="spec-table">
+          <tbody>
+            <tr><td className="spec-name">Marca</td><td>{product.brand || "—"}</td></tr>
+            <tr><td className="spec-name">Categoría</td><td>{product.category || "—"}</td></tr>
+            <tr><td className="spec-name">Subcategoría</td><td>{product.subcategory || "—"}</td></tr>
+            <tr><td className="spec-name">Peso</td><td>{product.weight_grams ? `${product.weight_grams} g` : "—"}</td></tr>
+            <tr><td className="spec-name">Garantía</td><td>{product.warranty || "—"}</td></tr>
+            <tr><td className="spec-name">Materiales</td><td>{product.materials || "—"}</td></tr>
+            <tr><td className="spec-name">Cuidados</td><td>{product.care_instructions || "—"}</td></tr>
+           
+          </tbody>
+        </table>
+      </section>
     </div>
   );
 }

@@ -100,7 +100,7 @@ export default function Footer() {
           <h6 className="footer-heading">Contacto</h6>
           <ul className="footer-list">
             <li>
-              <span className="footer-muted">Email:</span> tiendasdleongold@gmail.com
+              <span className="footer-muted">Email:</span> dleongold@dleongold.com
             </li>
             <li>
               <span className="footer-muted">Tel:</span> +57 310 417 3201

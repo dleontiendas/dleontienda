@@ -5,7 +5,7 @@ import {
   getDocs,
   updateDoc,
   deleteDoc,
-  addDoc, // (aún importado por compat, ya no lo usamos para crear)
+  addDoc, // compat
   collection,
   writeBatch,
   setDoc,
@@ -19,13 +19,11 @@ import "./ProductsTab.css";
 const toCsv = (arr) => (Array.isArray(arr) ? arr.join(", ") : "");
 const fromCsv = (s) =>
   String(s || "")
-    .split(/[\n,]+/) // coma o salto de línea
+    .split(/[\n,]+/)
     .map((x) => x.trim())
     .filter(Boolean);
 const currencyCO = (n) =>
-  typeof n === "number"
-    ? `$${n.toLocaleString("es-CO")}`
-    : `$${Number(n || 0).toLocaleString("es-CO")}`;
+  typeof n === "number" ? `$${n.toLocaleString("es-CO")}` : `$${Number(n || 0).toLocaleString("es-CO")}`;
 const emptyProduct = (over = {}) => ({
   sku: "",
   name: "",
@@ -37,61 +35,37 @@ const emptyProduct = (over = {}) => ({
   price_cop: 0,
   images: [],
   active: true,
-  variants: [], // [{color, tallas:[{size, stock}]}]
+  variants: [], // [{color, images:[], tallas:[{size, stock}]}]
   weight_grams: 0,
   warranty: "",
   care_instructions: "",
   materials: "",
+  specifications: "", // NUEVO
   ...over,
 });
 
 /* ---------- Normalizadores ---------- */
 const toStr = (v) => (v === undefined || v === null ? "" : String(v).trim());
-const toNum = (v) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
-};
+const toNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const sanitizeId = (s) =>
-  toStr(s)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s-]/g, "")
-    .replace(/\s+/g, "_")
-    .toLowerCase()
-    .slice(0, 120);
+  toStr(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "_").toLowerCase().slice(0, 120);
 const normalizeDriveLink = (url) => {
   const u = toStr(url);
   if (!u) return null;
-  const m =
-    u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+  const m = u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
   const id = m ? m[1] : null;
-  return id
-    ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}`
-    : u;
+  return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}` : u;
 };
 
 /* ---------- Modal (no cierra por clic fuera) ---------- */
 function Modal({ open, title, onClose, children, footer }) {
   if (!open) return null;
   return (
-    <div
-      className="ap-modal-backdrop"
-      onClick={() => {
-        // Intencionalmente NO cerramos al clicar fuera
-      }}
-    >
-      <div
-        className="ap-modal"
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-      >
+    <div className="ap-modal-backdrop" onClick={() => {}}>
+      <div className="ap-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={title}>
         <div className="ap-modal-header">
           <h3>{title}</h3>
-          <button className="ap-icon-btn" onClick={onClose} title="Cerrar">
-            ✕
-          </button>
+          <button className="ap-icon-btn" onClick={onClose} title="Cerrar">✕</button>
         </div>
         <div className="ap-modal-body">{children}</div>
         {footer && <div className="ap-modal-footer">{footer}</div>}
@@ -100,11 +74,10 @@ function Modal({ open, title, onClose, children, footer }) {
   );
 }
 
-/* ---------- Variants Editor ---------- */
+/* ---------- Variants Editor (con imágenes por color) ---------- */
 function VariantsEditor({ value = [], onChange }) {
   const setAll = (v) => onChange(Array.isArray(v) ? v : []);
-  const addColor = () =>
-    setAll([...value, { color: "", tallas: [{ size: "", stock: 0 }] }]);
+  const addColor = () => setAll([...value, { color: "", images: [], tallas: [{ size: "", stock: 0 }] }]);
   const removeColor = (i) => setAll(value.filter((_, idx) => idx !== i));
   const setColor = (i, color) => {
     const next = [...value];
@@ -121,7 +94,7 @@ function VariantsEditor({ value = [], onChange }) {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? [...next[i].tallas] : [];
     const row = { ...(tallas[j] || { size: "", stock: 0 }), [field]: v };
-    if (field === "stock") row.stock = Math.max(0, Number(v || 0)); // por sanidad
+    if (field === "stock") row.stock = Math.max(0, Number(v || 0));
     tallas[j] = row;
     next[i] = { ...next[i], tallas };
     setAll(next);
@@ -129,24 +102,35 @@ function VariantsEditor({ value = [], onChange }) {
   const removeSizeRow = (i, j) => {
     const next = [...value];
     const tallas = (next[i].tallas || []).filter((_, idx) => idx !== j);
-    next[i] = {
-      ...next[i],
-      tallas: tallas.length ? tallas : [{ size: "", stock: 0 }],
-    };
+    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", stock: 0 }] };
+    setAll(next);
+  };
+
+  const setVariantImages = (i, src) => {
+    const next = [...value];
+    const arr = fromCsv(src);
+    next[i] = { ...next[i], images: arr };
+    setAll(next);
+  };
+  const appendVariantImage = (i) => {
+    const url = window.prompt("Pega la URL de la imagen para este color:");
+    if (!url) return;
+    const next = [...value];
+    const arr = Array.isArray(next[i].images) ? next[i].images : [];
+    next[i] = { ...next[i], images: [...arr, String(url).trim()].filter(Boolean) };
+    setAll(next);
+  };
+  const clearVariantImages = (i) => {
+    const next = [...value];
+    next[i] = { ...next[i], images: [] };
     setAll(next);
   };
 
   return (
     <div className="var-wrap">
       <div className="var-head">
-        <h4>Variantes (Color / Tallas y stock)</h4>
-        <button
-          type="button"
-          className="ap-btn ap-btn--primary"
-          onClick={addColor}
-        >
-          + Color
-        </button>
+        <h4>Variantes (Color / Imágenes por color / Tallas y stock)</h4>
+        <button type="button" className="ap-btn ap-btn--primary" onClick={addColor}>+ Color</button>
       </div>
 
       {!value.length ? (
@@ -157,21 +141,33 @@ function VariantsEditor({ value = [], onChange }) {
             <div className="var-row">
               <label className="var-color">
                 Color
-                <input
-                  value={v.color || ""}
-                  onChange={(e) => setColor(i, e.target.value)}
-                  placeholder="Negro, Azul, Rojo…"
-                />
+                <input value={v.color || ""} onChange={(e) => setColor(i, e.target.value)} placeholder="Negro, Azul, Rojo…" />
               </label>
 
-              <button
-                type="button"
-                className="ap-btn ap-btn--danger var-remove"
-                onClick={() => removeColor(i)}
-                title="Eliminar color"
-              >
+              <button type="button" className="ap-btn ap-btn--danger var-remove" onClick={() => removeColor(i)} title="Eliminar color">
                 Eliminar color
               </button>
+            </div>
+
+            {/* Imágenes por variación */}
+            <div className="span-2" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <label style={{ fontWeight: 700 }}>Imágenes de este color (CSV o una por línea)</label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <textarea
+                  rows={2}
+                  style={{ flex: 1 }}
+                  value={toCsv(v.images || [])}
+                  onChange={(e) => setVariantImages(i, e.target.value)}
+                  placeholder={`https://...,\nhttps://...`}
+                />
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <button type="button" className="ap-btn" onClick={() => appendVariantImage(i)}>+ Añadir</button>
+                  <button type="button" className="ap-btn ap-btn--ghost" onClick={() => clearVariantImages(i)}>Vaciar</button>
+                  <small style={{ opacity: 0.8, textAlign: "center" }}>
+                    {(v.images && v.images.length) || 0} img
+                  </small>
+                </div>
+              </div>
             </div>
 
             <div className="size-table">
@@ -183,42 +179,16 @@ function VariantsEditor({ value = [], onChange }) {
               <div className="size-body">
                 {(v.tallas || [{ size: "", stock: 0 }]).map((s, j) => (
                   <div className="size-row" key={`size-${i}-${j}`}>
-                    <input
-                      className="size-input"
-                      placeholder="S / 30 / Única…"
-                      value={s.size || ""}
-                      onChange={(e) => setSizeRow(i, j, "size", e.target.value)}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      className="stock-input"
-                      value={Number(s.stock || 0)}
-                      onChange={(e) =>
-                        setSizeRow(i, j, "stock", e.target.value)
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="ap-btn ap-btn--ghost"
-                      onClick={() => removeSizeRow(i, j)}
-                    >
-                      Quitar
-                    </button>
+                    <input className="size-input" placeholder="S / 30 / Única…" value={s.size || ""} onChange={(e) => setSizeRow(i, j, "size", e.target.value)} />
+                    <input type="number" min="0" step="1" className="stock-input" value={Number(s.stock || 0)} onChange={(e) => setSizeRow(i, j, "stock", e.target.value)} />
+                    <button type="button" className="ap-btn ap-btn--ghost" onClick={() => removeSizeRow(i, j)}>Quitar</button>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="var-actions">
-              <button
-                type="button"
-                className="ap-btn"
-                onClick={() => addSize(i)}
-              >
-                + Añadir talla
-              </button>
+              <button type="button" className="ap-btn" onClick={() => addSize(i)}>+ Añadir talla</button>
             </div>
           </div>
         ))
@@ -227,7 +197,7 @@ function VariantsEditor({ value = [], onChange }) {
   );
 }
 
-/* ---------- Editor principal (sin backdrop interno) ---------- */
+/* ---------- Editor principal ---------- */
 function ProductForm({ value, onChange }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
 
@@ -236,109 +206,70 @@ function ProductForm({ value, onChange }) {
       <div className="ap-form-grid">
         <label>
           SKU
-          <input
-            value={value.sku || ""}
-            onChange={(e) => set("sku", e.target.value)}
-            placeholder="JNS210"
-            required
-          />
+          <input value={value.sku || ""} onChange={(e) => set("sku", e.target.value)} placeholder="JNS210" required />
         </label>
         <label className="span-2">
           Nombre
-          <input
-            value={value.name || ""}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Jean slim fit hombre"
-            required
-          />
+          <input value={value.name || ""} onChange={(e) => set("name", e.target.value)} placeholder="Jean slim fit hombre" required />
         </label>
         <label>
           Marca
-          <input
-            value={value.brand || ""}
-            onChange={(e) => set("brand", e.target.value)}
-          />
+          <input value={value.brand || ""} onChange={(e) => set("brand", e.target.value)} />
         </label>
         <label>
           Departamento
-          <input
-            value={value.department || ""}
-            onChange={(e) => set("department", e.target.value)}
-            placeholder="Hombre / Mujer / Infantil…"
-          />
+          <input value={value.department || ""} onChange={(e) => set("department", e.target.value)} placeholder="Hombre / Mujer / Infantil…" />
         </label>
         <label>
           Categoría
-          <input
-            value={value.category || ""}
-            onChange={(e) => set("category", e.target.value)}
-            placeholder="Ropa / Calzado…"
-          />
+          <input value={value.category || ""} onChange={(e) => set("category", e.target.value)} placeholder="Ropa / Calzado…" />
         </label>
         <label>
           Subcategoría
-          <input
-            value={value.subcategory || ""}
-            onChange={(e) => set("subcategory", e.target.value)}
-            placeholder="Jeans, Camisetas…"
-          />
+          <input value={value.subcategory || ""} onChange={(e) => set("subcategory", e.target.value)} placeholder="Jeans, Camisetas…" />
         </label>
         <label>
           Precio (COP)
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={value.price_cop ?? 0}
-            onChange={(e) => set("price_cop", Number(e.target.value))}
-          />
+          <input type="number" min="0" step="1" value={value.price_cop ?? 0} onChange={(e) => set("price_cop", Number(e.target.value))} />
         </label>
 
         {/* NUEVOS CAMPOS */}
         <label>
           Peso (Gr)
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={value.weight_grams ?? 0}
-            onChange={(e) => set("weight_grams", Number(e.target.value))}
-            placeholder="0"
-          />
+          <input type="number" min="0" step="1" value={value.weight_grams ?? 0} onChange={(e) => set("weight_grams", Number(e.target.value))} placeholder="0" />
         </label>
         <label>
           Garantía
-          <input
-            value={value.warranty || ""}
-            onChange={(e) => set("warranty", e.target.value)}
-            placeholder="30 días por defectos de fábrica"
-          />
+          <input value={value.warranty || ""} onChange={(e) => set("warranty", e.target.value)} placeholder="30 días por defectos de fábrica" />
         </label>
         <label className="span-2">
           Cuidados y lavado
-          <input
-            value={value.care_instructions || ""}
-            onChange={(e) => set("care_instructions", e.target.value)}
-            placeholder="Lavar a mano, no usar cloro…"
-          />
+          <input value={value.care_instructions || ""} onChange={(e) => set("care_instructions", e.target.value)} placeholder="Lavar a mano, no usar cloro…" />
         </label>
-
         <label className="span-2">
           Materiales y composición
-          <input
-            value={value.materials || ""}
-            onChange={(e) => set("materials", e.target.value)}
-            placeholder="Algodón, poliéster…"
+          <input value={value.materials || ""} onChange={(e) => set("materials", e.target.value)} placeholder="Algodón, poliéster…" />
+        </label>
+
+        {/* ✅ Campo ESPECIFICACIONES */}
+        <label className="span-2">
+          Especificaciones
+          <textarea
+            rows={3}
+            value={value.specifications || ""}
+            onChange={(e) => set("specifications", e.target.value)}
+            placeholder="Ej.: Corte slim, tiro medio, cierre botón/cremallera, país de origen…"
           />
         </label>
 
+        {/* Imágenes generales del producto */}
         <label className="span-2">
           Imágenes (CSV o una por línea)
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
             <textarea
               rows={3}
               style={{ flex: 1 }}
-              value={toCsv(value.images)} // sigue mostrando como CSV
+              value={toCsv(value.images)}
               onChange={(e) => set("images", fromCsv(e.target.value))}
               placeholder={`https://...,\nhttps://...\n(o una por línea)`}
             />
@@ -351,9 +282,7 @@ function ProductForm({ value, onChange }) {
                   if (!url) return;
                   const trimmed = String(url).trim();
                   if (!trimmed) return;
-                  const next = Array.isArray(value.images)
-                    ? [...value.images, trimmed]
-                    : [trimmed];
+                  const next = Array.isArray(value.images) ? [...value.images, trimmed] : [trimmed];
                   set("images", next);
                 }}
                 title="Añadir una URL sin escribir el CSV"
@@ -366,40 +295,28 @@ function ProductForm({ value, onChange }) {
             </div>
           </div>
         </label>
+
         <label className="span-2">
           Descripción
-          <textarea
-            rows={3}
-            value={value.description || ""}
-            onChange={(e) => set("description", e.target.value)}
-          />
+          <textarea rows={3} value={value.description || ""} onChange={(e) => set("description", e.target.value)} />
         </label>
         <label className="check">
-          <input
-            type="checkbox"
-            checked={!!value.active}
-            onChange={(e) => set("active", e.target.checked)}
-          />
+          <input type="checkbox" checked={!!value.active} onChange={(e) => set("active", e.target.checked)} />
           Activo
         </label>
       </div>
 
-      {/* Variantes */}
-      <VariantsEditor
-        value={value.variants || []}
-        onChange={(v) => set("variants", v)}
-      />
+      <VariantsEditor value={value.variants || []} onChange={(v) => set("variants", v)} />
     </>
   );
 }
 
-/* ---------- Modal: Carga por lotes ---------- */
+/* ---------- Modal: Carga por lotes (sin cambios funcionales) ---------- */
 function BatchUploadModal({ open, onClose, onMergeRows }) {
   const [parsed, setParsed] = useState([]);
   const [rawCount, setRawCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [log, setLog] = useState([]);
-
   const appendLog = (m) => setLog((prev) => [...prev, m]);
 
   const handleFile = async (file) => {
@@ -417,10 +334,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       const acc = new Map();
       for (const r of rows) {
         const sku = toStr(r["COD Ref SKU"]);
-        if (!sku) {
-          appendLog("Fila sin SKU, se omite.");
-          continue;
-        }
+        if (!sku) { appendLog("Fila sin SKU, se omite."); continue; }
         const nombre = toStr(r["Nombre"]);
         const marca = toStr(r["Marca"]);
         const categoria = toStr(r["Categoría"]);
@@ -444,18 +358,9 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         if (!acc.has(sku)) {
           acc.set(sku, {
             base: {
-              sku,
-              name: nombre,
-              brand: marca,
-              category: categoria,
-              subcategory: subcat,
-              department: depto,
-              description: desc,
-              materials: materiales,
-              care_instructions: cuidados,
-              warranty: garantia,
-              price_cop: precio,
-              weight_grams: peso,
+              sku, name: nombre, brand: marca, category: categoria, subcategory: subcat,
+              department: depto, description: desc, materials: materiales, care_instructions: cuidados,
+              warranty: garantia, price_cop: precio, weight_grams: peso,
             },
             variantes: [],
             imgs: [],
@@ -474,16 +379,10 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         if (precio && !entry.base.price_cop) entry.base.price_cop = precio;
         if (peso && !entry.base.weight_grams) entry.base.weight_grams = peso;
 
-        [imgPrincipal, img1, img2].forEach((u) => {
-          if (u && !entry.imgs.includes(u)) entry.imgs.push(u);
-        });
+        [imgPrincipal, img1, img2].forEach((u) => { if (u && !entry.imgs.includes(u)) entry.imgs.push(u); });
 
         if (color || talla || Number.isFinite(cantidad)) {
-          entry.variantes.push({
-            color,
-            talla,
-            cantidad: Math.max(0, Math.trunc(cantidad || 0)),
-          });
+          entry.variantes.push({ color, talla, cantidad: Math.max(0, Math.trunc(cantidad || 0)) });
         }
       }
 
@@ -492,27 +391,15 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         const porColor = {};
         for (const v of variantes) {
           const key = v.color || "sin_color";
-          if (!porColor[key]) porColor[key] = { color: key, tallas: [] };
-          if (v.talla)
-            porColor[key].tallas.push({
-              size: v.talla,
-              stock: v.cantidad || 0,
-            });
+          if (!porColor[key]) porColor[key] = { color: key, images: [], tallas: [] }; // images opcional aquí
+          if (v.talla) porColor[key].tallas.push({ size: v.talla, stock: v.cantidad || 0 });
         }
 
         const producto = {
-          sku: toStr(base.sku),
-          name: toStr(base.name),
-          brand: toStr(base.brand),
-          category: toStr(base.category),
-          subcategory: toStr(base.subcategory),
-          department: toStr(base.department),
-          description: toStr(base.description),
-          materials: toStr(base.materials),
-          care_instructions: toStr(base.care_instructions),
-          warranty: toStr(base.warranty),
-          price_cop: toNum(base.price_cop),
-          weight_grams: toNum(base.weight_grams),
+          sku: toStr(base.sku), name: toStr(base.name), brand: toStr(base.brand),
+          category: toStr(base.category), subcategory: toStr(base.subcategory), department: toStr(base.department),
+          description: toStr(base.description), materials: toStr(base.materials), care_instructions: toStr(base.care_instructions),
+          warranty: toStr(base.warranty), price_cop: toNum(base.price_cop), weight_grams: toNum(base.weight_grams),
           images: imgs.filter(Boolean),
           variants: Object.values(porColor),
           active: true,
@@ -520,10 +407,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
           created_at: new Date(),
         };
 
-        if (!producto.sku) {
-          appendLog("Producto sin SKU, se omite.");
-          continue;
-        }
+        if (!producto.sku) { appendLog("Producto sin SKU, se omite."); continue; }
         productos.push(producto);
       }
 
@@ -568,15 +452,9 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       title="Carga por lotes (Excel)"
       footer={
         <>
-          <button className="ap-btn" onClick={onClose} disabled={loading}>
-            Cerrar
-          </button>
-          <button
-            className="ap-btn ap-btn--primary"
-            onClick={uploadAll}
-            disabled={!parsed.length || loading}
-            title={!parsed.length ? "Sube un archivo primero" : "Subir a Firestore"}
-          >
+          <button className="ap-btn" onClick={onClose} disabled={loading}>Cerrar</button>
+          <button className="ap-btn ap-btn--primary" onClick={uploadAll} disabled={!parsed.length || loading}
+            title={!parsed.length ? "Sube un archivo primero" : "Subir a Firestore"}>
             {loading ? "Procesando…" : `Subir ${parsed.length} productos`}
           </button>
         </>
@@ -585,12 +463,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       <div className="ap-form-grid">
         <label className="span-2">
           Archivo (.xlsx, .xls, .csv)
-          <input
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-            disabled={loading}
-          />
+          <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => handleFile(e.target.files?.[0])} disabled={loading} />
         </label>
 
         <div className="ap-hint">
@@ -598,19 +471,13 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         </div>
 
         <div className="ap-summary">
-          {rawCount ? `Filas leídas: ${rawCount}. ` : ""}
-          {parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
+          {rawCount ? `Filas leídas: ${rawCount}. ` : ""}{parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
         </div>
 
         {parsed.length > 0 && (
           <div className="ap-table preview">
             <div className="ap-thead">
-              <div>SKU</div>
-              <div>Nombre</div>
-              <div>Categoría</div>
-              <div>Precio</div>
-              <div>Variantes</div>
-              <div>Imágenes</div>
+              <div>SKU</div><div>Nombre</div><div>Categoría</div><div>Precio</div><div>Variantes</div><div>Imágenes</div>
             </div>
             <div className="ap-tbody">
               {parsed.slice(0, 20).map((p) => (
@@ -619,9 +486,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
                   <div className="ap-cell">{p.name}</div>
                   <div className="ap-cell">{p.category || "—"}</div>
                   <div className="ap-cell">{currencyCO(p.price_cop)}</div>
-                  <div className="ap-cell">
-                    {p.variants?.map((v) => `${v.color}(${v.tallas?.length || 0})`).join(", ")}
-                  </div>
+                  <div className="ap-cell">{p.variants?.map((v) => `${v.color}(${v.tallas?.length || 0})`).join(", ")}</div>
                   <div className="ap-cell">{p.images?.length || 0}</div>
                 </div>
               ))}
@@ -629,11 +494,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
           </div>
         )}
 
-        <div className="ap-log">
-          {log.map((l, i) => (
-            <div key={i} className="ap-log-line">{l}</div>
-          ))}
-        </div>
+        <div className="ap-log">{log.map((l, i) => (<div key={i} className="ap-log-line">{l}</div>))}</div>
       </div>
     </Modal>
   );
@@ -659,12 +520,7 @@ export default function AdminProducts() {
       setLoading(true);
       try {
         const snap = await getDocs(collectionGroup(db, "items"));
-        const items = snap.docs.map((d) => ({
-          id: d.id,
-          ref: d.ref,
-          catSlug: d.ref.parent?.parent?.id || "sin_categoria",
-          ...d.data(),
-        }));
+        const items = snap.docs.map((d) => ({ id: d.id, ref: d.ref, catSlug: d.ref.parent?.parent?.id || "sin_categoria", ...d.data() }));
         items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
         setRows(items);
       } catch (e) {
@@ -679,10 +535,7 @@ export default function AdminProducts() {
     const needle = q.trim().toLowerCase();
     if (!needle) return rows;
     return rows.filter((p) => {
-      const txt = [p.name, p.sku, p.brand, p.department, p.category, p.subcategory]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+      const txt = [p.name, p.sku, p.brand, p.department, p.category, p.subcategory].filter(Boolean).join(" ").toLowerCase();
       return txt.includes(needle);
     });
   }, [rows, q]);
@@ -696,11 +549,18 @@ export default function AdminProducts() {
       emptyProduct({
         ...row,
         images: Array.isArray(row.images) ? row.images : fromCsv(row.images),
-        variants: Array.isArray(row.variants) ? row.variants : [],
+        variants: Array.isArray(row.variants)
+          ? row.variants.map((v) => ({
+              color: v.color || "",
+              images: Array.isArray(v.images) ? v.images : fromCsv(v.images || ""),
+              tallas: Array.isArray(v.tallas) ? v.tallas : [],
+            }))
+          : [],
         weight_grams: Number(row.weight_grams || 0),
         warranty: row.warranty || "",
         care_instructions: row.care_instructions || "",
         materials: row.materials || "",
+        specifications: row.specifications || "",
       })
     );
   };
@@ -712,26 +572,18 @@ export default function AdminProducts() {
 
   const onSave = async () => {
     try {
-      if (!toStr(draft.sku)) {
-        alert("El SKU es obligatorio.");
-        return;
-      }
-      if (!toStr(draft.name)) {
-        alert("El nombre es obligatorio.");
-        return;
-      }
+      if (!toStr(draft.sku)) return alert("El SKU es obligatorio.");
+      if (!toStr(draft.name)) return alert("El nombre es obligatorio.");
 
       const variantsClean = (draft.variants || [])
         .map((v) => ({
           color: String(v.color || "").trim(),
+          images: (v.images || []).map((u) => toStr(u)).filter(Boolean),
           tallas: (v.tallas || [])
-            .map((t) => ({
-              size: String(t.size || "").trim(),
-              stock: Math.max(0, Number(t.stock || 0)),
-            }))
+            .map((t) => ({ size: String(t.size || "").trim(), stock: Math.max(0, Number(t.stock || 0)) }))
             .filter((t) => t.size),
         }))
-        .filter((v) => v.color && v.tallas.length);
+        .filter((v) => v.color && (v.tallas.length || v.images.length));
 
       const payload = {
         sku: toStr(draft.sku) || editing?.sku || "",
@@ -749,27 +601,18 @@ export default function AdminProducts() {
         warranty: toStr(draft.warranty),
         care_instructions: toStr(draft.care_instructions),
         materials: toStr(draft.materials),
+        specifications: toStr(draft.specifications), // NUEVO
         updated_at: new Date(),
       };
 
       if (creating) {
         const categoriaId = sanitizeId(payload.category || "sin_categoria");
-        const ref = doc(db, "productos", categoriaId, "items", payload.sku); // ID = SKU
+        const ref = doc(db, "productos", categoriaId, "items", payload.sku);
         await setDoc(ref, { ...payload, created_at: new Date() }, { merge: true });
-        setRows((prev) => [
-          ...prev,
-          {
-            id: payload.sku,
-            ref,
-            catSlug: categoriaId,
-            ...payload,
-          },
-        ]);
+        setRows((prev) => [...prev, { id: payload.sku, ref, catSlug: categoriaId, ...payload }]);
       } else if (editing?.ref) {
         await updateDoc(editing.ref, payload);
-        setRows((prev) =>
-          prev.map((r) => (r.id === editing.id ? { ...editing, ...payload } : r))
-        );
+        setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...editing, ...payload } : r)));
       }
       onCloseModal();
     } catch (e) {
@@ -812,25 +655,12 @@ export default function AdminProducts() {
             className="ap-search"
             placeholder="Buscar por nombre, SKU, marca, categoría…"
             value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => { setQ(e.target.value); setPage(1); }}
           />
-          <button
-            className="ap-btn"
-            onClick={() => setBatchOpen(true)}
-            title="Cargar productos desde Excel"
-          >
+          <button className="ap-btn" onClick={() => setBatchOpen(true)} title="Cargar productos desde Excel">
             Añadir por lotes
           </button>
-          <button
-            className="ap-btn ap-btn--primary"
-            onClick={() => {
-              setCreating(true);
-              setDraft(emptyProduct());
-            }}
-          >
+          <button className="ap-btn ap-btn--primary" onClick={() => { setCreating(true); setDraft(emptyProduct()); }}>
             + Nuevo
           </button>
         </div>
@@ -844,12 +674,7 @@ export default function AdminProducts() {
         <>
           <div className="ap-table">
             <div className="ap-thead">
-              <div>Producto</div>
-              <div>SKU</div>
-              <div>Categoría</div>
-              <div>Precio</div>
-              <div>Activo</div>
-              <div>Acciones</div>
+              <div>Producto</div><div>SKU</div><div>Categoría</div><div>Precio</div><div>Activo</div><div>Acciones</div>
             </div>
             <div className="ap-tbody">
               {pageRows.map((r) => (
@@ -857,31 +682,19 @@ export default function AdminProducts() {
                   <div className="ap-cell">
                     <div className="ap-name">{r.name || "—"}</div>
                     <div className="ap-sub">
-                      {r.brand || "—"} · {r.department || "—"} · {r.category || "—"}
-                      {r.subcategory ? ` / ${r.subcategory}` : ""}
+                      {r.brand || "—"} · {r.department || "—"} · {r.category || "—"}{r.subcategory ? ` / ${r.subcategory}` : ""}
                     </div>
                   </div>
                   <div className="ap-cell mono">{r.sku || "—"}</div>
                   <div className="ap-cell">{r.catSlug || r.category || "—"}</div>
                   <div className="ap-cell">{currencyCO(r.price_cop)}</div>
                   <div className="ap-cell">
-                    <span className={`ap-badge ${r.active ? "ok" : "off"}`}>
-                      {r.active ? "Sí" : "No"}
-                    </span>
+                    <span className={`ap-badge ${r.active ? "ok" : "off"}`}>{r.active ? "Sí" : "No"}</span>
                   </div>
                   <div className="ap-cell actions">
-                    <button className="ap-btn ap-btn--ghost" onClick={() => onOpenEdit(r)}>
-                      Editar
-                    </button>
-                    <button className="ap-btn ap-btn--danger" onClick={() => onDelete(r)}>
-                      Eliminar
-                    </button>
-                    <a
-                      className="ap-btn ap-btn--link"
-                      href={`https://dleongold.com/products/${r.catSlug}/${r.sku || r.id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
+                    <button className="ap-btn ap-btn--ghost" onClick={() => onOpenEdit(r)}>Editar</button>
+                    <button className="ap-btn ap-btn--danger" onClick={() => onDelete(r)}>Eliminar</button>
+                    <a className="ap-btn ap-btn--link" href={`https://dleongold.com/products/${r.catSlug}/${r.sku || r.id}`} target="_blank" rel="noreferrer">
                       Ver
                     </a>
                   </div>
@@ -891,53 +704,30 @@ export default function AdminProducts() {
           </div>
 
           <div className="ap-pager">
-            <button
-              className="ap-btn"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              ← Anterior
-            </button>
+            <button className="ap-btn" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>← Anterior</button>
             <span>Página {page} de {totalPages}</span>
-            <button
-              className="ap-btn"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Siguiente →
-            </button>
+            <button className="ap-btn" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>Siguiente →</button>
           </div>
         </>
       )}
 
-      {/* Modal: Carga por lotes */}
       <BatchUploadModal
         open={batchOpen}
         onClose={() => setBatchOpen(false)}
-        onMergeRows={(uploaded) => {
-          mergeUploadedRows(uploaded);
-          setBatchOpen(false);
-        }}
+        onMergeRows={(uploaded) => { mergeUploadedRows(uploaded); setBatchOpen(false); }}
       />
 
-      {/* Modal de edición / creación (no cierra por fuera) */}
       <Modal
         open={!!editing || creating}
         title={creating ? "Nuevo producto" : "Editar producto"}
         onClose={onCloseModal}
         footer={
           <>
-            <button className="ap-btn" onClick={onCloseModal}>
-              Cancelar
-            </button>
+            <button className="ap-btn" onClick={onCloseModal}>Cancelar</button>
             {creating && (
               <div className="ap-cat-select">
                 <span>Guardar en:</span>
-                <select
-                  value={catForCreate}
-                  onChange={(e) => setCatForCreate(e.target.value)}
-                  title="ID doc categoría (slug)"
-                >
+                <select value={catForCreate} onChange={(e) => setCatForCreate(e.target.value)} title="ID doc categoría (slug)">
                   <option value="ropa">ropa</option>
                   <option value="calzado">calzado</option>
                   <option value="accesorios">accesorios</option>
@@ -945,9 +735,7 @@ export default function AdminProducts() {
                 </select>
               </div>
             )}
-            <button className="ap-btn ap-btn--primary" onClick={onSave}>
-              Guardar
-            </button>
+            <button className="ap-btn ap-btn--primary" onClick={onSave}>Guardar</button>
           </>
         }
       >

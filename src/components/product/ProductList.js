@@ -1,5 +1,5 @@
 // src/components/ProductList.jsx
-import React, { useMemo, useState, useContext } from "react";
+import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ProductsContext } from "../../context/ProductContext";
 import "./ProductList.css";
@@ -13,7 +13,6 @@ const parseDriveId = (urlOrId = "") => {
   const m =
     s.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
     s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-
   return m ? m[1] : s;
 };
 
@@ -21,9 +20,7 @@ const driveView = (urlOrId) =>
   `https://drive.google.com/uc?export=view&id=${parseDriveId(urlOrId)}`;
 
 const driveThumb = (urlOrId, w = 1600) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
-    urlOrId
-  )}`;
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(urlOrId)}`;
 
 const driveLH3 = (urlOrId, w = 1600) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
@@ -31,50 +28,29 @@ const driveLH3 = (urlOrId, w = 1600) =>
 /* URLs a probar en orden */
 const driveFallbackSrc = (urlOrId) => {
   const id = parseDriveId(urlOrId);
-  return [
-    driveLH3(id),     // #1 funciona mejor en iPhone
-    driveThumb(id),   // #2 Google thumbnail
-    driveView(id)     // #3 clásico uc?export=view
-  ];
+  return [driveLH3(id), driveThumb(id), driveView(id)];
 };
 
 const resolveImage = (img) => {
   if (!img) return null;
-
-  if (/drive\.google\.com/.test(img)) {
-    return driveFallbackSrc(img); // ahora devuelve 3 URLs posibles
-  }
-
+  if (/drive\.google\.com/.test(img)) return driveFallbackSrc(img);
   if (isHttp(img)) return [img];
-
   return null;
 };
 
 const depToSlug = (p) => {
   const d = (p?.department || "").toLowerCase();
-  if (d.includes("hombre") || d.includes("caballero") || d.includes("men"))
-    return "hombre";
-  if (d.includes("mujer") || d.includes("dama") || d.includes("women"))
-    return "mujer";
-  if (
-    d.includes("infantil") ||
-    d.includes("niño") ||
-    d.includes("nina") ||
-    d.includes("kids")
-  )
-    return "infantil";
-  if (d.includes("complement") || d.includes("accesorio"))
-    return "complementos";
+  if (d.includes("hombre") || d.includes("caballero") || d.includes("men")) return "hombre";
+  if (d.includes("mujer") || d.includes("dama") || d.includes("women")) return "mujer";
+  if (d.includes("infantil") || d.includes("niño") || d.includes("nina") || d.includes("kids")) return "infantil";
+  if (d.includes("complement") || d.includes("accesorio")) return "complementos";
   return "otros";
 };
 
 const sizesOf = (variants = []) =>
-  variants
-    .flatMap((v) => (v.tallas || v.sizes || []).map((s) => s?.size))
-    .filter(Boolean);
+  variants.flatMap((v) => (v.tallas || v.sizes || []).map((s) => s?.size)).filter(Boolean);
 
-const colorsOf = (variants = []) =>
-  variants.map((v) => v?.color).filter(Boolean);
+const colorsOf = (variants = []) => variants.map((v) => v?.color).filter(Boolean);
 
 /* Precio actual numérico. Retorna null cuando no hay precio válido. */
 const getPrice = (p) => {
@@ -82,31 +58,109 @@ const getPrice = (p) => {
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-const ProductCard = ({ product }) => {
-  const fallbackImages =
-    resolveImage((product.images || [])[0]) ||
-    ["https://placehold.co/600x800?text=Sin+Imagen"];
+/* ✅ Tomar primera imagen disponible de variantes cuando no hay generales */
+const firstVariantImage = (variants = []) => {
+  for (const v of variants) {
+    if (Array.isArray(v?.images) && v.images.length && v.images[0]) {
+      return v.images[0];
+    }
+  }
+  return null;
+};
 
-  const [src, setSrc] = useState(fallbackImages[0]);
-
-  const handleError = () => {
-    const idx = fallbackImages.indexOf(src);
-    const next = idx + 1;
-
-    if (next < fallbackImages.length) {
-      setSrc(fallbackImages[next]); // prueba siguiente URL
-    } else {
-      setSrc("https://placehold.co/600x800?text=Sin+Imagen");
+/* ✅ Mezcla imágenes generales + variantes (sin duplicados) como items con fallbacks */
+const collectImages = (product, limit = 8) => {
+  const pool = [];
+  const pushUrl = (url) => {
+    if (!url) return;
+    const fall = resolveImage(url);
+    if (!fall || !fall.length) return;
+    const primary = fall[0];
+    if (!primary) return;
+    if (!pool.some((it) => it.primary === primary)) {
+      pool.push({ primary, fallbacks: fall });
     }
   };
 
-  // Deduplicar tallas
-  const rawSizes = sizesOf(product.variants);
-  const sizes = [...new Set(rawSizes)];
+  // 1) Generales primero
+  (Array.isArray(product?.images) ? product.images : []).forEach(pushUrl);
 
-  // Deduplicar colores
-  const rawColors = colorsOf(product.variants);
-  const colors = [...new Set(rawColors)];
+  // 2) Variantes luego
+  (Array.isArray(product?.variants) ? product.variants : []).forEach((v) => {
+    (Array.isArray(v?.images) ? v.images : []).forEach(pushUrl);
+  });
+
+  // 3) Fallback si quedó vacío
+  if (!pool.length) {
+    const fallback = firstVariantImage(product?.variants) || null;
+    if (fallback) pushUrl(fallback);
+  }
+  if (!pool.length) {
+    pool.push({
+      primary: "https://placehold.co/600x800?text=Sin+Imagen",
+      fallbacks: ["https://placehold.co/600x800?text=Sin+Imagen"],
+    });
+  }
+
+  return pool.slice(0, limit);
+};
+
+/* ---------- Product Card ---------- */
+const ProductCard = ({ product }) => {
+  const images = collectImages(product);
+  const [idx, setIdx] = useState(0);
+  const [src, setSrc] = useState(images[0]?.primary);
+  const [fallbacks, setFallbacks] = useState(images[0]?.fallbacks || []);
+  const touchStartX = useRef(null);
+
+  // Si cambian las imágenes (producto nuevo), re-inicializa
+  React.useEffect(() => {
+    const first = images[0];
+    setIdx(0);
+    setSrc(first?.primary);
+    setFallbacks(first?.fallbacks || []);
+  }, [product?.id]); // depende del producto
+
+  const goTo = (newIdx) => {
+    const n = ((newIdx % images.length) + images.length) % images.length;
+    setIdx(n);
+    setSrc(images[n].primary);
+    setFallbacks(images[n].fallbacks);
+  };
+
+  const onError = () => {
+    const i = fallbacks.indexOf(src);
+    const next = i + 1;
+    if (next < fallbacks.length) {
+      setSrc(fallbacks[next]);
+    } else {
+      // pasa a la siguiente imagen del carrusel
+      if (images.length > 1) {
+        const nxt = (idx + 1) % images.length;
+        goTo(nxt);
+      } else {
+        setSrc("https://placehold.co/600x800?text=Sin+Imagen");
+      }
+    }
+  };
+
+  // Swipe móvil
+  const onTouchStart = (e) => {
+    touchStartX.current = e.touches?.[0]?.clientX ?? null;
+  };
+  const onTouchEnd = (e) => {
+    const sx = touchStartX.current;
+    const ex = e.changedTouches?.[0]?.clientX ?? null;
+    touchStartX.current = null;
+    if (sx == null || ex == null) return;
+    const dx = ex - sx;
+    if (Math.abs(dx) < 30) return; // umbral
+    if (dx < 0) goTo(idx + 1); // swipe izquierda → siguiente
+    else goTo(idx - 1);        // swipe derecha → anterior
+  };
+
+  const sizes = [...new Set(sizesOf(product.variants))];
+  const colors = [...new Set(colorsOf(product.variants))];
 
   return (
     <div className="col s12 m6 l4 xl3">
@@ -115,13 +169,35 @@ const ProductCard = ({ product }) => {
           to={`/products/${product.catSlug || "sin_categoria"}/${product.id}`}
           className="product-card-link"
         >
-          <div className="card-image product-card-image-wrapper">
+          <div
+            className="card-image product-card-image-wrapper"
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+          >
             <img
               src={src}
               alt={product.name || "Sin nombre"}
               className="product-image"
-              onError={handleError}
+              onError={onError}
             />
+
+            {/* Dots navegación */}
+            {images.length > 1 && (
+              <div className="pc-dots" aria-label="Cambiar imagen">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`pc-dot ${i === idx ? "active" : ""}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      goTo(i);
+                    }}
+                    aria-label={`Imagen ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card-content product-card-content">
@@ -170,9 +246,7 @@ const ProductCard = ({ product }) => {
             </p>
 
             <p className="product-colors">
-              <small>
-                Colores: {colors.length ? colors.join(", ") : "N/A"}
-              </small>
+              <small>Colores: {colors.length ? colors.join(", ") : "N/A"}</small>
             </p>
           </div>
         </Link>
@@ -198,9 +272,7 @@ export default function ProductList() {
       if (!bySlug.has(s)) bySlug.set(s, { label, count: 0 });
       bySlug.get(s).count++;
     }
-
     const order = ["mujer", "hombre", "infantil", "complementos", "otros"];
-
     return Array.from(bySlug.entries())
       .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
       .map(([key, v]) => ({ key, label: v.label, count: v.count }));
@@ -242,23 +314,20 @@ export default function ProductList() {
   const sorted = useMemo(() => {
     if (!sort) return filtered;
     const arr = [...filtered];
-    const cmpAsc = (a, b) => {
-      const pa = getPrice(a);
-      const pb = getPrice(b);
-      // Sin precio al final
-      if (pa === null && pb === null) return tieBreak(a, b);
-      if (pa === null) return 1;
-      if (pb === null) return -1;
-      if (pa === pb) return tieBreak(a, b);
-      return pa - pb;
-    };
-    const cmpDesc = (a, b) => -cmpAsc(a, b);
     const tieBreak = (a, b) => {
-      // Evita saltos visuales en empates
       const an = (a.name || "").localeCompare(b.name || "");
       if (an !== 0) return an;
       return String(a.id ?? "").localeCompare(String(b.id ?? ""));
     };
+    const cmpAsc = (a, b) => {
+      const pa = getPrice(a);
+      const pb = getPrice(b);
+      if (pa === null && pb === null) return tieBreak(a, b);
+      if (pa === null) return 1;
+      if (pb === null) return -1;
+      return pa === pb ? tieBreak(a, b) : pa - pb;
+    };
+    const cmpDesc = (a, b) => -cmpAsc(a, b);
     arr.sort(sort === "price_asc" ? cmpAsc : cmpDesc);
     return arr;
   }, [filtered, sort]);
@@ -285,9 +354,7 @@ export default function ProductList() {
         {departmentChips.map(({ key, label, count }) => (
           <button
             key={key}
-            className={`gender-chip ${
-              dep === key ? "gender-chip--active" : ""
-            }`}
+            className={`gender-chip ${dep === key ? "gender-chip--active" : ""}`}
             onClick={() => {
               setDep(key);
               setSubFilter("");
@@ -313,10 +380,7 @@ export default function ProductList() {
               </h5>
             </div>
             <div className="col s12 m4 right-align">
-              {/* Ordenamiento */}
-              <label htmlFor="sort" className="sort-label">
-                Ordenar:
-              </label>
+              <label htmlFor="sort" className="sort-label">Ordenar:</label>
               <select
                 id="sort"
                 className="browser-default sort-select"
@@ -342,9 +406,7 @@ export default function ProductList() {
                       <li key={s}>
                         <button
                           type="button"
-                          className={`subcat-link ${
-                            subFilter === s ? "active" : ""
-                          }`}
+                          className={`subcat-link ${subFilter === s ? "active" : ""}`}
                           onClick={() => setSubFilter(subFilter === s ? "" : s)}
                         >
                           {s}
@@ -362,9 +424,7 @@ export default function ProductList() {
       {/* Grilla */}
       <div className="product-grid">
         {sorted.length ? (
-          sorted.map((p) => (
-            <ProductCard key={`${p.catSlug}-${p.id}`} product={p} />
-          ))
+          sorted.map((p) => <ProductCard key={`${p.catSlug}-${p.id}`} product={p} />)
         ) : (
           <p className="center-align">No se encontraron productos</p>
         )}

@@ -289,3 +289,29 @@
 .sort-bar label {
   font-weight: 600;
 }
+/* --- Dots del mini–carrusel en card --- */
+.pc-dots{
+  position:absolute;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:6px;
+  padding:4px 6px;
+  background:rgba(255,255,255,.75);
+  border-radius:999px;
+  box-shadow: var(--shadow-sm);
+}
+.pc-dot{
+  width:8px; height:8px; border-radius:50%;
+  border:1px solid rgba(0,0,0,.25);
+  background:rgba(0,0,0,.15);
+  cursor:pointer;
+}
+.pc-dot.active{
+  background:var(--gold);
+  border-color:var(--gold);
+}
+@media (hover:hover){
+  .pc-dot:hover{ background:var(--gold-600); border-color:var(--gold-600); }
+}
