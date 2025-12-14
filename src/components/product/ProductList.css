@@ -315,3 +315,55 @@
 @media (hover:hover){
   .pc-dot:hover{ background:var(--gold-600); border-color:var(--gold-600); }
 }
+/* Flechas del carrusel en tarjetas */
+.pc-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,0,0,.12);
+  background: rgba(255,255,255,.9);
+  color: #111;
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background-color .15s ease, transform .08s ease, border-color .15s ease;
+  user-select: none;
+}
+
+.pc-arrow:hover {
+  background: #fff;
+  border-color: rgba(0,0,0,.2);
+  transform: translateY(-50%) scale(1.04);
+}
+
+.pc-arrow:active {
+  transform: translateY(-50%) scale(0.98);
+}
+
+.pc-arrow--left { left: 8px; }
+.pc-arrow--right { right: 8px; }
+
+/* Asegurar que queden por encima de la imagen */
+.product-card-image-wrapper { position: relative; }
+.pc-dots { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+.pc-dot {
+  width: 6px; height: 6px; border-radius: 999px; border: none;
+  background: rgba(0,0,0,.25); cursor: pointer;
+}
+.pc-dot.active { background: rgba(0,0,0,.6); }
+
+/* En móvil, flechas un poco más grandes para mejor tap */
+@media (max-width: 600px) {
+  .pc-arrow {
+    width: 38px;
+    height: 38px;
+    font-size: 20px;
+  }
+}

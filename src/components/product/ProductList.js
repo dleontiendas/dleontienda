@@ -11,8 +11,7 @@ const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
 const parseDriveId = (urlOrId = "") => {
   const s = String(urlOrId).trim();
   const m =
-    s.match(/\/d\/([a-zA-Z0-9_-]+)/) ||
-    s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    s.match(/\/d\/([a-zA-Z0-9_-]+)/) || s.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   return m ? m[1] : s;
 };
 
@@ -20,7 +19,9 @@ const driveView = (urlOrId) =>
   `https://drive.google.com/uc?export=view&id=${parseDriveId(urlOrId)}`;
 
 const driveThumb = (urlOrId, w = 1600) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(urlOrId)}`;
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
+    urlOrId
+  )}`;
 
 const driveLH3 = (urlOrId, w = 1600) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
@@ -40,17 +41,29 @@ const resolveImage = (img) => {
 
 const depToSlug = (p) => {
   const d = (p?.department || "").toLowerCase();
-  if (d.includes("hombre") || d.includes("caballero") || d.includes("men")) return "hombre";
-  if (d.includes("mujer") || d.includes("dama") || d.includes("women")) return "mujer";
-  if (d.includes("infantil") || d.includes("niño") || d.includes("nina") || d.includes("kids")) return "infantil";
-  if (d.includes("complement") || d.includes("accesorio")) return "complementos";
+  if (d.includes("hombre") || d.includes("caballero") || d.includes("men"))
+    return "hombre";
+  if (d.includes("mujer") || d.includes("dama") || d.includes("women"))
+    return "mujer";
+  if (
+    d.includes("infantil") ||
+    d.includes("niño") ||
+    d.includes("nina") ||
+    d.includes("kids")
+  )
+    return "infantil";
+  if (d.includes("complement") || d.includes("accesorio"))
+    return "complementos";
   return "otros";
 };
 
 const sizesOf = (variants = []) =>
-  variants.flatMap((v) => (v.tallas || v.sizes || []).map((s) => s?.size)).filter(Boolean);
+  variants
+    .flatMap((v) => (v.tallas || v.sizes || []).map((s) => s?.size))
+    .filter(Boolean);
 
-const colorsOf = (variants = []) => variants.map((v) => v?.color).filter(Boolean);
+const colorsOf = (variants = []) =>
+  variants.map((v) => v?.color).filter(Boolean);
 
 /* Precio actual numérico. Retorna null cuando no hay precio válido. */
 const getPrice = (p) => {
@@ -108,41 +121,53 @@ const collectImages = (product, limit = 8) => {
 /* ---------- Product Card ---------- */
 const ProductCard = ({ product }) => {
   const images = collectImages(product);
+  const PLACEHOLDER = "https://placehold.co/600x800?text=Sin+Imagen";
+
+  // índice de imagen del carrusel
   const [idx, setIdx] = useState(0);
-  const [src, setSrc] = useState(images[0]?.primary);
-  const [fallbacks, setFallbacks] = useState(images[0]?.fallbacks || []);
+  // índice del fallback dentro de la imagen actual
+  const fbIdxRef = useRef(0);
+  // src actual mostrado
+  const [src, setSrc] = useState(
+    images[0]?.fallbacks?.[0] || PLACEHOLDER
+  );
+
   const touchStartX = useRef(null);
 
-  // Si cambian las imágenes (producto nuevo), re-inicializa
+  // Si cambia el pool de imágenes (producto nuevo o distintas urls), re-inicializa
+  const primarySignature = useMemo(
+    () => images.map((i) => i.primary).join("|"),
+    [images]
+  );
+
   React.useEffect(() => {
-    const first = images[0];
+    fbIdxRef.current = 0;
     setIdx(0);
-    setSrc(first?.primary);
-    setFallbacks(first?.fallbacks || []);
-  }, [product?.id]); // depende del producto
+    setSrc(images[0]?.fallbacks?.[0] || PLACEHOLDER);
+  }, [primarySignature]); // <- se actualiza cuando cambia el set de imágenes
 
   const goTo = (newIdx) => {
+    if (!images.length) return;
     const n = ((newIdx % images.length) + images.length) % images.length;
     setIdx(n);
-    setSrc(images[n].primary);
-    setFallbacks(images[n].fallbacks);
+    fbIdxRef.current = 0; // siempre reiniciar fallback al cambiar de imagen
+    setSrc(images[n]?.fallbacks?.[0] || PLACEHOLDER);
   };
 
   const onError = () => {
-    const i = fallbacks.indexOf(src);
-    const next = i + 1;
-    if (next < fallbacks.length) {
-      setSrc(fallbacks[next]);
-    } else {
-      // pasa a la siguiente imagen del carrusel
-      if (images.length > 1) {
-        const nxt = (idx + 1) % images.length;
-        goTo(nxt);
-      } else {
-        setSrc("https://placehold.co/600x800?text=Sin+Imagen");
-      }
-    }
-  };
+  const fallbacks = images[idx]?.fallbacks || [];
+  const nextFb = fbIdxRef.current + 1;
+
+  // 1) Intenta el siguiente fallback de la MISMA imagen
+  if (nextFb < fallbacks.length) {
+    fbIdxRef.current = nextFb;
+    setSrc(fallbacks[nextFb]);
+    return;
+  }
+
+  // 2) No pasar a la siguiente imagen. Muestra placeholder y NO te muevas.
+  setSrc(PLACEHOLDER);
+};
 
   // Swipe móvil
   const onTouchStart = (e) => {
@@ -155,8 +180,8 @@ const ProductCard = ({ product }) => {
     if (sx == null || ex == null) return;
     const dx = ex - sx;
     if (Math.abs(dx) < 30) return; // umbral
-    if (dx < 0) goTo(idx + 1); // swipe izquierda → siguiente
-    else goTo(idx - 1);        // swipe derecha → anterior
+    if (dx < 0) goTo(idx + 1); // izquierda → siguiente
+    else goTo(idx - 1);        // derecha → anterior
   };
 
   const sizes = [...new Set(sizesOf(product.variants))];
@@ -180,6 +205,36 @@ const ProductCard = ({ product }) => {
               className="product-image"
               onError={onError}
             />
+
+            {/* Flechas izquierda / derecha */}
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="pc-arrow pc-arrow--left"
+                  aria-label="Imagen anterior"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goTo(idx - 1);
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="pc-arrow pc-arrow--right"
+                  aria-label="Imagen siguiente"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    goTo(idx + 1);
+                  }}
+                >
+                  ›
+                </button>
+              </>
+            )}
 
             {/* Dots navegación */}
             {images.length > 1 && (
@@ -246,7 +301,9 @@ const ProductCard = ({ product }) => {
             </p>
 
             <p className="product-colors">
-              <small>Colores: {colors.length ? colors.join(", ") : "N/A"}</small>
+              <small>
+                Colores: {colors.length ? colors.join(", ") : "N/A"}
+              </small>
             </p>
           </div>
         </Link>
@@ -354,7 +411,9 @@ export default function ProductList() {
         {departmentChips.map(({ key, label, count }) => (
           <button
             key={key}
-            className={`gender-chip ${dep === key ? "gender-chip--active" : ""}`}
+            className={`gender-chip ${
+              dep === key ? "gender-chip--active" : ""
+            }`}
             onClick={() => {
               setDep(key);
               setSubFilter("");
@@ -380,7 +439,9 @@ export default function ProductList() {
               </h5>
             </div>
             <div className="col s12 m4 right-align">
-              <label htmlFor="sort" className="sort-label">Ordenar:</label>
+              <label htmlFor="sort" className="sort-label">
+                Ordenar:
+              </label>
               <select
                 id="sort"
                 className="browser-default sort-select"
@@ -406,7 +467,9 @@ export default function ProductList() {
                       <li key={s}>
                         <button
                           type="button"
-                          className={`subcat-link ${subFilter === s ? "active" : ""}`}
+                          className={`subcat-link ${
+                            subFilter === s ? "active" : ""
+                          }`}
                           onClick={() => setSubFilter(subFilter === s ? "" : s)}
                         >
                           {s}
@@ -424,7 +487,9 @@ export default function ProductList() {
       {/* Grilla */}
       <div className="product-grid">
         {sorted.length ? (
-          sorted.map((p) => <ProductCard key={`${p.catSlug}-${p.id}`} product={p} />)
+          sorted.map((p) => (
+            <ProductCard key={`${p.catSlug}-${p.id}`} product={p} />
+          ))
         ) : (
           <p className="center-align">No se encontraron productos</p>
         )}
