@@ -7,6 +7,10 @@ import "./ProductList.css";
 /* ---------- Helpers ---------- */
 const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
 
+/* Normaliza: minúsculas + sin acentos */
+const normalizeText = (s = "") =>
+  String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 /* --- Google Drive helpers --- */
 const parseDriveId = (urlOrId = "") => {
   const s = String(urlOrId).trim();
@@ -15,23 +19,89 @@ const parseDriveId = (urlOrId = "") => {
   return m ? m[1] : s;
 };
 
+const DEPARTMENT_LABELS = {
+  mujer: "Mujer",
+  hombre: "Hombre",
+  niña: "Niña",
+  niño: "Niño",
+  infantil: "Infantil",
+  complementos: "Complementos",
+  otros: "Otros",
+};
+
+/* Candidatos de imágenes por slug (con y sin tilde) */
+const DEPARTMENT_IMAGE_SOURCES = (slug) => {
+  switch (slug) {
+    case "mujer":
+      return ["/images/departments/mujer.jpg", "/images/departments/otros.jpg"];
+    case "hombre":
+      return ["/images/departments/hombre.jpg", "/images/departments/otros.jpg"];
+    case "niña":
+      return [
+        "/images/departments/nina.jpg",   // sin tilde
+        "/images/departments/niña.jpg",   // con tilde
+        "/images/departments/infantil.jpg",
+        "/images/departments/otros.jpg",
+      ];
+    case "niño":
+      return [
+        "/images/departments/nino.jpg",   // sin tilde
+        "/images/departments/niño.jpg",   // con tilde
+        "/images/departments/infantil.jpg",
+        "/images/departments/otros.jpg",
+      ];
+    case "infantil":
+      return [
+        "/images/departments/infantil.jpg",
+        "/images/departments/ninos.jpg",  // opcional si existe
+        "/images/departments/otros.jpg",
+      ];
+    case "complementos":
+      return ["/images/departments/otros.jpg"];
+    default:
+      return ["/images/departments/otros.jpg"];
+  }
+};
+
+/* Mini-componente <img> con fallbacks */
+function DepartmentChipImage({ slug, alt }) {
+  const candidates = DEPARTMENT_IMAGE_SOURCES(slug);
+  const idxRef = useRef(0);
+  const [src, setSrc] = useState(candidates[0]);
+
+  const handleError = () => {
+    const next = idxRef.current + 1;
+    if (next < candidates.length) {
+      idxRef.current = next;
+      setSrc(candidates[next]);
+    }
+  };
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={handleError}
+    />
+  );
+}
+
+const getDepartmentImage = (slug) => {
+  const list = DEPARTMENT_IMAGE_SOURCES(slug);
+  return list[0] || "/images/departments/otros.jpg";
+};
+
 const driveView = (urlOrId) =>
   `https://drive.google.com/uc?export=view&id=${parseDriveId(urlOrId)}`;
-
 const driveThumb = (urlOrId, w = 1600) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(
-    urlOrId
-  )}`;
-
+  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(urlOrId)}`;
 const driveLH3 = (urlOrId, w = 1600) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
-
-/* URLs a probar en orden */
 const driveFallbackSrc = (urlOrId) => {
   const id = parseDriveId(urlOrId);
   return [driveLH3(id), driveThumb(id), driveView(id)];
 };
-
 const resolveImage = (img) => {
   if (!img) return null;
   if (/drive\.google\.com/.test(img)) return driveFallbackSrc(img);
@@ -39,21 +109,23 @@ const resolveImage = (img) => {
   return null;
 };
 
+/* -------- Slug de departamento: soporta singular/plural y sin acentos -------- */
 const depToSlug = (p) => {
-  const d = (p?.department || "").toLowerCase();
-  if (d.includes("hombre") || d.includes("caballero") || d.includes("men"))
-    return "hombre";
-  if (d.includes("mujer") || d.includes("dama") || d.includes("women"))
+  const d = normalizeText(p?.department || "");
+
+  if (d.includes("mujer") || d.includes("dama") || d.includes("damas") || d.includes("women"))
     return "mujer";
-  if (
-    d.includes("infantil") ||
-    d.includes("niño") ||
-    d.includes("nina") ||
-    d.includes("kids")
-  )
-    return "infantil";
-  if (d.includes("complement") || d.includes("accesorio"))
-    return "complementos";
+  if (d.includes("hombre") || d.includes("caballero") || d.includes("caballeros") || d.includes("men"))
+    return "hombre";
+
+  if (d.includes("nina") || d.includes("ninas") || d.includes("girl") || d.includes("girls"))
+    return "niña";
+  if (d.includes("nino") || d.includes("ninos") || d.includes("boy") || d.includes("boys"))
+    return "niño";
+
+  if (d.includes("infantil") || d.includes("kids")) return "infantil";
+  if (d.includes("complement") || d.includes("accesorio")) return "complementos";
+
   return "otros";
 };
 
@@ -65,13 +137,11 @@ const sizesOf = (variants = []) =>
 const colorsOf = (variants = []) =>
   variants.map((v) => v?.color).filter(Boolean);
 
-/* Precio actual numérico. Retorna null cuando no hay precio válido. */
 const getPrice = (p) => {
   const n = Number(p?.price_cop);
   return Number.isFinite(n) && n > 0 ? n : null;
 };
 
-/* ✅ Tomar primera imagen disponible de variantes cuando no hay generales */
 const firstVariantImage = (variants = []) => {
   for (const v of variants) {
     if (Array.isArray(v?.images) && v.images.length && v.images[0]) {
@@ -81,7 +151,6 @@ const firstVariantImage = (variants = []) => {
   return null;
 };
 
-/* ✅ Mezcla imágenes generales + variantes (sin duplicados) como items con fallbacks */
 const collectImages = (product, limit = 8) => {
   const pool = [];
   const pushUrl = (url) => {
@@ -95,15 +164,11 @@ const collectImages = (product, limit = 8) => {
     }
   };
 
-  // 1) Generales primero
   (Array.isArray(product?.images) ? product.images : []).forEach(pushUrl);
-
-  // 2) Variantes luego
   (Array.isArray(product?.variants) ? product.variants : []).forEach((v) => {
     (Array.isArray(v?.images) ? v.images : []).forEach(pushUrl);
   });
 
-  // 3) Fallback si quedó vacío
   if (!pool.length) {
     const fallback = firstVariantImage(product?.variants) || null;
     if (fallback) pushUrl(fallback);
@@ -123,18 +188,12 @@ const ProductCard = ({ product }) => {
   const images = collectImages(product);
   const PLACEHOLDER = "https://placehold.co/600x800?text=Sin+Imagen";
 
-  // índice de imagen del carrusel
   const [idx, setIdx] = useState(0);
-  // índice del fallback dentro de la imagen actual
   const fbIdxRef = useRef(0);
-  // src actual mostrado
-  const [src, setSrc] = useState(
-    images[0]?.fallbacks?.[0] || PLACEHOLDER
-  );
+  const [src, setSrc] = useState(images[0]?.fallbacks?.[0] || PLACEHOLDER);
 
   const touchStartX = useRef(null);
 
-  // Si cambia el pool de imágenes (producto nuevo o distintas urls), re-inicializa
   const primarySignature = useMemo(
     () => images.map((i) => i.primary).join("|"),
     [images]
@@ -144,32 +203,27 @@ const ProductCard = ({ product }) => {
     fbIdxRef.current = 0;
     setIdx(0);
     setSrc(images[0]?.fallbacks?.[0] || PLACEHOLDER);
-  }, [primarySignature]); // <- se actualiza cuando cambia el set de imágenes
+  }, [primarySignature]);
 
   const goTo = (newIdx) => {
     if (!images.length) return;
     const n = ((newIdx % images.length) + images.length) % images.length;
     setIdx(n);
-    fbIdxRef.current = 0; // siempre reiniciar fallback al cambiar de imagen
+    fbIdxRef.current = 0;
     setSrc(images[n]?.fallbacks?.[0] || PLACEHOLDER);
   };
 
   const onError = () => {
-  const fallbacks = images[idx]?.fallbacks || [];
-  const nextFb = fbIdxRef.current + 1;
+    const fallbacks = images[idx]?.fallbacks || [];
+    const nextFb = fbIdxRef.current + 1;
+    if (nextFb < fallbacks.length) {
+      fbIdxRef.current = nextFb;
+      setSrc(fallbacks[nextFb]);
+      return;
+    }
+    setSrc(PLACEHOLDER);
+  };
 
-  // 1) Intenta el siguiente fallback de la MISMA imagen
-  if (nextFb < fallbacks.length) {
-    fbIdxRef.current = nextFb;
-    setSrc(fallbacks[nextFb]);
-    return;
-  }
-
-  // 2) No pasar a la siguiente imagen. Muestra placeholder y NO te muevas.
-  setSrc(PLACEHOLDER);
-};
-
-  // Swipe móvil
   const onTouchStart = (e) => {
     touchStartX.current = e.touches?.[0]?.clientX ?? null;
   };
@@ -179,9 +233,9 @@ const ProductCard = ({ product }) => {
     touchStartX.current = null;
     if (sx == null || ex == null) return;
     const dx = ex - sx;
-    if (Math.abs(dx) < 30) return; // umbral
-    if (dx < 0) goTo(idx + 1); // izquierda → siguiente
-    else goTo(idx - 1);        // derecha → anterior
+    if (Math.abs(dx) < 30) return;
+    if (dx < 0) goTo(idx + 1);
+    else goTo(idx - 1);
   };
 
   const sizes = [...new Set(sizesOf(product.variants))];
@@ -206,7 +260,6 @@ const ProductCard = ({ product }) => {
               onError={onError}
             />
 
-            {/* Flechas izquierda / derecha */}
             {images.length > 1 && (
               <>
                 <button
@@ -236,7 +289,6 @@ const ProductCard = ({ product }) => {
               </>
             )}
 
-            {/* Dots navegación */}
             {images.length > 1 && (
               <div className="pc-dots" aria-label="Cambiar imagen">
                 {images.map((_, i) => (
@@ -325,11 +377,12 @@ export default function ProductList() {
     const bySlug = new Map();
     for (const p of enriched) {
       const s = p.depSlug || "otros";
-      const label = p.department || (s === "otros" ? "Otros" : s);
+      const label =
+        p.department || DEPARTMENT_LABELS[s] || (s === "otros" ? "Otros" : s);
       if (!bySlug.has(s)) bySlug.set(s, { label, count: 0 });
       bySlug.get(s).count++;
     }
-    const order = ["mujer", "hombre", "infantil", "complementos", "otros"];
+    const order = ["mujer", "hombre", "niña", "niño", "infantil", "complementos", "otros"];
     return Array.from(bySlug.entries())
       .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
       .map(([key, v]) => ({ key, label: v.label, count: v.count }));
@@ -337,7 +390,7 @@ export default function ProductList() {
 
   const [dep, setDep] = useState("");
   const [subFilter, setSubFilter] = useState("");
-  const [sort, setSort] = useState(""); // "" | "price_asc" | "price_desc"
+  const [sort, setSort] = useState("");
 
   const subcatGroups = useMemo(() => {
     const base = enriched.filter((p) => !dep || p.depSlug === dep);
@@ -367,7 +420,6 @@ export default function ProductList() {
     });
   }, [enriched, dep, subFilter]);
 
-  /* Ordenamiento por precio */
   const sorted = useMemo(() => {
     if (!sort) return filtered;
     const arr = [...filtered];
@@ -411,7 +463,7 @@ export default function ProductList() {
         {departmentChips.map(({ key, label, count }) => (
           <button
             key={key}
-            className={`gender-chip ${
+            className={`gender-chip gender-chip--image ${
               dep === key ? "gender-chip--active" : ""
             }`}
             onClick={() => {
@@ -419,7 +471,13 @@ export default function ProductList() {
               setSubFilter("");
             }}
           >
-            {label} <span className="count">({count})</span>
+            {/* IMG con fallbacks entre nino/nina con/ sin tilde */}
+            <DepartmentChipImage slug={key} alt={DEPARTMENT_LABELS[key] || label} />
+
+            <span className="gender-chip-label">
+              {DEPARTMENT_LABELS[key] || label}{" "}
+              <span className="count">({count})</span>
+            </span>
           </button>
         ))}
       </div>
@@ -433,7 +491,9 @@ export default function ProductList() {
                 Explora por subcategoría{" "}
                 {dep
                   ? `— ${
-                      departmentChips.find((d) => d.key === dep)?.label || ""
+                      departmentChips.find((d) => d.key === dep)?.label ||
+                      DEPARTMENT_LABELS[dep] ||
+                      ""
                     }`
                   : ""}
               </h5>
@@ -461,7 +521,6 @@ export default function ProductList() {
               <div className="col s12 m6 l4 xl3" key={g.category}>
                 <div className="subcat-card text-only card-border">
                   <h6 className="subcat-title">{g.category}</h6>
-
                   <ul className="subcat-list">
                     {g.subcats.slice(0, 12).map((s) => (
                       <li key={s}>

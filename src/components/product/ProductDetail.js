@@ -424,7 +424,7 @@ export default function ProductDetail() {
         </table>
       </section>
 
-      <RandomProductsCarousel title="También te puede gustar" limit={10} />
+      <RandomProductsCarousel title="También te puede interesar" limit={10} />
     </div>
   );
 }

@@ -117,7 +117,7 @@ function CarouselCard({ p }) {
 
 /* ===== Carrusel ===== */
 export default function RandomProductsCarousel({
-  title = "Te puede interesar",
+  title = "",
   limit = 12,
   autoplay = true,
   interval = 5000,

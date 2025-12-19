@@ -1,81 +1,58 @@
 // src/components/home/Home.js
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import RandomProductsCarousel from "../product/carrousel/RandomProductsCarousel";
 import "./Home.css";
-
-
-/* Helpers Drive */
-const parseDriveId = (s = "") =>
-  String(s).match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ||
-  String(s).match(/[?&]id=([a-zA-Z0-9_-]+)/)?.[1] ||
-  String(s);
-
-const driveView = (id) =>
-  `https://drive.google.com/uc?export=view&id=${parseDriveId(id)}`;
-
-const driveThumb = (id, w = 1920) =>
-  `https://drive.google.com/thumbnail?authuser=0&sz=w${w}&id=${parseDriveId(id)}`;
-
-const driveLH3 = (id, w = 1920) =>
-  `https://lh3.googleusercontent.com/d/${parseDriveId(id)}=w${w}`;
-
-const HERO_ID = "1Gbhzt5qPIeJLlHnnOAHEPCbCXRq5WFLu";
 
 export default function Home() {
   const categorias = [
     {
       nombre: "Moda",
-      imagen:
-        "https://static.vecteezy.com/system/resources/previews/005/096/535/non_2x/fashion-clothing-neon-banner-design-vector.jpg",
+      imagen: "/images/categories/moda.jpg",
       ruta: "/moda",
       descripcion: "Descubre las últimas tendencias en ropa y accesorios.",
     },
     {
       nombre: "Tecnología",
-      imagen:
-        "https://puntopc.com.co/wp-content/uploads/2025/04/Banner-Tecnologia-Punto-PC.webp",
+      imagen: "/images/categories/tecnologia.jpg",
       ruta: "/tecnologia",
       descripcion: "Explora los gadgets y dispositivos más innovadores.",
     },
-    {
+   /* {
       nombre: "Ofertas",
-      imagen:
-        "https://marketplace.canva.com/EAFD3LQExj0/1/0/1600w/canva-banner-anuncio-rebajas-de-verano-ofertas-tienda-online-negro-rosa-BlReD-pFXpQ.jpg",
+      imagen: "/images/categories/ofertas.jpg",
       ruta: "/ofertas",
       descripcion: "Aprovecha descuentos exclusivos por tiempo limitado.",
-    },
+    },*/
   ];
 
   const DESKTOP_SRCS = [
-    driveThumb(
-      "https://drive.google.com/file/d/1Gbhzt5qPIeJLlHnnOAHEPCbCXRq5WFLu/view?usp=drive_link",
-      1920
-    ),
-    driveLH3(
-      "https://drive.google.com/file/d/1Gbhzt5qPIeJLlHnnOAHEPCbCXRq5WFLu/view?usp=drive_link",
-      1920
-    ),
+    "/images/hero/hero-desktop-1.jpg",
+    "/images/hero/hero-desktop-2.jpg",
   ];
 
-  const MOBILE_SRCS = [driveThumb(HERO_ID, 1080), driveLH3(HERO_ID, 1080)];
-
-  const [heroIdx, setHeroIdx] = useState(0);
-  const onHeroError = () =>
-    setHeroIdx((i) => (i < DESKTOP_SRCS.length - 1 ? i + 1 : i));
+  const MOBILE_SRCS = [
+    "/images/hero/hero-mobile-1.jpg",
+    "/images/hero/hero-mobile-2.jpg",
+  ];
 
   const [currentIdx, setCurrentIdx] = useState(0);
+
   const nextSlide = () =>
     setCurrentIdx((prev) => (prev + 1) % DESKTOP_SRCS.length);
+
   const prevSlide = () =>
-    setCurrentIdx((prev) => (prev - 1 + DESKTOP_SRCS.length) % DESKTOP_SRCS.length);
+    setCurrentIdx(
+      (prev) => (prev - 1 + DESKTOP_SRCS.length) % DESKTOP_SRCS.length
+    );
 
   useEffect(() => {
-    const t = setInterval(() => nextSlide(), 5000);
-    return () => clearInterval(t);
+    const timer = setInterval(nextSlide, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
-    <main className="page">    
+    <main className="page">
       {/* ===== HERO CAROUSEL ===== */}
       <section className="hero-carousel">
         <div
@@ -91,14 +68,21 @@ export default function Home() {
                 alt={`Slide ${i + 1}`}
                 loading={i === 0 ? "eager" : "lazy"}
                 decoding="async"
-                onError={onHeroError}
+                onError={(e) => {
+                  e.currentTarget.src =
+                    "https://placehold.co/1920x600?text=Imagen+no+disponible";
+                }}
               />
             </picture>
           ))}
         </div>
 
-        <button className="nav-btn prev" onClick={prevSlide}>‹</button>
-        <button className="nav-btn next" onClick={nextSlide}>›</button>
+        <button className="nav-btn prev" onClick={prevSlide}>
+          ‹
+        </button>
+        <button className="nav-btn next" onClick={nextSlide}>
+          ›
+        </button>
 
         <div className="carousel-dots">
           {DESKTOP_SRCS.map((_, i) => (
@@ -124,7 +108,6 @@ export default function Home() {
                   alt={cat.nombre}
                   loading="lazy"
                   decoding="async"
-                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     e.currentTarget.src =
                       "https://placehold.co/800x400?text=Imagen+no+disponible";
@@ -138,6 +121,8 @@ export default function Home() {
             </Link>
           ))}
         </div>
+
+        <RandomProductsCarousel limit={10} />
       </div>
     </main>
   );
