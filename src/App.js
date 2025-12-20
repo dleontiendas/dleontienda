@@ -5,6 +5,8 @@ import { HelmetProvider } from "react-helmet-async";
 
 import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
+import TechProductList from "./components/product/techProductList/techProductList";
+import ModaProductList from "./components/product/modaProductList/modaProductList";
 import ProductList from "./components/product/ProductList";
 import ProductDetail from "./components/product/ProductDetail";
 import Cart from "./components/cart/Cart";
@@ -38,7 +40,8 @@ const App = () => {
               <div className="App-content">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/moda" element={<ProductList />} />
+                  <Route path="/moda" element={<ModaProductList />} />
+                  <Route path="/tech" element={<TechProductList />} />
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/:category/:productId" element={<ProductDetail />} />
                   <Route path="/products/:productId" element={<ProductDetail />} />
