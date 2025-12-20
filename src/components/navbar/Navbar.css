@@ -1,98 +1,142 @@
+/* src/components/Navbar/Navbar.css */
+
 .navbar-top {
   height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
+  background: #fff;
   width: 100%;
 }
 
-/* Centra todo el contenido */
 .navbar-top-content {
   width: 100%;
   max-width: 1300px;
   padding: 0 20px;
-
   display: flex;
   align-items: center;
+  gap: 16px;
   justify-content: space-between;
 }
 
-.navbar-left {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
+.navbar-left { display: flex; align-items: center; gap: 15px; }
+.brand-logo-img { height: 36px; }
 
-.menu-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #000 !important;
-}
-
-.brand-logo-img {
-  height: 36px;
-}
-
+/* ====== BUSCADOR ====== */
 .navbar-search {
   flex: 1;
+  max-width: 720px;
+  position: relative;
   display: flex;
   align-items: center;
-  position: relative;
-  margin: 0 25px;
 }
 
 .navbar-input {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 8px 38px 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px 88px 12px 44px;
   background-color: #fff;
   font-size: 15px;
+  transition: box-shadow .2s, border-color .2s;
+  outline: none;
+}
+.navbar-input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
 }
 
-.navbar-search-icon {
+.navbar-search-icon-left {
   position: absolute;
-  right: 12px;
+  left: 14px;
+  opacity: .65;
+}
+
+.navbar-clear-btn,
+.navbar-search-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: #f5f5f5;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
   cursor: pointer;
+  transition: background .15s;
 }
+.navbar-clear-btn:hover,
+.navbar-search-btn:hover { background: #eee; }
 
-.navbar-right {
-  display: flex;
-  align-items: center;
-  gap: 25px;
-}
+.navbar-clear-btn { right: 50px; }
+.navbar-search-btn { right: 10px; }
 
-.nav-icon {
+/* Dropdown */
+.navbar-autocomplete {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+  overflow: hidden;
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
+}
+
+.ac-empty {
+  padding: 16px 14px;
+  color: #666;
+  font-size: 14px;
+}
+
+.ac-item {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
   align-items: center;
-  justify-content: center;
-
-  color: #000;
-  font-size: 12px;
+  padding: 10px 12px;
   text-decoration: none;
+  color: #111;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ac-item:last-child { border-bottom: 0; }
+.ac-item:hover { background: #fafafa; }
+.ac-item.active { background: #fff7e5; } /* selección teclado */
 
-  position: relative;
+.ac-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f0f0f0;
 }
 
+.ac-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ac-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ac-meta { font-size: 12px; color: #666; }
+.ac-price { font-weight: 700; color: #111; }
+
+mark { background: #ffecb3; color: inherit; padding: 0 2px; border-radius: 3px; }
+
+/* Right actions */
+.navbar-right { display: flex; align-items: center; gap: 25px; }
+.nav-icon {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: #000; font-size: 12px; text-decoration: none; position: relative;
+}
 .cart-badge {
-  position: absolute;
-  top: -5px;
-  right: 10px;
-  background: red;
-  color: white;
-  border-radius: 50%;
-  font-size: 10px;
-  padding: 2px 6px;
+  position: absolute; top: -5px; right: 10px; background: red; color: #fff;
+  border-radius: 999px; font-size: 10px; padding: 2px 6px;
 }
 
-/* ======================================================= */
-/* ⚪ SUBBARRA GRIS */
-/* ======================================================= */
-
+/* Subbarra */
 .navbar-bottom {
   height: 42px;
   display: flex;
@@ -100,28 +144,16 @@
   justify-content: center;
   background: #f5f5f5;
 }
-
 .navbar-bottom-content {
-  width: 100%;
-  max-width: 1300px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 25px;
-
-  font-size: 14px;
-  font-weight: 500;
+  width: 100%; max-width: 1300px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 25px; font-size: 14px; font-weight: 500;
 }
+.nav-link { color: #000; text-decoration: none; padding-bottom: 3px; transition: color .2s; }
+.nav-link:hover, .nav-link.active { color: #d4af37; }
 
-.nav-link {
-  color: #000;
-  text-decoration: none;
-  padding-bottom: 3px;
-  transition: color 0.2s;
-}
-
-.nav-link:hover,
-.nav-link.active {
-  color: #d4af37;
+/* Responsive */
+@media (max-width: 768px) {
+  .navbar-input { padding: 10px 86px 10px 40px; font-size: 14px; }
+  .brand-logo-img { height: 28px; }
 }
