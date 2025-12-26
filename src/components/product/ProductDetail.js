@@ -71,6 +71,24 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
+
+  const [addiReady, setAddiReady] = useState(false);
+
+  useEffect(() => {
+    if (window.customElements?.get("addi-widget")) {
+      setAddiReady(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src =
+      "https://s3.amazonaws.com/widgets.addi.com/bundle.min.js";
+    script.async = true;
+    script.onload = () => setAddiReady(true);
+    document.body.appendChild(script);
+  }, []);
+
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -230,6 +248,7 @@ export default function ProductDetail() {
   };
 
   const canonicalUrl = toAbsoluteUrl(shareUrl);
+  const ADDI_ALLY_SLUG = "247serviciosgold-ecommerce";
   const price = Number(product.price_cop);
 
   return (
@@ -305,10 +324,13 @@ export default function ProductDetail() {
           <div className="pd-price">
             ${Number(product.price_cop).toLocaleString("es-CO")}
           </div>
-
+ {/* Botón Compartir */}
+              <button className="btn-share" onClick={handleShare} aria-label="Compartir producto">
+                Compartir
+              </button>
           {colorCards.length > 0 && (
             <>
-              <div className="pd-label">COLOR</div>
+              <div className="pd-label">COLORES</div>
               <div className="option-grid">
                 {colorCards.map((c) => (
                   <button
@@ -325,7 +347,7 @@ export default function ProductDetail() {
                     }}
                     type="button"
                   >
-                    <div className="color-thumb" />
+                    {/*<div className="color-thumb" />*/}
                     <div className="color-name">{c.color}</div>
                     {c.isOut && <div className="badge-out">AGOTADO</div>}
                   </button>
@@ -339,9 +361,11 @@ export default function ProductDetail() {
               <div className="pd-label size-label">
                 TALLA
                 <button className="size-guide" type="button">
-                  🧵&nbsp;GUIA DE TALLAS
+                  &nbsp;GUIA DE TALLAS
                 </button>
               </div>
+
+              
 
               <div className="size-grid">
                 {sizesForColor.map((s) => {
@@ -370,34 +394,37 @@ export default function ProductDetail() {
               onClick={handleAddToCart}
               disabled={!selectedColor || !selectedSize}
             >
-              AÑADIR AL CARRITO •{" "}
+              AÑADIR AL CARRITO{/*} •{" "}
               {product.price_cop
                 ? `$${Number(product.price_cop).toLocaleString("es-CO")}`
-                : "—"}
+                : "—"}*/}
             </button>
 
             <div className="cta-row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button
+              
+             {/* <button
                 className="btn-secondary"
                 onClick={handleBuyNow}
                 disabled={!selectedColor || !selectedSize}
               >
                 Comprar ahora
-              </button>
+              </button>*/}
 
               <button className="btn-outline" onClick={handleWhatsApp}>
-                Consultar por WhatsApp
+                Comprar por WhatsApp
               </button>
+              
+              <addi-widget
+               price={price}
+               ally-slug={ADDI_ALLY_SLUG}
+              ></addi-widget>
 
-              {/* Botón Compartir */}
-              <button className="btn-outline" onClick={handleShare} aria-label="Compartir producto">
-                Compartir
-              </button>
+             
             </div>
           </div>
 
           <div className="tip-card">
-            <div className="tip-emoji">🧍‍♀️</div>
+            
             <div>
               <div className="tip-title">¿Dudas con tu talla?</div>
               <div className="tip-text">

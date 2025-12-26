@@ -27,12 +27,12 @@ export default function Home() {
   ];
 
   const DESKTOP_SRCS = [
-    "/images/hero/hero-desktop-1.jpg",
+    "/images/hero/hero-desktop-1.png",
     "/images/hero/hero-desktop-2.jpg",
   ];
 
   const MOBILE_SRCS = [
-    "/images/hero/hero-mobile-1.jpg",
+    "/images/hero/hero-mobile-1.png",
     "/images/hero/hero-mobile-2.jpg",
   ];
 
@@ -47,7 +47,7 @@ export default function Home() {
     );
 
   useEffect(() => {
-    const timer = setInterval(nextSlide, 5000);
+    const timer = setInterval(nextSlide, 10000);
     return () => clearInterval(timer);
   }, []);
 

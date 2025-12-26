@@ -4,7 +4,7 @@
 }
 .product-detail .crumbs span{ white-space:nowrap; }
 .product-detail .pd-title{ font-weight:700; margin:6px 0 4px; }
-.product-detail .pd-price{ font-size:1.6rem; font-weight:800; color:#111; margin-bottom:18px; }
+.product-detail .pd-price{ font-size:2.5rem; font-weight:800; color:#111; margin-bottom:18px; }
 .product-detail .pd-label{ font-size:.8rem; font-weight:800; letter-spacing:.08em; color:#555; margin:10px 0 8px; }
 .product-detail .size-label{ display:flex; align-items:center; justify-content:space-between; }
 .product-detail .size-guide{ background:transparent; border:none; color:#111; font-weight:700; letter-spacing:.06em; cursor:pointer; display:flex; align-items:center; gap:6px; }
@@ -58,9 +58,12 @@
 }
 .product-detail .btn-secondary:disabled{ opacity:.6; }
 .product-detail .btn-outline{
-  height:44px; border-radius:10px; font-weight:700; background:#fff; color:#111; border:1.6px solid #d4af37; padding:0 12px;
+  height:44px; border-radius:10px; font-weight:700; background:#2e7d32; color:#fff; border:1.6px solid #d4af37; padding:0 12px;
 }
-
+.product-detail .btn-share{
+  height:44px; border-radius:10px; font-weight:700; background:#fff; color:#111; border:1.6px solid #d4af37; padding:0 12px;
+ 
+}
 
 .product-detail .tip-card{
   margin-top:10px; display:flex; gap:10px; align-items:flex-start; background:#f7f7f7; border-radius:10px; padding:12px 14px;
@@ -71,6 +74,10 @@
 
 
 .product-detail .pd-desc{ margin-top:14px; color:#333; }
+
+.product-detail .addi-widget{
+  margin-top:20px;
+}
 
 
 .product-detail .pd-specs{
