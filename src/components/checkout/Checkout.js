@@ -2,17 +2,15 @@ import React, { useContext, useState } from "react";
 import { CartContext } from "../../context/CartContext";
 import { db } from "../../Firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-/*import {
-  processWompiPayment,
-  processAddiPayment,
-} from "../../services/payments";*/
 import "./Checkout.css";
+
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
+
   const [shipping] = useState(15900);
   const [paymentMethod, setPaymentMethod] = useState("contraentrega");
-  const [wompiType, setWompiType] = useState("CARD"); // CARD | PSE | NEQUI
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -38,11 +36,14 @@ const Checkout = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /* ===================== SUBMIT ===================== */
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!cart.length) return alert("Tu carrito está vacío");
 
     setLoading(true);
+
     try {
       const order = {
         customer: formData,
@@ -51,60 +52,89 @@ const Checkout = () => {
           name: item.name,
           price: item.price_cop,
           quantity: item.quantity,
+          color: item.selectedColor,
+          size: item.selectedSize,
         })),
         subtotal,
         shipping,
         total,
         paymentMethod,
-        status: "Initiated",
-        date: serverTimestamp(),
+        status: "INITIATED",
+        createdAt: serverTimestamp(),
       };
 
-      // Guardamos pedido inicial
+      // 1️⃣ Guardar orden en Firestore
       const docRef = await addDoc(collection(db, "orders"), order);
 
+      // 2️⃣ FLUJOS DE PAGO
       if (paymentMethod === "contraentrega") {
-        alert("Tu pedido ha sido creado. Pagarás al recibirlo 🚚");
-        clearCart?.();
-      }/* else if (paymentMethod === "wompi") {
-        const wompi = await processWompiPayment({
-          ...order,
-          orderId: docRef.id,
-          wompiType,
+        alert("Tu pedido fue creado. Pagarás al recibirlo 🚚");
+        clearCart();
+        return;
+      }
+
+      if (paymentMethod === "addi") {
+        // 3️⃣ Llamar a tu backend ADDI
+        const res = await fetch(`${API_URL}/api/payments/addi`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: docRef.id,
+            total,
+            email: formData.email,
+            phone: formData.phone,
+            document: formData.document,
+            firstName: formData.first_name,
+            lastName: formData.last_name,
+          }),
         });
-        window.location.href = wompi.redirect_url;
-      } else if (paymentMethod === "addi") {
-        const addi = await processAddiPayment({
-          ...order,
-          orderId: docRef.id,
-        });
-        window.location.href = addi.redirectUrls.success;
-      }*/
+
+        const data = await res.json();
+
+        if (!data.redirectUrl) {
+          throw new Error("No se recibió redirectUrl de ADDI");
+        }
+
+        // 4️⃣ Redirigir a ADDI
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
+      alert("Método de pago no soportado aún");
     } catch (error) {
-      console.error("Error al crear pedido:", error);
-      alert("❌ Error al crear el pedido. Intenta nuevamente.");
+      console.error("Checkout error:", error);
+      alert("❌ Error al procesar el pago. Intenta nuevamente.");
     } finally {
       setLoading(false);
     }
   };
 
+  /* ===================== WHATSAPP ===================== */
+
   const handleWhatsAppOrder = () => {
     const phoneNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
     const message = encodeURIComponent(
-      `*Nuevo pedido desde D'LEON GOLD*\n\n` +
+      `*Nuevo pedido*\n\n` +
         `${formData.first_name} ${formData.last_name}\n${formData.email}\n${formData.phone}\n${formData.address}, ${formData.city}\n\n` +
         cart
           .map(
             (item) =>
               `• ${item.name} (${item.selectedColor || "N/A"} / ${
                 item.selectedSize || "N/A"
-              }) x${item.quantity} — $${Number(item.price_cop).toLocaleString()}`
+              }) x${item.quantity} — $${Number(
+                item.price_cop
+              ).toLocaleString("es-CO")}`
           )
           .join("\n") +
-        `\n\nSubtotal: $${subtotal.toLocaleString()}\nEnvío: $${shipping.toLocaleString()}\n*Total: $${total.toLocaleString()}*`
+        `\n\nSubtotal: $${subtotal.toLocaleString("es-CO")}` +
+        `\nEnvío: $${shipping.toLocaleString("es-CO")}` +
+        `\n*Total: $${total.toLocaleString("es-CO")}*`
     );
+
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
+
+  /* ===================== RENDER ===================== */
 
   return (
     <div className="checkout-page">
@@ -149,6 +179,7 @@ const Checkout = () => {
           name="document"
           value={formData.document}
           onChange={handleChange}
+          required
         />
 
         <label>Dirección</label>
@@ -172,7 +203,7 @@ const Checkout = () => {
             />
           </div>
           <div>
-            <label>Provincia / Departamento</label>
+            <label>Departamento</label>
             <input
               type="text"
               name="province"
@@ -191,22 +222,12 @@ const Checkout = () => {
           required
         />
 
-        <div className="shipping-section">
-          <h4>Método de envío</h4>
-          <label className="radio-option">
-            <input type="radio" name="envio" checked readOnly />
-            Envío express a toda Colombia —{" "}
-            <strong>${shipping.toLocaleString()}</strong>
-          </label>
-        </div>
-
         <div className="payment-section">
           <h4>Método de pago</h4>
 
           <label className="radio-option">
             <input
               type="radio"
-              name="metodoPago"
               value="contraentrega"
               checked={paymentMethod === "contraentrega"}
               onChange={(e) => setPaymentMethod(e.target.value)}
@@ -217,55 +238,11 @@ const Checkout = () => {
           <label className="radio-option">
             <input
               type="radio"
-              name="metodoPago"
-              value="wompi"
-              checked={paymentMethod === "wompi"}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            />
-            Wompi (Tarjeta, PSE o Nequi)
-          </label>
-
-          {paymentMethod === "wompi" && (
-            <div className="sub-options">
-              <label>
-                <input
-                  type="radio"
-                  value="CARD"
-                  checked={wompiType === "CARD"}
-                  onChange={(e) => setWompiType(e.target.value)}
-                />
-                Tarjeta 💳
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="PSE"
-                  checked={wompiType === "PSE"}
-                  onChange={(e) => setWompiType(e.target.value)}
-                />
-                PSE 🏦
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  value="NEQUI"
-                  checked={wompiType === "NEQUI"}
-                  onChange={(e) => setWompiType(e.target.value)}
-                />
-                Nequi 📱
-              </label>
-            </div>
-          )}
-
-          <label className="radio-option">
-            <input
-              type="radio"
-              name="metodoPago"
               value="addi"
               checked={paymentMethod === "addi"}
               onChange={(e) => setPaymentMethod(e.target.value)}
             />
-            Financiación con Addi 🛍️
+            Financiación con ADDI 🛍️
           </label>
         </div>
 
@@ -283,21 +260,27 @@ const Checkout = () => {
               <span>
                 {item.name} x{item.quantity || 1}
               </span>
-              <span>${Number(item.price_cop).toLocaleString()}</span>
+              <span>
+                ${Number(item.price_cop).toLocaleString("es-CO")}
+              </span>
             </li>
           ))}
         </ul>
 
         <hr />
         <p>
-          Subtotal: <strong>${subtotal.toLocaleString()}</strong>
+          Subtotal: <strong>${subtotal.toLocaleString("es-CO")}</strong>
         </p>
         <p>
-          Envío: <strong>${shipping.toLocaleString()}</strong>
+          Envío: <strong>${shipping.toLocaleString("es-CO")}</strong>
         </p>
-        <h4>Total: ${total.toLocaleString()}</h4>
+        <h4>Total: ${total.toLocaleString("es-CO")}</h4>
 
-        <button type="button" className="btn-whatsapp" onClick={handleWhatsAppOrder}>
+        <button
+          type="button"
+          className="btn-whatsapp"
+          onClick={handleWhatsAppOrder}
+        >
           Comprar por WhatsApp 💬
         </button>
       </div>

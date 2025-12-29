@@ -1,17 +1,39 @@
-import express from "express";
-import { createAddiApplication } from "./addi/createApplication.js";
+import fetch from "node-fetch";
+import { getAddiToken } from "./auth.js";
 
-const app = express();
-app.use(express.json());
+export const createAddiApplication = async (order) => {
+  const token = await getAddiToken();
 
-app.post("/api/payments/addi", async (req, res) => {
-  try {
-    const redirectUrl = await createAddiApplication(req.body);
-    res.json({ redirectUrl });
-  } catch (e) {
-    console.error(e.response?.data || e.message);
-    res.status(500).json({ error: "ADDI_ERROR" });
+  const res = await fetch(
+    `${"https://api.addi.com"}/online-applications`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        allySlug: "247serviciosgold-ecommerce",
+        requestedAmount: order.total,
+        reference: order.id,
+        callbackUrl: `${"https://dleongold.com/:3001"}/api/addi/callback`,
+        customer: {
+          email: order.email,
+          phoneNumber: order.phone,
+          documentNumber: order.document,
+          documentType: "CC",
+          firstName: order.firstName,
+          lastName: order.lastName,
+        },
+      }),
+      redirect: "manual",
+    }
+  );
+
+  if (res.status !== 301) {
+    const err = await res.text();
+    throw new Error(err);
   }
-});
 
-app.listen(3001);
+  return res.headers.get("location");
+};

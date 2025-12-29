@@ -414,10 +414,13 @@ export default function ProductDetail() {
                 Comprar por WhatsApp
               </button>
               
-              <addi-widget
-               price={price}
-               ally-slug={ADDI_ALLY_SLUG}
-              ></addi-widget>
+              {/* ===== ADDI WIDGET (CORRECTO) ===== */}
+      {addiReady && price > 0 && (
+        <addi-widget
+          price={price}
+          ally-slug={ADDI_ALLY_SLUG}
+        />
+      )}
 
              
             </div>
