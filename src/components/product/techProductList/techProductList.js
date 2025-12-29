@@ -352,8 +352,9 @@ export default function TechProductList() {
       return (
         c.includes("tecnologia") ||
         c.includes("technology") ||
-        c === "tech" ||
-        c.includes("electron") // electrónicos/electronics
+        c.includes("bolsos") ||
+        c.includes("BOLSOS") 
+       
       );
     };
     return (products || []).filter((p) => isTech(p?.category) || isTech(p?.catSlug));
