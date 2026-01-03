@@ -1,12 +1,26 @@
 /* ================================
+   VARIABLES (FACILITA AJUSTES)
+================================ */
+:root {
+  --primary: #ff6f00;
+  --primary-dark: #e65c00;
+  --success: #25d366;
+  --bg-page: #f5f6f8;
+  --bg-card: #ffffff;
+  --text-main: #111;
+  --text-muted: #666;
+  --border-soft: #eaeaea;
+}
+
+/* ================================
    BASE
 ================================ */
 .checkout-page {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
-  gap: 2rem;
-  padding: 2.5rem;
-  background: linear-gradient(180deg, #fafafa, #f3f3f3);
+  gap: 2.5rem;
+  padding: 3rem;
+  background: var(--bg-page);
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
 }
@@ -15,25 +29,26 @@
    FORMULARIO
 ================================ */
 .checkout-form {
-  background: #ffffff;
-  padding: 2.5rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  background: var(--bg-card);
+  padding: 2.8rem;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.05);
 }
 
 .checkout-form h3 {
-  font-size: 1.4rem;
-  margin-bottom: 1.5rem;
-  color: #111;
-  font-weight: 700;
+  font-size: 1.5rem;
+  margin-bottom: 1.8rem;
+  color: var(--text-main);
+  font-weight: 800;
 }
 
 .checkout-form h4 {
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  color: #222;
-  font-size: 1rem;
-  font-weight: 600;
+  margin-top: 2.4rem;
+  margin-bottom: 1.1rem;
+  color: var(--text-main);
+  font-size: 1.05rem;
+  font-weight: 700;
 }
 
 /* ================================
@@ -42,23 +57,23 @@
 .checkout-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
 .checkout-form label {
   display: block;
   font-weight: 600;
-  color: #555;
-  margin-top: 1rem;
+  color: var(--text-muted);
+  margin-top: 1.2rem;
   font-size: 0.9rem;
 }
 
 .checkout-form input {
   width: 100%;
-  padding: 0.85rem 0.9rem;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  margin-top: 0.35rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  margin-top: 0.4rem;
   font-size: 0.95rem;
   background: #fafafa;
   transition: all 0.2s ease;
@@ -66,46 +81,51 @@
 
 .checkout-form input:focus {
   outline: none;
-  border-color: #ff6f00;
+  border-color: var(--primary);
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 111, 0, 0.15);
+  box-shadow: 0 0 0 4px rgba(255, 111, 0, 0.18);
 }
 
 /* ================================
-   ENVÍO
+   ENVÍO & RADIO
 ================================ */
 .shipping-section {
-  margin-top: 2rem;
+  margin-top: 2.5rem;
 }
 
 .radio-option {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
-  background: #f8f8f8;
-  padding: 1rem;
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  border: 1px solid #eaeaea;
+  gap: 1rem;
+  background: #fafafa;
+  padding: 1.1rem 1.2rem;
+  border-radius: 14px;
+  margin-bottom: 0.8rem;
+  border: 1px solid var(--border-soft);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 .radio-option:hover {
-  background: #f1f1f1;
-  border-color: #ddd;
+  background: #f2f2f2;
+  transform: translateY(-1px);
 }
 
 .radio-option input[type="radio"] {
-  accent-color: #ff6f00;
-  transform: scale(1.15);
+  accent-color: var(--primary);
+  transform: scale(1.2);
+}
+
+/* ===== SELECCIONADO ===== */
+.radio-option input[type="radio"]:checked {
+  filter: drop-shadow(0 0 4px rgba(255, 111, 0, 0.5));
 }
 
 /* ================================
    MÉTODOS DE PAGO
 ================================ */
 .payment-section {
-  margin-top: 2.5rem;
+  margin-top: 3rem;
 }
 
 .payment-section .radio-option {
@@ -113,14 +133,14 @@
 }
 
 .payment-section .radio-option span {
-  font-weight: 600;
-  color: #222;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .sub-options {
-  margin: 0.75rem 0 0.5rem 2rem;
+  margin: 0.8rem 0 0.6rem 2.2rem;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
 .sub-options label {
@@ -128,51 +148,47 @@
   align-items: center;
   gap: 0.6rem;
   font-size: 0.9rem;
-  color: #444;
+  color: var(--text-muted);
   cursor: pointer;
-}
-
-.sub-options input[type="radio"] {
-  accent-color: #ff6f00;
 }
 
 /* ================================
    BOTONES
 ================================ */
 .btn-primary {
-  background: linear-gradient(135deg, #ff7a18, #ff6f00);
+  background: linear-gradient(135deg, #ff7a18, var(--primary));
   color: #fff;
   border: none;
-  padding: 1rem;
+  padding: 1.05rem;
   width: 100%;
-  border-radius: 14px;
-  font-weight: 700;
-  margin-top: 2rem;
+  border-radius: 16px;
+  font-weight: 800;
+  margin-top: 2.5rem;
   cursor: pointer;
   font-size: 1rem;
+  letter-spacing: 0.3px;
   transition: all 0.25s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(255, 111, 0, 0.35);
+  box-shadow: 0 12px 30px rgba(255, 111, 0, 0.35);
 }
 
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .btn-whatsapp {
-  background: linear-gradient(135deg, #2ecc71, #25d366);
+  background: linear-gradient(135deg, #2ecc71, var(--success));
   color: #fff;
   border: none;
-  padding: 0.95rem;
+  padding: 1rem;
   width: 100%;
-  border-radius: 14px;
-  font-weight: 700;
-  margin-top: 1rem;
+  border-radius: 16px;
+  font-weight: 800;
+  margin-top: 1.2rem;
   cursor: pointer;
   font-size: 0.95rem;
   transition: all 0.25s ease;
@@ -180,26 +196,27 @@
 
 .btn-whatsapp:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(37, 211, 102, 0.35);
+  box-shadow: 0 12px 30px rgba(37, 211, 102, 0.35);
 }
 
 /* ================================
    RESUMEN
 ================================ */
 .checkout-summary {
-  background: #ffffff;
-  padding: 2.2rem;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  background: var(--bg-card);
+  padding: 2.4rem;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.05);
   height: fit-content;
   position: sticky;
-  top: 2rem;
+  top: 2.5rem;
 }
 
 .checkout-summary h3 {
-  margin-bottom: 1.5rem;
-  color: #111;
-  font-weight: 700;
+  margin-bottom: 1.6rem;
+  color: var(--text-main);
+  font-weight: 800;
 }
 
 .checkout-summary ul {
@@ -211,30 +228,30 @@
 .checkout-summary li {
   display: flex;
   justify-content: space-between;
-  padding: 0.6rem 0;
-  color: #555;
+  padding: 0.7rem 0;
+  color: var(--text-muted);
   font-size: 0.95rem;
 }
 
 .checkout-summary hr {
-  margin: 1.2rem 0;
+  margin: 1.4rem 0;
   border: none;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-soft);
 }
 
 .checkout-summary p {
   display: flex;
   justify-content: space-between;
   color: #333;
-  margin: 0.5rem 0;
+  margin: 0.6rem 0;
   font-size: 0.95rem;
 }
 
 .checkout-summary h4 {
-  color: #000;
-  margin-top: 1.2rem;
-  font-size: 1.15rem;
-  font-weight: 800;
+  margin-top: 1.4rem;
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--text-main);
 }
 
 /* ================================
@@ -253,15 +270,73 @@
 }
 
 @media (max-width: 600px) {
-  .checkout-form {
-    padding: 1.5rem;
-  }
-
+  .checkout-form,
   .checkout-summary {
-    padding: 1.5rem;
+    padding: 1.6rem;
   }
 
   .checkout-row {
     grid-template-columns: 1fr;
   }
+}
+/* ================================
+   PAYMENT CHECKLIST
+================================ */
+.payment-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.2rem;
+  border-radius: 16px;
+  border: 1px solid #eaeaea;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-bottom: 0.9rem;
+}
+
+.payment-card:hover {
+  transform: translateY(-1px);
+  background: #f2f2f2;
+}
+
+.payment-card.active {
+  border-color: #ff6f00;
+  background: #fff7f0;
+  box-shadow: 0 10px 25px rgba(255, 111, 0, 0.15);
+}
+
+.payment-card input[type="radio"] {
+  accent-color: #ff6f00;
+  transform: scale(1.2);
+  margin-top: 4px;
+}
+
+.payment-card strong {
+  font-size: 0.95rem;
+  color: #111;
+}
+
+.payment-card p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Subopciones Wompi */
+.payment-card .sub-options {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.payment-card .sub-options label {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.payment-card .sub-options input[type="radio"] {
+  accent-color: #ff6f00;
+  transform: scale(1.1);
+  margin-top: 3px;
 }

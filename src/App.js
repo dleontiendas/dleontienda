@@ -2,6 +2,7 @@
 import React from "react";
 import { Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async"; 
+import CheckoutSuccess from "./components/checkout/CheckoutSuccess";
 
 import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
@@ -54,6 +55,8 @@ const App = () => {
                   <Route path="/garantias" element={<Garantias />} />
                   <Route path="/envios" element={<Envios />} />
                   <Route path="/aviso-legal" element={<AvisoLegal />} />
+                  <Route path="/checkout/success" element={<CheckoutSuccess />} />
+
                   <Route
                     path="/dashboard"
                     element={

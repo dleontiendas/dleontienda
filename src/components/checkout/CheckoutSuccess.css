@@ -1,0 +1,33 @@
+.checkout-result {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: Inter, sans-serif;
+  text-align: center;
+}
+
+.checkout-result h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+}
+
+.checkout-result.success {
+  color: #2ecc71;
+}
+
+.checkout-result.error {
+  color: #e74c3c;
+}
+
+.checkout-result button {
+  margin-top: 1.5rem;
+  padding: 0.9rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  background: #ff6f00;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}

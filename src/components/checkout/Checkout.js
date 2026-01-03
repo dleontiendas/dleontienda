@@ -4,13 +4,14 @@ import { db } from "../../Firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import "./Checkout.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = "https://dleongold.com:3001" || "";
 
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
 
   const [shipping] = useState(15900);
   const [paymentMethod, setPaymentMethod] = useState("contraentrega");
+const [wompiType, setWompiType] = useState("PSE"); // PSE | CARD | NEQUI
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -68,10 +69,28 @@ const Checkout = () => {
 
       // 2️⃣ FLUJOS DE PAGO
       if (paymentMethod === "contraentrega") {
-        alert("Tu pedido fue creado. Pagarás al recibirlo 🚚");
+        alert("Tu pedido fue creado. Pagarás al recibirlo ");
         clearCart();
         return;
       }
+
+
+      if (paymentMethod === "wompi") {
+  const res = await fetch(`${API_URL}/api/payments/wompi`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      orderId: docRef.id,
+      total,
+      wompiType, // PSE | CARD | NEQUI
+      customer: formData,
+    }),
+  });
+
+  const data = await res.json();
+  window.location.href = data.redirectUrl;
+  return;
+}
 
       if (paymentMethod === "addi") {
         // 3️⃣ Llamar a tu backend ADDI
@@ -103,7 +122,7 @@ const Checkout = () => {
       alert("Método de pago no soportado aún");
     } catch (error) {
       console.error("Checkout error:", error);
-      alert("❌ Error al procesar el pago. Intenta nuevamente.");
+      alert(" Error al procesar el pago. Intenta nuevamente.");
     } finally {
       setLoading(false);
     }
@@ -112,7 +131,7 @@ const Checkout = () => {
   /* ===================== WHATSAPP ===================== */
 
   const handleWhatsAppOrder = () => {
-    const phoneNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
+    const phoneNumber = "573104173201";
     const message = encodeURIComponent(
       `*Nuevo pedido*\n\n` +
         `${formData.first_name} ${formData.last_name}\n${formData.email}\n${formData.phone}\n${formData.address}, ${formData.city}\n\n` +
@@ -223,28 +242,81 @@ const Checkout = () => {
         />
 
         <div className="payment-section">
-          <h4>Método de pago</h4>
+  <h4>Método de pago</h4>
 
-          <label className="radio-option">
+  {/* CONTRAENTREGA */}
+  <div
+    className={`payment-card ${
+      paymentMethod === "contraentrega" ? "active" : ""
+    }`}
+    onClick={() => setPaymentMethod("contraentrega")}
+  >
+    <input
+      type="radio"
+      checked={paymentMethod === "contraentrega"}
+      readOnly
+    />
+    <div>
+      <strong>Pago contra entrega</strong>
+      <p>Paga cuando recibas tu pedido</p>
+    </div>
+  </div>
+
+  {/* ADDI */}
+  <div
+    className={`payment-card ${paymentMethod === "addi" ? "active" : ""}`}
+    onClick={() => setPaymentMethod("addi")}
+  >
+    <input type="radio" checked={paymentMethod === "addi"} readOnly />
+    <div>
+      <strong>Financiación con ADDI</strong>
+      <p>Paga a cuotas sin tarjeta</p>
+    </div>
+  </div>
+
+  {/* WOMPI */}
+  <div
+    className={`payment-card ${paymentMethod === "wompi" ? "active" : ""}`}
+    onClick={() => setPaymentMethod("wompi")}
+  >
+    <input type="radio" checked={paymentMethod === "wompi"} readOnly />
+    <div>
+      <strong>Pago electrónico (Wompi)</strong>
+      <p>PSE, Tarjeta o Nequi</p>
+
+      {paymentMethod === "wompi" && (
+        <div className="sub-options">
+          <label>
             <input
               type="radio"
-              value="contraentrega"
-              checked={paymentMethod === "contraentrega"}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              checked={wompiType === "PSE"}
+              onChange={() => setWompiType("PSE")}
             />
-            Pago contra entrega 🚚
+            PSE 
           </label>
 
-          <label className="radio-option">
+          <label>
             <input
               type="radio"
-              value="addi"
-              checked={paymentMethod === "addi"}
-              onChange={(e) => setPaymentMethod(e.target.value)}
+              checked={wompiType === "CARD"}
+              onChange={() => setWompiType("CARD")}
             />
-            Financiación con ADDI 🛍️
+            Tarjeta 
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              checked={wompiType === "NEQUI"}
+              onChange={() => setWompiType("NEQUI")}
+            />
+            Nequi 
           </label>
         </div>
+      )}
+    </div>
+  </div>
+</div>
 
         <button type="submit" className="btn-primary" disabled={loading}>
           {loading ? "Procesando..." : "Finalizar compra"}
@@ -281,7 +353,7 @@ const Checkout = () => {
           className="btn-whatsapp"
           onClick={handleWhatsAppOrder}
         >
-          Comprar por WhatsApp 💬
+          Comprar por WhatsApp
         </button>
       </div>
     </div>

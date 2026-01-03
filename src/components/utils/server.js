@@ -2,7 +2,7 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
-
+import { createWompiTransaction } from "./wompi/createTransaction.js";
 import { createAddiApplication } from "./addi/createApplication.js";
 import { addiCallback } from "./addi/callback.js";
 
@@ -56,3 +56,35 @@ app.post("/api/addi/callback", addiCallback);
 app.listen(PORT, () => {
   console.log(`Servidor activo en puerto ${PORT}`);
 });
+
+app.get("/api/payments/validate", async (req, res) => {
+  try {
+    const { orderId } = req.query;
+
+    if (!orderId) {
+      return res.status(400).json({ status: "ERROR" });
+    }
+
+    // Aquí puedes:
+    // 1. Consultar estado en ADDI o WOMPI (opcional)
+    // 2. O validar con el callback ya recibido
+
+    // MVP: asumimos aprobado si existe
+    res.json({ status: "APPROVED" });
+  } catch (e) {
+    res.status(500).json({ status: "ERROR" });
+  }
+});
+
+
+/* ========= WOMPI ========= */
+app.post("/api/payments/wompi", async (req, res) => {
+  try {
+    const redirect = await createWompiTransaction(req.body);
+    res.json(redirect);
+  } catch (err) {
+    console.error("WOMPI ERROR:", err.message);
+    res.status(500).json({ error: "WOMPI_ERROR" });
+  }
+});
+
