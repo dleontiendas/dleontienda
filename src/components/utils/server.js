@@ -5,6 +5,8 @@ import dotenv from "dotenv";
 import { createWompiTransaction } from "./wompi/createTransaction.js";
 import { createAddiApplication } from "./addi/createApplication.js";
 import { addiCallback } from "./addi/callback.js";
+import { getDoc, doc } from "firebase/firestore";
+
 
 dotenv.config();
 
@@ -12,7 +14,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: "https://dleongold.com",
 }));
 app.use(express.json());
 
@@ -87,4 +89,25 @@ app.post("/api/payments/wompi", async (req, res) => {
     res.status(500).json({ error: "WOMPI_ERROR" });
   }
 });
+
+app.get("/api/payments/validate", async (req, res) => {
+  try {
+    const { orderId } = req.query;
+
+    const ref = doc(db, "orders", orderId);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      return res.status(404).json({ status: "ERROR" });
+    }
+
+    const order = snap.data();
+
+    res.json({ status: order.status });
+  } catch {
+    res.status(500).json({ status: "ERROR" });
+  }
+});
+
+export default Checkout;
 

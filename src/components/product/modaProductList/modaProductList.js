@@ -129,6 +129,8 @@ const firstVariantImage = (variants = []) => {
   return null;
 };
 
+
+
 const collectImages = (product, limit = 8) => {
   const pool = [];
   const pushUrl = (url) => {
@@ -381,6 +383,8 @@ export default function ModaProductList() {
 
   const [dep, setDep] = useState("");
   const [subFilter, setSubFilter] = useState("");
+    const [openGroup, setOpenGroup] = useState(null); // ✅ AQUÍ
+
   const [sort, setSort] = useState("");
 
   const subcatGroups = useMemo(() => {
@@ -506,26 +510,52 @@ export default function ModaProductList() {
           </div>
 
           <div className="row subcat-grid">
-            {subcatGroups.map((g) => (
-              <div className="col s12 m6 l4 xl3" key={g.category}>
-                <div className="subcat-card text-only card-border">
-                  <h6 className="subcat-title">{g.category}</h6>
-                  <ul className="subcat-list">
-                    {g.subcats.slice(0, 12).map((s) => (
-                      <li key={s}>
-                        <button
-                          type="button"
-                          className={`subcat-link ${subFilter === s ? "active" : ""}`}
-                          onClick={() => setSubFilter(subFilter === s ? "" : s)}
-                        >
-                          {s}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
+  {subcatGroups.map((g) => {
+    const isOpen = openGroup === g.category;
+
+    return (
+      <div className="col s12 m6 l4 xl3" key={g.category}>
+        <div
+          className={`subcat-card text-only card-border accordion-item ${
+            isOpen ? "open" : ""
+          }`}
+        >
+          <button
+            type="button"
+            className="accordion-header"
+            onClick={() =>
+              setOpenGroup(isOpen ? null : g.category)
+            }
+            aria-expanded={isOpen}
+          >
+            <h6 className="subcat-title">{g.category}</h6>
+            <span className="accordion-arrow">⌄</span>
+          </button>
+
+          <div className="subcat-chips">
+            {g.subcats.slice(0, 12).map((s) => {
+              const active = subFilter === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className={`subcat-chip ${active ? "active" : ""}`}
+                  onClick={() => setSubFilter(active ? "" : s)}
+                  aria-pressed={active}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
+       
+
+         
           </div>
         </>
       )}

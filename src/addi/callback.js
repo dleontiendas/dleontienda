@@ -32,19 +32,39 @@ export const createAddiApplication = async (order) => {
 
   return res.headers.location;
 };
-export const addiCallback = (req, res) => {
-  const { status, reference } = req.body;
+export async function addiCallback(req, res) {
+  try {
+    const payload = req.body;
 
-  switch (status) {
-    case "APPROVED":
-      // marcar orden como PAGADA
-      break;
-    case "REJECTED":
-    case "DECLINED":
-    case "ABANDONED":
-      // marcar como FALLIDA
-      break;
+    /**
+     * ADDI envía algo como:
+     * {
+     *   applicationId,
+     *   externalReference, // ← tu orderId
+     *   status: APPROVED | REJECTED | DECLINED | ABANDONED
+     * }
+     */
+
+    const orderId = payload.externalReference;
+    const status = payload.status;
+
+    if (!orderId || !status) {
+      return res.status(400).send("Invalid ADDI callback");
+    }
+
+    const orderRef = doc(db, "orders", orderId);
+
+    await updateDoc(orderRef, {
+      status,
+      addiApplicationId: payload.applicationId,
+      updatedAt: serverTimestamp(),
+      paymentProvider: "ADDI",
+    });
+
+    console.log("✅ ADDI callback OK:", orderId, status);
+    res.status(200).send("OK");
+  } catch (error) {
+    console.error("❌ ADDI CALLBACK ERROR:", error);
+    res.status(500).send("ERROR");
   }
-
-  res.sendStatus(200);
-};
+}
