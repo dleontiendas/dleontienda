@@ -247,6 +247,7 @@ const ProductCard = ({ product }) => {
         <Link
           to={`/products/${product.catSlug || "sin_categoria"}/${product.id}`}
           className="product-card-link"
+            onClick={() => window.scrollTo({ top: 0, left: 0, behavior: "auto" })}
         >
           <div
             className="card-image product-card-image-wrapper"

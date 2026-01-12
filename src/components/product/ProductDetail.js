@@ -76,8 +76,10 @@ export default function ProductDetail() {
   const [addiReady, setAddiReady] = useState(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     if (window.customElements?.get("addi-widget")) {
       setAddiReady(true);
+      
       return;
     }
 
