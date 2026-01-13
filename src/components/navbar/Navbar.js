@@ -263,7 +263,7 @@ const Navbar = ({ onSearch }) => {
           <Link to="/" className="nav-link active">Inicio</Link>
           <Link to="/moda" className="nav-link">Moda</Link>
           <Link to="/tecnologia" className="nav-link">Tecnología</Link>
-          <Link to="/ofertas" className="nav-link">Ofertas</Link>
+          {/*<Link to="/ofertas" className="nav-link">Ofertas</Link>*/}
         </div>
       </div>
     </header>

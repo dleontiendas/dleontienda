@@ -204,6 +204,8 @@ export default function ProductDetail() {
   const handleAddToCart = () => {
     if (!selectedColor || !selectedSize) return;
     addToCart(product, 1, selectedSize, selectedColor);
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+
   };
 
   const handleBuyNow = () => {

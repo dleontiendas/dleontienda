@@ -274,7 +274,7 @@ const [wompiType, setWompiType] = useState("PSE"); // PSE | CARD | NEQUI
     </div>
   </div>
 
-  {/* WOMPI */}
+  {/* WOMPI 
   <div
     className={`payment-card ${paymentMethod === "wompi" ? "active" : ""}`}
     onClick={() => setPaymentMethod("wompi")}
@@ -315,12 +315,10 @@ const [wompiType, setWompiType] = useState("PSE"); // PSE | CARD | NEQUI
         </div>
       )}
     </div>
-  </div>
+  </div>*/}
 </div>
 
-        <button type="submit" className="btn-primary" disabled={loading}>
-          {loading ? "Procesando..." : "Finalizar compra"}
-        </button>
+        
       </form>
 
       <div className="checkout-summary">
@@ -347,7 +345,9 @@ const [wompiType, setWompiType] = useState("PSE"); // PSE | CARD | NEQUI
           Envío: <strong>${shipping.toLocaleString("es-CO")}</strong>
         </p>
         <h4>Total: ${total.toLocaleString("es-CO")}</h4>
-
+        <button type="submit" className="btn-primary" disabled={loading}>
+          {loading ? "Procesando..." : "Finalizar compra"}
+        </button>
         <button
           type="button"
           className="btn-whatsapp"
