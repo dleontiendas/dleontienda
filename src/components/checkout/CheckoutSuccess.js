@@ -9,6 +9,7 @@ export default function CheckoutSuccess() {
   const navigate = useNavigate();
 
   const [status, setStatus] = useState("loading"); // loading | success | error
+
   const orderId = params.get("ref");
 
   useEffect(() => {
@@ -17,11 +18,15 @@ export default function CheckoutSuccess() {
       return;
     }
 
-    (async () => {
+    const validatePayment = async () => {
       try {
         const res = await fetch(
           `${API_URL}/api/payments/validate?orderId=${orderId}`
         );
+
+        if (!res.ok) {
+          throw new Error("API error");
+        }
 
         const data = await res.json();
 
@@ -30,21 +35,34 @@ export default function CheckoutSuccess() {
         } else {
           setStatus("error");
         }
-      } catch {
+      } catch (error) {
+        console.error("Validation error:", error);
         setStatus("error");
       }
-    })();
+    };
+
+    validatePayment();
   }, [orderId]);
 
+  /* ===== LOADING ===== */
+
   if (status === "loading") {
-    return <div className="checkout-result">Validando pago...</div>;
+    return (
+      <div className="checkout-result loading">
+        <h2>Validando pago...</h2>
+        <p>Por favor espera mientras confirmamos tu transacción.</p>
+      </div>
+    );
   }
+
+  /* ===== ERROR ===== */
 
   if (status === "error") {
     return (
       <div className="checkout-result error">
         <h2>❌ Pago no confirmado</h2>
         <p>Tu pago no pudo ser validado.</p>
+
         <button onClick={() => navigate("/checkout")}>
           Volver al checkout
         </button>
@@ -52,11 +70,21 @@ export default function CheckoutSuccess() {
     );
   }
 
+  /* ===== SUCCESS ===== */
+
   return (
     <div className="checkout-result success">
       <h2>✅ ¡Pago exitoso!</h2>
-      <p>Tu pedido fue confirmado correctamente.</p>
-      <button onClick={() => navigate("/")}>Ir a inicio</button>
+
+      <p>
+        Tu pedido fue confirmado correctamente.
+        <br />
+        Recibirás un correo con los detalles.
+      </p>
+
+      <button onClick={() => navigate("/")}>
+        Ir a inicio
+      </button>
     </div>
   );
 }
