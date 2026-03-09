@@ -48,7 +48,9 @@ const Checkout = () => {
   /* ================= SUBMIT ================= */
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+
+    console.log("Checkout iniciado");
 
     if (!cart.length) {
       M.toast({ html: "Tu carrito está vacío" });
@@ -77,13 +79,17 @@ const Checkout = () => {
         createdAt: serverTimestamp(),
       };
 
+      console.log("Guardando orden:", order);
+
       const docRef = await addDoc(collection(db, "orders"), order);
+
+      console.log("Orden creada:", docRef.id);
 
       /* CONTRAENTREGA */
 
       if (paymentMethod === "contraentrega") {
         clearCart();
-        navigate("/checkout-success");
+        navigate(`/checkout-success?ref=${docRef.id}`);
         return;
       }
 
@@ -102,6 +108,10 @@ const Checkout = () => {
         });
 
         const data = await res.json();
+
+        if (!data.redirectUrl) {
+          throw new Error("Wompi no devolvió redirectUrl");
+        }
 
         window.location.href = data.redirectUrl;
         return;
@@ -126,11 +136,15 @@ const Checkout = () => {
 
         const data = await res.json();
 
+        if (!data.redirectUrl) {
+          throw new Error("Addi no devolvió redirectUrl");
+        }
+
         window.location.href = data.redirectUrl;
         return;
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error checkout:", error);
       M.toast({ html: "Error procesando el pago" });
     } finally {
       setLoading(false);
@@ -159,136 +173,68 @@ const Checkout = () => {
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
-  /* ================= RENDER ================= */
-
   return (
     <div className="checkout-page">
-      <form className="checkout-form" onSubmit={handleSubmit}>
+
+      <div className="checkout-form">
         <h3>Datos del comprador</h3>
 
         <label>Email</label>
-        <input
-          type="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
+        <input type="email" name="email" value={formData.email} onChange={handleChange} required />
 
         <div className="checkout-row">
           <div>
             <label>Nombre</label>
-            <input
-              type="text"
-              name="first_name"
-              value={formData.first_name}
-              onChange={handleChange}
-              required
-            />
+            <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} required />
           </div>
 
           <div>
             <label>Apellidos</label>
-            <input
-              type="text"
-              name="last_name"
-              value={formData.last_name}
-              onChange={handleChange}
-              required
-            />
+            <input type="text" name="last_name" value={formData.last_name} onChange={handleChange} required />
           </div>
         </div>
 
         <label>Cédula</label>
-        <input
-          type="text"
-          name="document"
-          value={formData.document}
-          onChange={handleChange}
-          required
-        />
+        <input type="text" name="document" value={formData.document} onChange={handleChange} required />
 
         <label>Dirección</label>
-        <input
-          type="text"
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          required
-        />
+        <input type="text" name="address" value={formData.address} onChange={handleChange} required />
 
         <div className="checkout-row">
           <div>
             <label>Ciudad</label>
-            <input
-              type="text"
-              name="city"
-              value={formData.city}
-              onChange={handleChange}
-              required
-            />
+            <input type="text" name="city" value={formData.city} onChange={handleChange} required />
           </div>
 
           <div>
             <label>Departamento</label>
-            <input
-              type="text"
-              name="province"
-              value={formData.province}
-              onChange={handleChange}
-            />
+            <input type="text" name="province" value={formData.province} onChange={handleChange} />
           </div>
         </div>
 
         <label>Teléfono</label>
-        <input
-          type="text"
-          name="phone"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
-
-        {/* PAYMENT SECTION */}
+        <input type="text" name="phone" value={formData.phone} onChange={handleChange} required />
 
         <div className="payment-section">
           <h4>Método de pago</h4>
 
           <p>
             <label>
-              <input
-                name="paymentMethod"
-                type="radio"
-                value="contraentrega"
-                checked={paymentMethod === "contraentrega"}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              />
+              <input name="paymentMethod" type="radio" value="contraentrega" checked={paymentMethod === "contraentrega"} onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Pago contra entrega</span>
             </label>
           </p>
 
           <p>
             <label>
-              <input
-                name="paymentMethod"
-                type="radio"
-                value="addi"
-                checked={paymentMethod === "addi"}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              />
+              <input name="paymentMethod" type="radio" value="addi" checked={paymentMethod === "addi"} onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Financiación con ADDI</span>
             </label>
           </p>
 
           <p>
             <label>
-              <input
-                name="paymentMethod"
-                type="radio"
-                value="wompi"
-                checked={paymentMethod === "wompi"}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              />
+              <input name="paymentMethod" type="radio" value="wompi" checked={paymentMethod === "wompi"} onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Pago electrónico (Wompi)</span>
             </label>
           </p>
@@ -297,48 +243,28 @@ const Checkout = () => {
             <div style={{ marginLeft: "25px", marginTop: "10px" }}>
               <p>
                 <label>
-                  <input
-                    name="wompiType"
-                    type="radio"
-                    value="PSE"
-                    checked={wompiType === "PSE"}
-                    onChange={(e) => setWompiType(e.target.value)}
-                  />
+                  <input name="wompiType" type="radio" value="PSE" checked={wompiType === "PSE"} onChange={(e) => setWompiType(e.target.value)} />
                   <span>PSE</span>
                 </label>
               </p>
 
               <p>
                 <label>
-                  <input
-                    name="wompiType"
-                    type="radio"
-                    value="CARD"
-                    checked={wompiType === "CARD"}
-                    onChange={(e) => setWompiType(e.target.value)}
-                  />
+                  <input name="wompiType" type="radio" value="CARD" checked={wompiType === "CARD"} onChange={(e) => setWompiType(e.target.value)} />
                   <span>Tarjeta</span>
                 </label>
               </p>
 
               <p>
                 <label>
-                  <input
-                    name="wompiType"
-                    type="radio"
-                    value="NEQUI"
-                    checked={wompiType === "NEQUI"}
-                    onChange={(e) => setWompiType(e.target.value)}
-                  />
+                  <input name="wompiType" type="radio" value="NEQUI" checked={wompiType === "NEQUI"} onChange={(e) => setWompiType(e.target.value)} />
                   <span>Nequi</span>
                 </label>
               </p>
             </div>
           )}
         </div>
-      </form>
-
-      {/* RESUMEN */}
+      </div>
 
       <div className="checkout-summary">
         <h3>Resumen del Pedido</h3>
@@ -346,9 +272,7 @@ const Checkout = () => {
         <ul>
           {cart.map((item, i) => (
             <li key={i}>
-              <span>
-                {item.name} x{item.quantity}
-              </span>
+              <span>{item.name} x{item.quantity}</span>
               <span>${Number(item.price_cop).toLocaleString("es-CO")}</span>
             </li>
           ))}
@@ -356,19 +280,15 @@ const Checkout = () => {
 
         <hr />
 
-        <p>
-          Subtotal <strong>${subtotal.toLocaleString("es-CO")}</strong>
-        </p>
-
-        <p>
-          Envío <strong>${shipping.toLocaleString("es-CO")}</strong>
-        </p>
+        <p>Subtotal <strong>${subtotal.toLocaleString("es-CO")}</strong></p>
+        <p>Envío <strong>${shipping.toLocaleString("es-CO")}</strong></p>
 
         <h4>Total ${total.toLocaleString("es-CO")}</h4>
 
         <button
-          type="submit"
+          type="button"
           className="btn-primary"
+          onClick={handleSubmit}
           disabled={loading}
         >
           {loading ? "Procesando..." : "Finalizar compra"}
@@ -382,6 +302,7 @@ const Checkout = () => {
           Comprar por WhatsApp
         </button>
       </div>
+
     </div>
   );
 };
