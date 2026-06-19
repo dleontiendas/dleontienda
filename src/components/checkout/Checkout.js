@@ -15,6 +15,7 @@ const Checkout = () => {
   const [shipping] = useState(15900);
   const [paymentMethod, setPaymentMethod] = useState("contraentrega");
   const [wompiType, setWompiType] = useState("PSE");
+  const [boldType, setBoldType] = useState("CARD");
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -37,7 +38,6 @@ const Checkout = () => {
     (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
     0
   );
-
   const total = subtotal + shipping;
 
   const handleChange = (e) => {
@@ -46,11 +46,8 @@ const Checkout = () => {
   };
 
   /* ================= SUBMIT ================= */
-
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
-
-    console.log("Checkout iniciado");
 
     if (!cart.length) {
       M.toast({ html: "Tu carrito está vacío" });
@@ -75,18 +72,14 @@ const Checkout = () => {
         total,
         paymentMethod,
         wompiType,
+        boldType,
         status: "INITIATED",
         createdAt: serverTimestamp(),
       };
 
-      console.log("Guardando orden:", order);
-
       const docRef = await addDoc(collection(db, "orders"), order);
 
-      console.log("Orden creada:", docRef.id);
-
       /* CONTRAENTREGA */
-
       if (paymentMethod === "contraentrega") {
         clearCart();
         navigate(`/checkout-success?ref=${docRef.id}`);
@@ -94,7 +87,6 @@ const Checkout = () => {
       }
 
       /* WOMPI */
-
       if (paymentMethod === "wompi") {
         const res = await fetch(`${API_URL}/api/payments/wompi`, {
           method: "POST",
@@ -106,19 +98,13 @@ const Checkout = () => {
             customer: formData,
           }),
         });
-
         const data = await res.json();
-
-        if (!data.redirectUrl) {
-          throw new Error("Wompi no devolvió redirectUrl");
-        }
-
+        if (!data.redirectUrl) throw new Error("Wompi no devolvió redirectUrl");
         window.location.href = data.redirectUrl;
         return;
       }
 
       /* ADDI */
-
       if (paymentMethod === "addi") {
         const res = await fetch(`${API_URL}/api/payments/addi`, {
           method: "POST",
@@ -133,16 +119,51 @@ const Checkout = () => {
             lastName: formData.last_name,
           }),
         });
-
         const data = await res.json();
-
-        if (!data.redirectUrl) {
-          throw new Error("Addi no devolvió redirectUrl");
-        }
-
+        if (!data.redirectUrl) throw new Error("Addi no devolvió redirectUrl");
         window.location.href = data.redirectUrl;
         return;
       }
+
+      /* BOLD */
+      if (paymentMethod === "bold") {
+        const res = await fetch(`${API_URL}/api/payments/bold`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: docRef.id,
+            total,
+            boldType,
+            customer: formData,
+          }),
+        });
+        const data = await res.json();
+        if (!data.redirectUrl) throw new Error("Bold no devolvió redirectUrl");
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
+      /* SISTECREDITO */
+      if (paymentMethod === "sistecredito") {
+        const res = await fetch(`${API_URL}/api/payments/sistecredito`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: docRef.id,
+            total,
+            document: formData.document,
+            email: formData.email,
+            phone: formData.phone,
+            firstName: formData.first_name,
+            lastName: formData.last_name,
+          }),
+        });
+        const data = await res.json();
+        if (!data.redirectUrl) throw new Error("Sistecrédito no devolvió redirectUrl");
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
     } catch (error) {
       console.error("Error checkout:", error);
       M.toast({ html: "Error procesando el pago" });
@@ -152,24 +173,19 @@ const Checkout = () => {
   };
 
   /* ================= WHATSAPP ================= */
-
   const handleWhatsAppOrder = () => {
     const phoneNumber = "573104173201";
-
     const message = encodeURIComponent(
       `Nuevo pedido\n\n` +
         `${formData.first_name} ${formData.last_name}\n${formData.email}\n${formData.phone}\n${formData.address}, ${formData.city}\n\n` +
         cart
           .map(
             (item) =>
-              `• ${item.name} x${item.quantity} - $${Number(
-                item.price_cop
-              ).toLocaleString("es-CO")}`
+              `• ${item.name} x${item.quantity} - $${Number(item.price_cop).toLocaleString("es-CO")}`
           )
           .join("\n") +
         `\n\nTotal: $${total.toLocaleString("es-CO")}`
     );
-
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
@@ -187,7 +203,6 @@ const Checkout = () => {
             <label>Nombre</label>
             <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} required />
           </div>
-
           <div>
             <label>Apellidos</label>
             <input type="text" name="last_name" value={formData.last_name} onChange={handleChange} required />
@@ -205,7 +220,6 @@ const Checkout = () => {
             <label>Ciudad</label>
             <input type="text" name="city" value={formData.city} onChange={handleChange} required />
           </div>
-
           <div>
             <label>Departamento</label>
             <input type="text" name="province" value={formData.province} onChange={handleChange} />
@@ -220,47 +234,77 @@ const Checkout = () => {
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="contraentrega" checked={paymentMethod === "contraentrega"} onChange={(e) => setPaymentMethod(e.target.value)} />
+              <input name="paymentMethod" type="radio" value="contraentrega"
+                checked={paymentMethod === "contraentrega"}
+                onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Pago contra entrega</span>
             </label>
           </p>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="addi" checked={paymentMethod === "addi"} onChange={(e) => setPaymentMethod(e.target.value)} />
+              <input name="paymentMethod" type="radio" value="addi"
+                checked={paymentMethod === "addi"}
+                onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Financiación con ADDI</span>
             </label>
           </p>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="wompi" checked={paymentMethod === "wompi"} onChange={(e) => setPaymentMethod(e.target.value)} />
+              <input name="paymentMethod" type="radio" value="sistecredito"
+                checked={paymentMethod === "sistecredito"}
+                onChange={(e) => setPaymentMethod(e.target.value)} />
+              <span>Financiación con Sistecrédito</span>
+            </label>
+          </p>
+
+          <p>
+            <label>
+              <input name="paymentMethod" type="radio" value="wompi"
+                checked={paymentMethod === "wompi"}
+                onChange={(e) => setPaymentMethod(e.target.value)} />
               <span>Pago electrónico (Wompi)</span>
             </label>
           </p>
 
           {paymentMethod === "wompi" && (
             <div style={{ marginLeft: "25px", marginTop: "10px" }}>
-              <p>
-                <label>
-                  <input name="wompiType" type="radio" value="PSE" checked={wompiType === "PSE"} onChange={(e) => setWompiType(e.target.value)} />
-                  <span>PSE</span>
-                </label>
-              </p>
+              {[["PSE", "PSE"], ["CARD", "Tarjeta"], ["NEQUI", "Nequi"]].map(([val, label]) => (
+                <p key={val}>
+                  <label>
+                    <input name="wompiType" type="radio" value={val}
+                      checked={wompiType === val}
+                      onChange={(e) => setWompiType(e.target.value)} />
+                    <span>{label}</span>
+                  </label>
+                </p>
+              ))}
+            </div>
+          )}
 
-              <p>
-                <label>
-                  <input name="wompiType" type="radio" value="CARD" checked={wompiType === "CARD"} onChange={(e) => setWompiType(e.target.value)} />
-                  <span>Tarjeta</span>
-                </label>
-              </p>
+          {/* ── BOLD ── */}
+          <p>
+            <label>
+              <input name="paymentMethod" type="radio" value="bold"
+                checked={paymentMethod === "bold"}
+                onChange={(e) => setPaymentMethod(e.target.value)} />
+              <span>Pago con Bold</span>
+            </label>
+          </p>
 
-              <p>
-                <label>
-                  <input name="wompiType" type="radio" value="NEQUI" checked={wompiType === "NEQUI"} onChange={(e) => setWompiType(e.target.value)} />
-                  <span>Nequi</span>
-                </label>
-              </p>
+          {paymentMethod === "bold" && (
+            <div style={{ marginLeft: "25px", marginTop: "10px" }}>
+              {[["CARD", "Tarjeta crédito / débito"], ["NEQUI", "Nequi"], ["PSE", "PSE"]].map(([val, label]) => (
+                <p key={val}>
+                  <label>
+                    <input name="boldType" type="radio" value={val}
+                      checked={boldType === val}
+                      onChange={(e) => setBoldType(e.target.value)} />
+                    <span>{label}</span>
+                  </label>
+                </p>
+              ))}
             </div>
           )}
         </div>
@@ -282,23 +326,13 @@ const Checkout = () => {
 
         <p>Subtotal <strong>${subtotal.toLocaleString("es-CO")}</strong></p>
         <p>Envío <strong>${shipping.toLocaleString("es-CO")}</strong></p>
-
         <h4>Total ${total.toLocaleString("es-CO")}</h4>
 
-        <button
-          type="button"
-          className="btn-primary"
-          onClick={handleSubmit}
-          disabled={loading}
-        >
+        <button type="button" className="btn-primary" onClick={handleSubmit} disabled={loading}>
           {loading ? "Procesando..." : "Finalizar compra"}
         </button>
 
-        <button
-          type="button"
-          className="btn-whatsapp"
-          onClick={handleWhatsAppOrder}
-        >
+        <button type="button" className="btn-whatsapp" onClick={handleWhatsAppOrder}>
           Comprar por WhatsApp
         </button>
       </div>

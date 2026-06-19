@@ -58,6 +58,14 @@ const toAbsoluteUrl = (maybeUrl) => {
   }
 };
 
+// Devuelve la lista de fallbacks de la primera imagen disponible para un color
+const resolveFirstImageForColor = (product, color) => {
+  const variantImgs = getVariantImagesForColor(product, color);
+  const firstRaw = variantImgs[0] || (Array.isArray(product?.images) ? product.images[0] : null);
+  if (!firstRaw) return null;
+  return resolveDriveImage(firstRaw) || [firstRaw];
+};
+
 export default function ProductDetail() {
   const { category, productId } = useParams();
   const navigate = useNavigate();
@@ -173,14 +181,15 @@ export default function ProductDetail() {
     return items;
   }, [product, selectedColor]);
 
+  // Al cambiar color, actualizar imagen principal con la primera imagen de esa variante
   useEffect(() => {
-    if (!thumbItems.length) return;
-    const first = thumbItems[0];
-    if (first.primary !== mainImage) {
-      setMainImage(first.primary);
-      setMainFallbackList(first.fallbacks);
+    if (!product || !selectedColor) return;
+    const fallbacks = resolveFirstImageForColor(product, selectedColor);
+    if (fallbacks?.length) {
+      setMainImage(fallbacks[0]);
+      setMainFallbackList(fallbacks);
     }
-  }, [selectedColor, thumbItems]); // keep selection in sync
+  }, [selectedColor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const variants = useMemo(() => getVariants(product), [product]);
 
