@@ -1,27 +1,45 @@
-// Firebase Core
+// src/Firebase.js
+
 import { initializeApp } from "firebase/app";
-
-// Auth
 import { getAuth } from "firebase/auth";
-
-// Firestore
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD26x4nTZphJdqGmDjJHV8UpMw1C3KUSpo",
-  authDomain: "dleongold-10de3.firebaseapp.com",
-  projectId: "dleongold-10de3",
-  storageBucket: "dleongold-10de3.firebasestorage.app",
-  messagingSenderId: "351263846211",
-  appId: "1:351263846211:web:48ea75103dc071a92149f6",
-  measurementId: "G-V8GVFLGN07"
+  apiKey:
+    process.env.REACT_APP_FIREBASE_API_KEY,
+
+  authDomain:
+    process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+
+  projectId:
+    process.env.REACT_APP_FIREBASE_PROJECT_ID,
+
+  storageBucket:
+    process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+
+  messagingSenderId:
+    process.env
+      .REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+
+  appId:
+    process.env.REACT_APP_FIREBASE_APP_ID,
+
+  measurementId:
+    process.env
+      .REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize
-const app = initializeApp(firebaseConfig);
+const app =
+  initializeApp(firebaseConfig);
 
-// Export Auth + DB
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth =
+  getAuth(app);
+
+export const db =
+  getFirestore(app);
+
+export const storage =
+  getStorage(app);
 
 export default app;

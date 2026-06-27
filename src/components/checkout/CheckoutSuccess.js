@@ -1,94 +1,194 @@
-import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+// src/pages/CheckoutSuccess/CheckoutSuccess.js
+
+import React, {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  listenOrder,
+} from "../../services/orderStatusService";
+
 import "./CheckoutSuccess.css";
 
-const API_URL = "https://dleongold.com:3001";
-
 export default function CheckoutSuccess() {
-
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState("loading"); 
-  const [errorMessage, setErrorMessage] = useState("");
+  const orderId =
+  params.get("ref") ||
+  localStorage.getItem(
+    "lastOrderId"
+  );
 
-  const orderId = params.get("ref");
+  const [status, setStatus] = useState("loading");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [order, setOrder] = useState(null);
 
   useEffect(() => {
+  if (!orderId) {
+    setErrorMessage(
+      "No se encontró la referencia."
+    );
 
-    const validatePayment = async () => {
+    setStatus("error");
+    return;
+  }
 
-      if (!orderId) {
-        setErrorMessage("No se encontró referencia de pago.");
-        setStatus("error");
-        return;
-      }
+  const unsubscribe =
+    listenOrder(
+      orderId,
+      (order) => {
+        if (!order) {
+          setErrorMessage(
+            "La orden no existe."
+          );
 
-      try {
+          setStatus("error");
+          return;
+        }
 
-        const res = await fetch(
-          `${API_URL}/api/payments/validate?orderId=${orderId}`
+        setOrder(order);
+
+        switch (
+          order.paymentStatus
+        ) {
+          case "APPROVED":
+            localStorage.removeItem(
+              "lastOrderId"
+            );
+
+            setStatus(
+              "success"
+            );
+            break;
+
+          case "DECLINED":
+          case "VOIDED":
+          case "ERROR":
+            setErrorMessage(
+              "El pago no fue aprobado."
+            );
+
+            setStatus(
+              "error"
+            );
+            break;
+
+          case "PENDING":
+          default:
+            setStatus(
+              "loading"
+            );
+        }
+      },
+      (error) => {
+        console.error(error);
+
+        setErrorMessage(
+          "No fue posible consultar la orden."
         );
 
-        if (!res.ok) {
-          throw new Error("Error en la API");
-        }
-
-        const data = await res.json();
-
-        if (data?.status === "APPROVED") {
-          setStatus("success");
-        } else if (data?.status === "PENDING") {
-          setErrorMessage("El pago aún está pendiente.");
-          setStatus("error");
-        } else {
-          setErrorMessage("El pago fue rechazado o no encontrado.");
-          setStatus("error");
-        }
-
-      } catch (error) {
-        console.error("Validation error:", error);
-        setErrorMessage("No se pudo validar el pago.");
         setStatus("error");
       }
-    };
+    );
 
-    validatePayment();
-
-  }, [orderId]);
-
-
+  return () => {
+    unsubscribe?.();
+  };
+}, [orderId]);
 
   /* ================= LOADING ================= */
 
   if (status === "loading") {
     return (
       <div className="checkout-result loading">
-        <h2>Validando pago...</h2>
-        <p>Por favor espera mientras confirmamos tu transacción.</p>
+        <h2>
+          ⏳ Estamos confirmando tu pago
+        </h2>
+
+        <p>
+          Por favor espera mientras
+          validamos tu transacción.
+        </p>
+
+        {order && (
+          <>
+            <p>
+              Orden:
+              <strong>
+                {" "}
+                {orderId}
+              </strong>
+            </p>
+
+            <p>
+              Estado:
+              <strong>
+                {" "}
+                {order.paymentStatus ||
+                  "PENDING"}
+              </strong>
+            </p>
+          </>
+        )}
       </div>
     );
   }
-
-
 
   /* ================= ERROR ================= */
 
   if (status === "error") {
     return (
       <div className="checkout-result error">
-        <h2>❌ Pago no confirmado</h2>
+        <h2>
+          ❌ Pago no confirmado
+        </h2>
 
         <p>
-          {errorMessage || "Tu pago no pudo ser validado."}
+          {errorMessage ||
+            "Tu pago no pudo ser validado."}
         </p>
 
+        {order && (
+          <>
+            <p>
+              Orden:
+              <strong>
+                {" "}
+                {orderId}
+              </strong>
+            </p>
+
+            <p>
+              Estado:
+              <strong>
+                {" "}
+                {order.paymentStatus}
+              </strong>
+            </p>
+          </>
+        )}
+
         <div className="actions">
-          <button onClick={() => navigate("/checkout")}>
+          <button
+            onClick={() =>
+              navigate("/checkout")
+            }
+          >
             Volver al checkout
           </button>
 
-          <button onClick={() => navigate("/")}>
+          <button
+            onClick={() =>
+              navigate("/")
+            }
+          >
             Ir al inicio
           </button>
         </div>
@@ -96,30 +196,69 @@ export default function CheckoutSuccess() {
     );
   }
 
-
-
   /* ================= SUCCESS ================= */
 
   return (
     <div className="checkout-result success">
-
-      <h2>✅ ¡Pago exitoso!</h2>
+      <h2>
+        ✅ ¡Pago exitoso!
+      </h2>
 
       <p>
-        Tu pedido fue confirmado correctamente.
+        Tu pedido fue confirmado
+        correctamente.
       </p>
 
       <p>
         Número de orden:
-        <strong> {orderId}</strong>
+        <strong>
+          {" "}
+          {orderId}
+        </strong>
       </p>
 
+      {order && (
+        <>
+          <p>
+            Método de pago:
+            <strong>
+              {" "}
+              {order.paymentProvider}
+            </strong>
+          </p>
+
+          <p>
+            Estado:
+            <strong>
+              {" "}
+              {order.paymentStatus}
+            </strong>
+          </p>
+
+          <p>
+            Total:
+            <strong>
+              {" "}
+              $
+              {Number(
+                order.total || 0
+              ).toLocaleString(
+                "es-CO"
+              )}
+            </strong>
+          </p>
+        </>
+      )}
+
       <div className="actions">
-        <button onClick={() => navigate("/")}>
-          Ir a inicio
+        <button
+          onClick={() =>
+            navigate("/")
+          }
+        >
+          Ir al inicio
         </button>
       </div>
-
     </div>
   );
 }

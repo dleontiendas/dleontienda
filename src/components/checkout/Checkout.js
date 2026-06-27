@@ -1,56 +1,124 @@
-import React, { useContext, useState, useEffect } from "react";
-import { CartContext } from "../../context/CartContext";
-import { db } from "../../Firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
+import {
+  serverTimestamp,
+} from "firebase/firestore";
+
+import { CartContext } from "../../context/CartContext";
+import { processCheckout } from "../../services/checkoutService";
+import { startPayment } from "../../services/paymentService";
+import {
+  PAYMENT_PROVIDER_MAP,
+} from "../../utils/paymentProviderMap";
 import "./Checkout.css";
 
-const API_URL = "https://dleongold.com:3001";
+const paymentProvider =
+  PAYMENT_PROVIDER_MAP[
+    paymentMethod
+  ];
+
 
 const Checkout = () => {
-  const { cart, clearCart } = useContext(CartContext);
+  const {
+    cart,
+    clearCart,
+    subtotal,
+  } = useContext(CartContext);
+
+  const provider =
+  PAYMENT_PROVIDER_MAP[
+    paymentMethod.toUpperCase()
+  ];
+
+if (!provider) {
+  throw new Error(
+    `Proveedor inválido: ${paymentMethod}`
+  );
+}
+
+const payload = {
+  orderId,
+};
+
+const response =
+  await startPayment(
+    provider,
+    payload
+  );
+
   const navigate = useNavigate();
 
   const [shipping] = useState(15900);
-  const [paymentMethod, setPaymentMethod] = useState("contraentrega");
-  const [wompiType, setWompiType] = useState("PSE");
-  const [boldType, setBoldType] = useState("CARD");
-  const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    email: "",
-    first_name: "",
-    last_name: "",
-    document: "",
-    address: "",
-    city: "",
-    province: "",
-    postal_code: "",
-    phone: "",
-  });
+  const [paymentMethod, setPaymentMethod] =
+    useState("contraentrega");
+
+  const [wompiType, setWompiType] =
+    useState("PSE");
+
+  const [boldType, setBoldType] =
+    useState("CARD");
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [formData, setFormData] =
+    useState({
+      email: "",
+      first_name: "",
+      last_name: "",
+      document: "",
+      address: "",
+      city: "",
+      province: "",
+      postal_code: "",
+      phone: "",
+    });
 
   useEffect(() => {
     M.AutoInit();
   }, []);
 
-  const subtotal = cart.reduce(
-    (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
-    0
-  );
   const total = subtotal + shipping;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
+    if (loading) return;
+
     if (!cart.length) {
-      M.toast({ html: "Tu carrito está vacío" });
+      M.toast({
+        html: "Tu carrito está vacío",
+      });
+      return;
+    }
+
+    if (
+      !formData.email ||
+      !formData.first_name ||
+      !formData.last_name ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.city
+    ) {
+      M.toast({
+        html:
+          "Completa todos los datos requeridos",
+      });
       return;
     }
 
@@ -58,135 +126,206 @@ const Checkout = () => {
 
     try {
       const order = {
-        customer: formData,
+        customer: {
+          ...formData,
+        },
+
         items: cart.map((item) => ({
-          id: item.id,
+          productId: item.id,
           name: item.name,
           price: item.price_cop,
           quantity: item.quantity,
-          color: item.selectedColor,
-          size: item.selectedSize,
+          color:
+            item.selectedColor || null,
+          size:
+            item.selectedSize || null,
         })),
+
         subtotal,
         shipping,
         total,
+
         paymentMethod,
+
+        paymentProvider:
+          paymentMethod ===
+          "contraentrega"
+            ? "CASH"
+            : paymentMethod.toUpperCase(),
+
         wompiType,
         boldType,
-        status: "INITIATED",
-        createdAt: serverTimestamp(),
+
+        status: "Initiated",
+        paymentStatus: "PENDING",
+
+        externalId: null,
+        providerData: {},
+
+        createdAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, "orders"), order);
+      const { id: orderId } =
+        await processCheckout(order);
 
-      /* CONTRAENTREGA */
-      if (paymentMethod === "contraentrega") {
+      localStorage.setItem(
+        "lastOrderId",
+        orderId
+      );
+
+      /*
+       |----------------------------------------
+       | Contra entrega
+       |----------------------------------------
+       */
+
+      if (
+        paymentMethod ===
+        "contraentrega"
+      ) {
         clearCart();
-        navigate(`/checkout-success?ref=${docRef.id}`);
+
+        navigate(
+          `/checkout-success?ref=${orderId}`
+        );
+
         return;
       }
 
-      /* WOMPI */
-      if (paymentMethod === "wompi") {
-        const res = await fetch(`${API_URL}/api/payments/wompi`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            wompiType,
-            customer: formData,
-          }),
+      /*
+       |----------------------------------------
+       | Iniciar pago backend
+       |----------------------------------------
+       */
+
+      const payload = {
+  orderId,
+
+  customer: {
+    email: formData.email,
+    phone: formData.phone,
+    name: `${formData.first_name} ${formData.last_name}`,
+  },
+
+  metadata: {
+    wompiType,
+    boldType,
+  },
+
+  returnUrl:
+    `${window.location.origin}/checkout/success`,
+};
+
+      const response =
+        await startPayment(
+          paymentMethod,
+          payload
+        );
+
+      console.log(
+        "Payment response:",
+        response
+      );
+
+      /*
+       |----------------------------------------
+       | Redirect pasarelas
+       |----------------------------------------
+       */
+
+      if (response?.redirectUrl) {
+        window.location.href =
+          response.redirectUrl;
+
+        return;
+      }
+
+      /*
+       |----------------------------------------
+       | Sistecrédito
+       |----------------------------------------
+       */
+
+      if (
+        response?.applicationId
+      ) {
+        navigate(
+          `/checkout-success?ref=${orderId}&applicationId=${response.applicationId}`
+        );
+
+        return;
+      }
+
+      /*
+       |----------------------------------------
+       | Backend temporal
+       |----------------------------------------
+       */
+
+      if (response?.success) {
+        M.toast({
+          html:
+            "Integración de pago preparada. Backend conectado correctamente.",
         });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Wompi no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
+
         return;
       }
 
-      /* ADDI */
-      if (paymentMethod === "addi") {
-        const res = await fetch(`${API_URL}/api/payments/addi`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: docRef.id,
-            total,
-            email: formData.email,
-            phone: formData.phone,
-            document: formData.document,
-            firstName: formData.first_name,
-            lastName: formData.last_name,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Addi no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
-      /* BOLD */
-      if (paymentMethod === "bold") {
-        const res = await fetch(`${API_URL}/api/payments/bold`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            boldType,
-            customer: formData,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Bold no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
-      /* SISTECREDITO */
-      if (paymentMethod === "sistecredito") {
-        const res = await fetch(`${API_URL}/api/payments/sistecredito`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            document: formData.document,
-            email: formData.email,
-            phone: formData.phone,
-            firstName: formData.first_name,
-            lastName: formData.last_name,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Sistecrédito no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
+      throw new Error(
+        "El backend no devolvió una respuesta válida."
+      );
     } catch (error) {
-      console.error("Error checkout:", error);
-      M.toast({ html: "Error procesando el pago" });
+      console.error(
+        "Checkout error:",
+        error
+      );
+
+      M.toast({
+        html:
+          error?.response?.data
+            ?.message ||
+          error?.message ||
+          "Error procesando el pago",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ================= WHATSAPP ================= */
   const handleWhatsAppOrder = () => {
-    const phoneNumber = "573104173201";
-    const message = encodeURIComponent(
-      `Nuevo pedido\n\n` +
-        `${formData.first_name} ${formData.last_name}\n${formData.email}\n${formData.phone}\n${formData.address}, ${formData.city}\n\n` +
-        cart
-          .map(
-            (item) =>
-              `• ${item.name} x${item.quantity} - $${Number(item.price_cop).toLocaleString("es-CO")}`
-          )
-          .join("\n") +
-        `\n\nTotal: $${total.toLocaleString("es-CO")}`
+    const phoneNumber =
+      "573104173201";
+
+    const message =
+      encodeURIComponent(
+        `Nuevo pedido\n\n` +
+          `${formData.first_name} ${formData.last_name}\n` +
+          `${formData.email}\n` +
+          `${formData.phone}\n` +
+          `${formData.address}, ${formData.city}\n\n` +
+          cart
+            .map(
+              (item) =>
+                `• ${item.name} x${item.quantity} - $${Number(
+                  item.price_cop
+                ).toLocaleString(
+                  "es-CO"
+                )}`
+            )
+            .join("\n") +
+          `\n\nTotal: $${total.toLocaleString(
+            "es-CO"
+          )}`
+      );
+
+    window.open(
+      `https://wa.me/${phoneNumber}?text=${message}`,
+      "_blank"
     );
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
 
   return (
@@ -310,33 +449,86 @@ const Checkout = () => {
         </div>
       </div>
 
+
       <div className="checkout-summary">
-        <h3>Resumen del Pedido</h3>
+        <h3>
+          Resumen del Pedido
+        </h3>
 
         <ul>
-          {cart.map((item, i) => (
-            <li key={i}>
-              <span>{item.name} x{item.quantity}</span>
-              <span>${Number(item.price_cop).toLocaleString("es-CO")}</span>
+          {cart.map((item) => (
+            <li
+              key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
+            >
+              <span>
+                {item.name} x
+                {item.quantity}
+              </span>
+
+              <span>
+                $
+                {Number(
+                  item.price_cop
+                ).toLocaleString(
+                  "es-CO"
+                )}
+              </span>
             </li>
           ))}
         </ul>
 
         <hr />
 
-        <p>Subtotal <strong>${subtotal.toLocaleString("es-CO")}</strong></p>
-        <p>Envío <strong>${shipping.toLocaleString("es-CO")}</strong></p>
-        <h4>Total ${total.toLocaleString("es-CO")}</h4>
+        <p>
+          Subtotal
+          <strong>
+            $
+            {subtotal.toLocaleString(
+              "es-CO"
+            )}
+          </strong>
+        </p>
 
-        <button type="button" className="btn-primary" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Procesando..." : "Finalizar compra"}
+        <p>
+          Envío
+          <strong>
+            $
+            {shipping.toLocaleString(
+              "es-CO"
+            )}
+          </strong>
+        </p>
+
+        <h4>
+          Total $
+          {total.toLocaleString(
+            "es-CO"
+          )}
+        </h4>
+
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={
+            handleSubmit
+          }
+          disabled={loading}
+        >
+          {loading
+            ? "Procesando..."
+            : "Finalizar compra"}
         </button>
 
-        <button type="button" className="btn-whatsapp" onClick={handleWhatsAppOrder}>
+        <button
+          type="button"
+          className="btn-whatsapp"
+          onClick={
+            handleWhatsAppOrder
+          }
+        >
           Comprar por WhatsApp
         </button>
       </div>
-
     </div>
   );
 };

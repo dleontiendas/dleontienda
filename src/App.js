@@ -31,15 +31,12 @@ import "./App.css";
 
 const App = () => {
   return (
-    <HelmetProvider>
-      <AuthProvider>
-        <CartProvider>
-          <ProductsProvider>
-            <div className="App">
-              <PromoBar />
-              <Navbar />
-              <div className="App-content">
-                <Routes>
+    <div className="App">
+      <PromoBar />
+      <Navbar />
+
+      <div className="App-content">
+         <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/moda" element={<ModaProductList />} />
                   <Route path="/tecnologia" element={<TechProductList />} />
@@ -66,13 +63,10 @@ const App = () => {
                     }
                   />
                 </Routes>
-              </div>
-              <Footer />
-            </div>
-          </ProductsProvider>
-        </CartProvider>
-      </AuthProvider>
-    </HelmetProvider>
+      </div>
+
+      <Footer />
+    </div>
   );
 };
 
