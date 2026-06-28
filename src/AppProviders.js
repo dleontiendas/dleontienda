@@ -7,7 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import {
   ProductsProvider
-} from "./context/ProductsContext";
+} from "./context/ProductContext";
 
 export default function AppProviders({ children }) {
   return (
