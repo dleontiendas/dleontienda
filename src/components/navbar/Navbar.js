@@ -3,7 +3,7 @@ import React, { useState, useContext, useMemo, useEffect, useRef, useId } from "
 import { Link, useNavigate } from "react-router-dom";
 import { CartContext } from "../../context/CartContext";
 import { ProductsContext } from "../../context/ProductContext";
-import { ShoppingCart, Search, X } from "lucide-react";
+import { ShoppingCart, Search, X, Menu } from "lucide-react";
 import "materialize-css/dist/css/materialize.min.css";
 import "./Navbar.css";
 
@@ -21,8 +21,15 @@ const firstImage = (p) => {
 
 const currencyCO = (n) => (Number.isFinite(n) ? `$${Math.round(n).toLocaleString("es-CO")}` : "");
 
+const CATEGORY_LINKS = [
+  { to: "/", label: "Inicio" },
+  { to: "/moda", label: "Moda" },
+  { to: "/tecnologia", label: "Tecnología" },
+  
+];
+
 const Navbar = ({ onSearch }) => {
-  const { cart } = useContext(Ccart);
+  const { cart } = useContext(CartContext);
   const { products } = useContext(ProductsContext);
   const navigate = useNavigate();
 
@@ -34,6 +41,9 @@ const Navbar = ({ onSearch }) => {
   const [debouncedTerm, setDebouncedTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
+
+// ---- menú móvil (categorías)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const inputRef = useRef(null);
   const listRef = useRef(null);
@@ -63,6 +73,23 @@ const Navbar = ({ onSearch }) => {
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, []);
+
+ // cerrar el menú móvil si la pantalla crece a desktop
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth > 768) setMobileMenuOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // bloquear scroll del body cuando el menú móvil está abierto
+  useEffect(() => {
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
 
   const filtered = useMemo(() => {
     const q = normalize(debouncedTerm);
@@ -145,7 +172,7 @@ const Navbar = ({ onSearch }) => {
   };
 
   return (
-    <header>
+    <header className="site-navbar">
       {/*  Barra superior  */}
       <div className="navbar-top grey lighten-2 z-depth-1">
         <div className="container navbar-top-content">
@@ -251,27 +278,55 @@ const Navbar = ({ onSearch }) => {
             <Link to="/cart" className="nav-icon tooltipped" data-tooltip="Carrito">
               <ShoppingCart size={24} color="#000" />
               {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-              <span>Carrito</span>
+               <span className="nav-icon-label">Carrito</span>
             </Link>
+            {/* Toggle menú de categorías (solo móvil) */}
+            <button
+              type="button"
+              className="navbar-menu-toggle"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="navbar-categories"
+              aria-label={mobileMenuOpen ? "Cerrar menú de categorías" : "Abrir menú de categorías"}
+            >
+              {mobileMenuOpen ? <X size={24} color="#fff" /> : <Menu size={24} color="#fff" />}
+            </button>
           </div>
         </div>
+        
       </div>
 
-      {/*  Subbarra gris con categorías */}
-      <div className="navbar-bottom grey lighten-3 z-depth-1">
-        <div className="container navbar-bottom-content flex gap-4">
-          <Link to="/" className="nav-link active">Inicio</Link>
-          <Link to="/moda" className="nav-link">Moda</Link>
-          <Link to="/tecnologia" className="nav-link">Tecnología</Link>
-          {/*<Link to="/ofertas" className="nav-link">Ofertas</Link>*/}
-        </div>
+      
+
+          {/*  Subbarra con categorías  */}
+      <div className={`navbar-bottom  ${mobileMenuOpen ? "is-open" : ""}`}>
+        <nav
+          id="navbar-categories"
+          className="container navbar-bottom-content"
+          aria-label="Categorías"
+        >
+          {CATEGORY_LINKS.map((link, i) => (
+            <Link
+              key={`${link.to}-${i}`}
+              to={link.to}
+              className={`nav-link ${link.to === "/" ? "active" : ""}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
+
+      {/* Overlay para cerrar el menú móvil al tocar fuera */}
+      {mobileMenuOpen && (
+        <div
+          className="navbar-mobile-overlay"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
     </header>
   );
 };
-
-// Corrige referencia al contexto de carrito
-function CcartProviderGuard() { return null; } // placeholder para tree-shaking
-const Ccart = CartContext;
-
 export default Navbar;

@@ -59,7 +59,7 @@
 }
 .nav-icon-label { margin-top: 1px; }
 .cart-badge {
-  position: absolute; top: -5px; right: 10px; background: yellow; color: #000;
+  position: absolute; top: -5px; right: 10px; background: red; color: #fff;
   border-radius: 999px; font-size: 10px; padding: 2px 6px; font-weight: 700;
 }
 
@@ -184,7 +184,7 @@ mark { background: #ffecb3; color: inherit; padding: 0 2px; border-radius: 3px; 
    En móvil se comporta como un panel deslizable que cuelga
    debajo de la barra roja, oculto hasta que se abre el ☰. */
 .navbar-bottom {
-  background: #0e0d0d;
+  background: #f5f5f5;
   position: absolute;
   left: 0;
   right: 0;
@@ -285,13 +285,25 @@ mark { background: #ffecb3; color: inherit; padding: 0 2px; border-radius: 3px; 
     padding: 12px 0;
   }
   .navbar-bottom-content {
+
+    background: transparent;
+  width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 8px 16px 16px;
+  box-shadow: none;   /* 👈 nuevo */
+  border: 0;          /* 👈 nuevo */
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     row-gap: 10px;
     column-gap: 25px;
-    padding: 0;
     overflow: visible;
     white-space: normal;
   }
