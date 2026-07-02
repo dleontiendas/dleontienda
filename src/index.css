@@ -1,3 +1,10 @@
+/* src/index.css
+   Solo estilos verdaderamente GLOBALES.
+   Nada de selectores de etiqueta (nav, button, header...) ni de
+   clases genéricas (.btn, .brand-logo...) — esos deben vivir en el
+   CSS del componente correspondiente para no chocar con otros.
+*/
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -11,19 +18,13 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
-/* src/index.css */
 
+/* Si quieres colores de marca reutilizables entre componentes,
+   defínelos como variables aquí (no como reglas que pinten elementos
+   directamente) y consúmelas donde corresponda:
 
-nav {
-  background-color: #ff5a5f;
+:root {
+  --brand-coral: #ff5a5f;
+  --brand-red: #ff0000;
 }
-
-.brand-logo {
-  font-family: 'Arial', sans-serif;
-  font-weight: bold;
-  font-size: 1.5rem;
-}
-
-button.btn {
-  background-color: #ff5a5f;
-}
+*/

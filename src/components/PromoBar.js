@@ -1,85 +1,95 @@
 // src/components/PromoBar.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
+import { X } from "lucide-react";
+import "./PromoBar.css";
 
-const THEMES = {
-  brand: { bg: "#111827", fg: "#ffffff", border: "transparent", ctaBg: "#ffffff", ctaFg: "#111827" },
-  dark:  { bg: "#000000", fg: "#ffffff", border: "transparent", ctaBg: "#ffffff", ctaFg: "#111827" },
-  light: { bg: "#f7f7f7", fg: "#111111", border: "#e5e5e5", ctaBg: "#111111", ctaFg: "#ffffff" },
-};
-
-const styles = {
-  bar: (t, sticky) => ({
-    position: sticky ? "sticky" : "static",
-    top: 0,
-    zIndex: 1000,
-    width: "100%",
-    boxSizing: "border-box",
-    background: t.bg,
-    color: t.fg,
-    borderBottom: t.border === "transparent" ? undefined : `1px solid ${t.border}`,
-  }),
-  inner: {
-    maxWidth: 1200,
-    margin: "0 auto",
-    padding: "10px 16px",
-    display: "flex",
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-  },
-  left: { display: "flex", flexDirection: "column", gap: 4, minWidth: 0 },
-  name: { fontWeight: 700, fontSize: "0.98rem" },
-  address: {
-    opacity: 0.9,
-    fontSize: "0.92rem",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    maxWidth: "80vw",
-  },
-  right: { display: "flex", alignItems: "center", gap: 8, flexShrink: 0 },
-  cta: (t) => ({
-    padding: "6px 12px",
-    borderRadius: 999,
-    textDecoration: "none",
-    display: "inline-block",
-    border: `1px solid ${t.ctaBg}`,
-    background: t.ctaBg,
-    color: t.ctaFg,
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-    userSelect: "none",
-  }),
-};
+const STORAGE_PREFIX = "promoBarDismissed:";
 
 export default function PromoBar({
-  name,
-  address,
+  name = "D'leon Gold",
+  address = "Dirección: Cra. 49 #48-31, Segovia, Antioquia, Colombia",
   sticky = true,
   theme = "brand",
   className = "",
   rightText = "Conócenos →",
   rightHref = "/nosotros",
+  dismissible = true,
+  // why: distintas campañas/promos pueden usar keys distintas para que
+  // cerrar una no oculte para siempre las futuras con contenido nuevo.
+  dismissKey = "default",
 }) {
-  const t = THEMES[theme] || THEMES.brand;
+  const storageKey = `${STORAGE_PREFIX}${dismissKey}`;
+
+  const [dismissed, setDismissed] = useState(false);
+  const [closing, setClosing] = useState(false);
+
+  // al montar, revisa si el usuario ya cerró esta promo antes
+  useEffect(() => {
+    if (!dismissible) return;
+    try {
+      if (window.localStorage.getItem(storageKey) === "1") {
+        setDismissed(true);
+      }
+    } catch {
+      // localStorage no disponible (ej. modo incógnito estricto) — no pasa nada, se muestra igual
+    }
+  }, [dismissible, storageKey]);
+
+  const handleClose = () => {
+    setClosing(true); // dispara la animación de colapso vía CSS
+  };
+
+  const handleTransitionEnd = () => {
+    if (!closing) return;
+    setDismissed(true);
+    try {
+      window.localStorage.setItem(storageKey, "1");
+    } catch {
+      // ignorar si localStorage no está disponible
+    }
+  };
+
+  if (dismissed) return null;
+
+  const barClasses = [
+    "promo-bar",
+    `promo-bar--${theme}`,
+    sticky ? "promo-bar--sticky" : "",
+    closing ? "promo-bar--closing" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <div role="region" aria-label="Información de la tienda" className={className} style={styles.bar(t, sticky)}>
-      <div style={styles.inner}>
-        <div style={styles.left}>
-          <span style={styles.name}>D’LEON GOLD</span>
-          <span style={styles.address}>Dirección: Cra. 49 #48-31, Segovia, Antioquia, Colombia </span>
+    <div
+      role="region"
+      aria-label="Información de la tienda"
+      className={barClasses}
+      onTransitionEnd={handleTransitionEnd}
+    >
+      <div className="promo-bar__inner">
+        <div className="promo-bar__text">
+          <span className="promo-bar__msg">{name}</span>
+          {address && <span className="promo-bar__address">{address}</span>}
         </div>
 
-        <div style={styles.right}>
-          {rightHref ? (
-            <a href={rightHref} style={styles.cta(t)} aria-label="Conócenos">
+        <div className="promo-bar__actions">
+          {rightHref && (
+            <a href={rightHref} className="promo-bar__cta" aria-label="Conócenos">
               {rightText}
             </a>
-          ) : (
-            <span style={{ opacity: 0.95 }}>{rightText}</span>
+          )}
+          {dismissible && (
+            <button
+              type="button"
+              className="promo-bar__close"
+              onClick={handleClose}
+              aria-label="Cerrar anuncio"
+            >
+              <X size={18} />
+            </button>
           )}
         </div>
       </div>
@@ -88,11 +98,13 @@ export default function PromoBar({
 }
 
 PromoBar.propTypes = {
-  name: PropTypes.string.isRequired,
-  address: PropTypes.string.isRequired,
+  name: PropTypes.string,
+  address: PropTypes.string,
   sticky: PropTypes.bool,
   theme: PropTypes.oneOf(["brand", "dark", "light"]),
   className: PropTypes.string,
   rightText: PropTypes.string,
   rightHref: PropTypes.string,
+  dismissible: PropTypes.bool,
+  dismissKey: PropTypes.string,
 };

@@ -8,11 +8,15 @@ import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
 import TechProductList from "./components/product/techProductList/techProductList";
 import ModaProductList from "./components/product/modaProductList/modaProductList";
+
+
 import ProductList from "./components/product/ProductList";
 import ProductDetail from "./components/product/ProductDetail";
 import Cart from "./components/cart/Cart";
 import Checkout from "./components/checkout/Checkout";
+
 import Footer from "./components/footer/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import { CartProvider } from "./context/CartContext";
 import { ProductsProvider } from "./context/ProductContext";
 import { AuthProvider } from "./context/AuthContext";
@@ -31,20 +35,26 @@ import "./App.css";
 
 const App = () => {
   return (
-    <div className="App">
-      <PromoBar />
-      <Navbar />
-
-      <div className="App-content">
-         <Routes>
+    <HelmetProvider>
+      <AuthProvider>
+        <CartProvider>
+          <ProductsProvider>
+            <div className="App">
+              <ScrollToTop />
+              <PromoBar />
+              <Navbar />
+              <div className="App-content">
+                <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/moda" element={<ModaProductList />} />
                   <Route path="/tecnologia" element={<TechProductList />} />
+                  
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/:category/:productId" element={<ProductDetail />} />
                   <Route path="/products/:productId" element={<ProductDetail />} />
                   <Route path="/cart" element={<Cart />} />
                   <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/checkout-success" element={<CheckoutSuccess />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   <Route path="/terminos" element={<Terminos />} />
@@ -52,6 +62,9 @@ const App = () => {
                   <Route path="/garantias" element={<Garantias />} />
                   <Route path="/envios" element={<Envios />} />
                   <Route path="/aviso-legal" element={<AvisoLegal />} />
+                  {/* TODO: crear el componente real de Cookies; usando Privacidad como
+                      placeholder temporal para que el link del footer no rompa */}
+                  <Route path="/cookies" element={<Privacidad />} />
                   <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
                   <Route
@@ -63,10 +76,13 @@ const App = () => {
                     }
                   />
                 </Routes>
-      </div>
-
-      <Footer />
-    </div>
+              </div>
+              <Footer />
+            </div>
+          </ProductsProvider>
+        </CartProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 };
 

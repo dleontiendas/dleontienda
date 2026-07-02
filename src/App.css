@@ -1,50 +1,8 @@
-/*.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
 /* src/App.css */
-
 
 /* --- Layout principal --- */
 html, body, #root {
-  height: 100%;
   margin: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* --- El contenedor principal (App) --- */
@@ -57,30 +15,8 @@ html, body, #root {
 
 /* --- El contenido (todo entre Navbar y Footer) --- */
 .App-content {
-  flex: 1; /* Ocupa todo el espacio disponible */
+  flex: 1; /* Ocupa todo el espacio disponible, empuja el footer abajo */
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
 }
-
-
-/* Footer styles */
-.page-footer.white {
-  background-color: #ffffff !important;
-  color: #ff6f00 !important;
-}
-
-.page-footer .container h5,
-.page-footer .container p,
-.page-footer .container a {
-  color: #ff6f00 !important;
-}
-
-.footer-copyright {
-  background-color: #ffffff !important;
-}
-
-.footer-copyright .container {
-  color: #ff6f00 !important;
-}
-

@@ -1,10 +1,19 @@
-
 .promo-bar {
   width: 100%;
   font-size: 0.95rem;
   line-height: 1.2;
   box-sizing: border-box;
+  overflow: hidden;
+  max-height: 200px; /* suficiente para 1-2 líneas de contenido; permite animar el cierre */
+  opacity: 1;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
 }
+.promo-bar--closing {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .promo-bar--sticky { position: sticky; top: 0; z-index: 1000; }
 .promo-bar--brand { background: #111827; color: #fff; }
 .promo-bar--dark  { background: #000; color: #fff; }
@@ -18,22 +27,36 @@
   gap: 12px;
   align-items: center;
   justify-content: space-between;
+  transition: padding 0.25s ease;
 }
+.promo-bar--closing .promo-bar__inner {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .promo-bar__text {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   align-items: baseline;
+  min-width: 0;
 }
-.promo-bar__msg { font-weight: 600; }
-.promo-bar__countdown {
-  opacity: 0.9;
-  font-variant-numeric: tabular-nums;
+.promo-bar__msg {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.promo-bar__address {
+  opacity: 0.85;
+  font-size: 0.9rem;
+}
+
 .promo-bar__actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 .promo-bar__cta {
   padding: 6px 10px;
@@ -42,24 +65,41 @@
   border: 1px solid currentColor;
   transition: transform .08s ease;
   display: inline-block;
+  white-space: nowrap;
 }
 .promo-bar--brand .promo-bar__cta { background: #fff; color: #111827; border-color: #fff; }
+.promo-bar--dark  .promo-bar__cta { background: #fff; color: #111827; border-color: #fff; }
 .promo-bar--light .promo-bar__cta { background: #111; color: #fff; border-color: #111; }
 .promo-bar__cta:active { transform: translateY(1px); }
+
 .promo-bar__close {
   background: transparent;
   border: none;
   color: inherit;
-  font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px;
   opacity: 0.8;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
 }
-.promo-bar__close:hover { opacity: 1; }
+.promo-bar__close:hover { opacity: 1; background: rgba(255, 255, 255, 0.1); }
+.promo-bar--light .promo-bar__close:hover { background: rgba(0, 0, 0, 0.06); }
 
 @media (max-width: 600px) {
   .promo-bar__inner { padding: 8px 12px; }
-  .promo-bar__msg { font-weight: 600; }
-  .promo-bar__countdown { display: none; } /* simplifica en mobile; quítalo si lo quieres visible */
+  .promo-bar__address { display: none; } /* simplifica en mobile */
+  .promo-bar__msg {
+    font-size: 0.85rem;
+    max-width: 60vw; /* deja espacio para el botón "Conócenos" + la X sin desbordar */
+  }
+  .promo-bar__cta {
+    padding: 5px 8px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .promo-bar__cta { display: none; } /* en pantallas muy angostas, prioriza el mensaje + cierre */
 }
