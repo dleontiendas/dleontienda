@@ -1,20 +1,22 @@
-/* src/components/Navbar/Navbar.css */
-
 /* ==========================================================
-   Mobile-first: estas son las reglas base (pantallas chicas).
-   Al final hay un @media (min-width: 769px) que reordena
-   todo para tablet/desktop.
+   NAVBAR
    ========================================================== */
 
 .site-navbar {
-  position: relative; /* punto de referencia para el panel móvil (.navbar-bottom) */
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 }
+
+/* ==========================================================
+   BARRA SUPERIOR
+   ========================================================== */
 
 .navbar-top {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ff0000;
+  background: lightgray;
   width: 100%;
   padding: 10px 0;
 }
@@ -23,11 +25,16 @@
   width: 100%;
   max-width: 1300px;
   padding: 0 16px;
+
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
 }
+
+/* ==========================================================
+   LOGO
+   ========================================================== */
 
 .navbar-left {
   display: flex;
@@ -35,50 +42,89 @@
   gap: 15px;
   order: 1;
 }
-.navbar-logo { text-decoration: none; }
+
+.navbar-logo {
+  text-decoration: none;
+}
+
 .brand-logo-text {
   color: #fff;
   font-weight: 700;
   font-size: 17px;
   white-space: nowrap;
 }
-.brand-logo-img { height: 28px; transition: transform .2s; }
 
-/* ====== Acciones (carrito + hamburguesa) ====== */
+.brand-logo-img {
+  height: 28px;
+  transition: transform 0.2s;
+}
+
+/* ==========================================================
+   ACCIONES (CARRITO + HAMBURGUESA)
+   ========================================================== */
+
 .navbar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 14px;
+
   order: 2;
   margin-left: auto;
-  
+  flex-shrink: 0;
 }
+
 .nav-icon {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  color: #fff; font-size: 11px; text-decoration: none; position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  color: black;
+  text-decoration: none;
+  font-size: 11px;
+  position: relative;
 }
-.nav-icon-label { margin-top: 1px; }
+
+.nav-icon-label {
+  margin-top: 1px;
+}
+
 .cart-badge {
-  position: absolute; top: -5px; right: 10px; background: red; color: #fff;
-  border-radius: 999px; font-size: 10px; padding: 2px 6px; font-weight: 700;
+  position: absolute;
+  top: -5px;
+  right: 10px;
+  background: red;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
 }
 
 .navbar-menu-toggle {
   display: grid;
   place-items: center;
+
   border: 0;
   background: transparent;
+
   width: 36px;
   height: 36px;
+
   cursor: pointer;
   padding: 0;
 }
 
-/* ====== BUSCADOR ====== */
+/* ==========================================================
+   BUSCADOR
+   ========================================================== */
+
 .navbar-search {
   order: 3;
   flex-basis: 100%;
   max-width: none;
+
   position: relative;
   display: flex;
   align-items: center;
@@ -86,23 +132,33 @@
 
 .navbar-input {
   width: 100%;
+  height: 48px;
+
   border: 1px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 14px;
+
   padding: 10px 78px 10px 38px;
-  background-color: #fff;
+
+  background: #fff;
   font-size: 14px;
-  transition: box-shadow .2s, border-color .2s;
+
   outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
+
 .navbar-input:focus {
   border-color: #d4af37;
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+  box-shadow:
+    0 0 0 4px rgba(212, 175, 55, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .navbar-search-icon-left {
   position: absolute;
   left: 12px;
-  opacity: .65;
+  opacity: 0.65;
   pointer-events: none;
 }
 
@@ -111,36 +167,57 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+
   border: 0;
   background: #f5f5f5;
+
   width: 30px;
   height: 30px;
+
   border-radius: 9px;
+
   display: grid;
   place-items: center;
+
   cursor: pointer;
-  transition: background .15s;
+  transition: background 0.15s;
 }
+
 .navbar-clear-btn:hover,
-.navbar-search-btn:hover { background: #eee; }
+.navbar-search-btn:hover {
+  background: #eee;
+}
 
-.navbar-clear-btn { right: 44px; }
-.navbar-search-btn { right: 8px; }
+.navbar-clear-btn {
+  right: 44px;
+}
 
-/* Dropdown de autocompletado */
+.navbar-search-btn {
+  right: 8px;
+}
+
+/* ==========================================================
+   AUTOCOMPLETE
+   ========================================================== */
+
 .navbar-autocomplete {
   position: absolute;
-  z-index: 20;
+  z-index: 50;
+
   top: calc(100% + 8px);
   left: 0;
   right: 0;
+
   background: #fff;
   border: 1px solid #eee;
   border-radius: 12px;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08);
+
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+
   overflow: hidden;
-  max-height: 60vh;
   overflow-y: auto;
+  max-height: 60vh;
+
   display: flex;
   flex-direction: column;
 }
@@ -152,105 +229,233 @@
 }
 
 .ac-item {
-  display: grid;
-  grid-template-columns: 44px 1fr;
-  gap: 10px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
   padding: 10px 12px;
-  text-decoration: none;
-  color: #111;
   border-bottom: 1px solid #f5f5f5;
 }
-.ac-item:last-child { border-bottom: 0; }
-.ac-item:hover { background: #fafafa; }
-.ac-item.active { background: #fff7e5; } /* selección teclado */
+
+.ac-item:last-child {
+  border-bottom: 0;
+}
+
+.ac-item:hover {
+  background: #fafafa;
+}
+
+.ac-item.active {
+  background: #fff7e5;
+}
+
+.ac-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.ac-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ac-cart-btn {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: none;
+  border-radius: 10px;
+
+  background: #ff0000;
+  
+  cursor: pointer;
+
+  flex-shrink: 0;
+
+  transition: all 0.2s ease;
+}
+
+.ac-cart-btn:hover {
+  background: #d90000;
+  transform: scale(1.05);
+}
+
+.ac-cart-btn:active {
+  transform: scale(0.95);
+}
 
 .ac-thumb {
   width: 44px;
   height: 44px;
   object-fit: cover;
+
   border-radius: 8px;
   background: #f0f0f0;
 }
 
-.ac-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ac-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ac-meta { font-size: 12px; color: #666; }
-.ac-price { font-weight: 700; color: #111; }
+.ac-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 
-mark { background: #ffecb3; color: inherit; padding: 0 2px; border-radius: 3px; }
+.ac-name {
+  font-size: 13.5px;
+  font-weight: 600;
 
-/* ====== Subbarra de categorías ======
-   En móvil se comporta como un panel deslizable que cuelga
-   debajo de la barra roja, oculto hasta que se abre el ☰. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ac-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.ac-price {
+  font-weight: 700;
+  color: #111;
+}
+
+mark {
+  background: #ffecb3;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 3px;
+}
+
+/* ==========================================================
+   SUBBARRA DE CATEGORÍAS
+   ========================================================== */
+
 .navbar-bottom {
-  background: #f5f5f5;
   position: absolute;
   left: 0;
   right: 0;
   top: 100%;
   z-index: 30;
+
   max-height: 0;
   overflow: hidden;
-  transition: max-height .25s ease;
+
+  transition:
+    max-height 0.3s ease,
+    opacity 0.2s ease;
+
+  box-shadow: none;
+  border: 0;
 }
+
 .navbar-bottom.is-open {
-  max-height: 70vh;
+  max-height: calc(100vh - 80px);
   overflow-y: auto;
 }
 
 .navbar-bottom-content {
-  background: transparent; /* evita que la regla global "nav { background-color: #ff5a5f }" de index.css pinte esto de rosa */
+  background: transparent;
   width: 100%;
   max-width: 1300px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
+
   gap: 2px;
+
   font-size: 15px;
   font-weight: 500;
-  padding: 8px 16px 16px;
-}
-.nav-link {
-  color: #000;
-  text-decoration: none;
-  padding: 12px 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  transition: color .2s;
-}
-.nav-link:last-child { border-bottom: 0; }
-.nav-link:hover, .nav-link.active { color: goldenrod; }
 
-/* Overlay oscuro detrás del menú móvil abierto */
+  padding: 8px 16px 16px;
+
+  height: auto !important;
+  min-height: auto !important;
+  line-height: normal !important;
+}
+
+.nav-link {
+  color: #000000;
+  text-decoration: none;
+
+  padding: 12px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+  transition: color 0.2s;
+}
+
+.nav-link:last-child {
+  border-bottom: 0;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  color: goldenrod;
+}
+
+/* ==========================================================
+   OVERLAY
+   ========================================================== */
+
 .navbar-mobile-overlay {
   position: fixed;
   inset: 0;
-  top: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 25;
 }
 
 /* ==========================================================
-   Tablet / Desktop (>= 769px): layout horizontal clásico
+   DESKTOP
    ========================================================== */
-@media (min-width: 769px) {
-  .navbar-top { height: 84px; padding: 0; }
 
-  .navbar-top-content {
-    display: grid;
-    grid-template-columns: 1fr minmax(0, 720px) 1fr;
-    align-items: center;
-    gap: 16px;
-    padding: 0 20px;
+@media (min-width: 769px) {
+  .navbar-top {
+    height: 84px;
+    padding: 0;
   }
 
-  .navbar-left { justify-self: start; }
-  .navbar-right { justify-self: end; }
+  .navbar-top-content {
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 0 20px;
 
-  .navbar-left { order: initial; }
-  .brand-logo-text { font-size: 20px; }
-  .brand-logo-img { height: 36px; }
+    display: grid;
+    grid-template-columns:
+      minmax(140px, 220px)
+      minmax(400px, 720px)
+      minmax(140px, 220px);
+
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+
+
+  .navbar-left {
+    order: initial;
+  }
+
+  .brand-logo-text {
+    font-size: 20px;
+  }
+
+  .brand-logo-img {
+    height: 36px;
+  }
 
   .navbar-search {
     order: initial;
@@ -258,59 +463,85 @@ mark { background: #ffecb3; color: inherit; padding: 0 2px; border-radius: 3px; 
     flex-basis: auto;
     max-width: 720px;
   }
+
   .navbar-input {
+    height: 50px;
     padding: 12px 88px 12px 44px;
     font-size: 15px;
   }
-  .navbar-search-icon-left { left: 14px; }
+
+  .navbar-search-icon-left {
+    left: 14px;
+  }
+
   .navbar-clear-btn,
-  .navbar-search-btn { width: 34px; height: 34px; border-radius: 10px; }
-  .navbar-clear-btn { right: 50px; }
-  .navbar-search-btn { right: 10px; }
+  .navbar-search-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
 
-  .navbar-right { order: initial; margin-left: 0; gap: 25px; }
-  .nav-icon { font-size: 12px; }
+  .navbar-clear-btn {
+    right: 50px;
+  }
 
-  .navbar-menu-toggle { display: none; }
+  .navbar-search-btn {
+    right: 10px;
+  }
+
+  .navbar-right {
+    order: initial;
+    margin-left: 0;
+    gap: 25px;
+  }
+
+  .nav-icon {
+    font-size: 12px;
+  }
+
+  .navbar-menu-toggle {
+    display: none;
+  }
 
   .navbar-bottom {
     position: static;
+
     max-height: none;
     overflow: visible;
+
     height: auto;
-    min-height: 52px;
+    min-height: auto;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 12px 0;
-  }
-  .navbar-bottom-content {
 
-    background: transparent;
-  width: 100%;
-  max-width: 1300px;
-  margin: 0 auto;
-  display: flex;
-  
-  gap: 2px;
-  font-size: 15px;
-  font-weight: 500;
-  padding: 8px 16px 16px;
-  box-shadow: none;   /* 👈 nuevo */
-  border: 0;          /* 👈 nuevo */
+    padding: 0;
+    background: #f5f5f5;
+  }
+
+  .navbar-bottom-content {
     flex-direction: row;
     flex-wrap: wrap;
+
     align-items: center;
     justify-content: center;
+
     row-gap: 10px;
     column-gap: 25px;
+
+    padding: 12px 0;
+
     overflow: visible;
     white-space: normal;
   }
+
   .nav-link {
     padding: 0 0 3px;
     border-bottom: 0;
   }
 
-  .navbar-mobile-overlay { display: none; }
+  .navbar-mobile-overlay {
+    display: none;
+  }
 }

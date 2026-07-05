@@ -174,7 +174,7 @@ const Navbar = ({ onSearch }) => {
   return (
     <header className="site-navbar">
       {/*  Barra superior  */}
-      <div className="navbar-top grey lighten-2 z-depth-1">
+      <div className="navbar-top z-depth-1">
         <div className="container navbar-top-content">
           <div className="navbar-left">
             <Link to="/" className="navbar-logo">
