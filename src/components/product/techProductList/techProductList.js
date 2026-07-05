@@ -351,7 +351,12 @@ export default function TechProductList() {
       // why: cubre "tecnologia", "tecnología", "technology", "tech", "electrónicos"
       return (
         c.includes("tecnologia") ||
+        c.includes("tecnología") ||
+        c.includes("Tecnologia") ||
+        c.includes("Tecnología") ||
         c.includes("technology") ||
+        c.includes("Accesorios") ||
+        c.includes("Accesorios") ||
         c.includes("bolsos") ||
         c.includes("BOLSOS") 
        
