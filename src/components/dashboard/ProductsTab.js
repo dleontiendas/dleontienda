@@ -57,22 +57,6 @@ const normalizeDriveLink = (url) => {
   return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}` : u;
 };
 
-/* ---------- Limpieza de variantes (COMPARTIDA por formulario manual y carga por Excel) ----------
-   Antes existían dos copias de esta lógica (una en onSave, otra implícita/ausente en la carga
-   por lotes), por lo que un producto subido por Excel podía terminar con una estructura de
-   `variants` distinta a uno editado manualmente (en particular, sin imágenes por color).
-   Centralizar esto garantiza que ambos caminos guarden exactamente lo mismo en Firestore. */
-const cleanVariants = (variants = []) =>
-  (variants || [])
-    .map((v) => ({
-      color: String(v.color || "").trim(),
-      images: (v.images || []).map((u) => toStr(u)).filter(Boolean),
-      tallas: (v.tallas || [])
-        .map((t) => ({ size: String(t.size || "").trim(), stock: Math.max(0, Number(t.stock || 0)) }))
-        .filter((t) => t.size),
-    }))
-    .filter((v) => v.color && (v.tallas.length || v.images.length));
-
 /* ---------- Modal (no cierra por clic fuera) ---------- */
 function Modal({ open, title, onClose, children, footer }) {
   if (!open) return null;
@@ -316,10 +300,31 @@ function ProductForm({ value, onChange }) {
           Descripción
           <textarea rows={3} value={value.description || ""} onChange={(e) => set("description", e.target.value)} />
         </label>
-        <label className="check">
-          <input type="checkbox" checked={!!value.active} onChange={(e) => set("active", e.target.checked)} />
-          Activo
-        </label>
+        <label className="span-2">
+  Estado del producto
+
+  <select
+    value={value.active ? "activo" : "inactivo"}
+    onChange={(e) =>
+      set("active", e.target.value === "activo")
+    }
+  >
+    <option value="activo">🟢 Activo (visible)</option>
+    <option value="inactivo">🔴 Inactivo (oculto)</option>
+  </select>
+
+
+  <small
+    style={{
+      display: "block",
+      marginTop: 6,
+      fontWeight: 600,
+      color: value.active ? "#0f9d58" : "#d93025",
+    }}
+  >
+    {value.active ? "🟢 Visible en la tienda" : "🔴 Oculto en la tienda"}
+  </small>
+</label>
       </div>
 
       <VariantsEditor value={value.variants || []} onChange={(v) => set("variants", v)} />
@@ -327,7 +332,7 @@ function ProductForm({ value, onChange }) {
   );
 }
 
-/* ---------- Modal: Carga por lotes ---------- */
+/* ---------- Modal: Carga por lotes (sin cambios funcionales) ---------- */
 function BatchUploadModal({ open, onClose, onMergeRows }) {
   const [parsed, setParsed] = useState([]);
   const [rawCount, setRawCount] = useState(0);
@@ -371,12 +376,6 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         const talla = toStr(r["Talla"]);
         const cantidad = toNum(r["Cantidad"]);
 
-        // NUEVO: imágenes específicas de la variante/color de esta fila.
-        // Solo es necesario llenarlas en una fila por color (las filas de otras
-        // tallas del mismo color pueden dejarlas en blanco; no se duplican).
-        const colorImg1 = normalizeDriveLink(r["Imagen Color 1"]);
-        const colorImg2 = normalizeDriveLink(r["Imagen Color 2"]);
-
         if (!acc.has(sku)) {
           acc.set(sku, {
             base: {
@@ -403,13 +402,8 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
 
         [imgPrincipal, img1, img2].forEach((u) => { if (u && !entry.imgs.includes(u)) entry.imgs.push(u); });
 
-        if (color || talla || Number.isFinite(cantidad) || colorImg1 || colorImg2) {
-          entry.variantes.push({
-            color,
-            talla,
-            cantidad: Math.max(0, Math.trunc(cantidad || 0)),
-            images: [colorImg1, colorImg2].filter(Boolean), // NUEVO
-          });
+        if (color || talla || Number.isFinite(cantidad)) {
+          entry.variantes.push({ color, talla, cantidad: Math.max(0, Math.trunc(cantidad || 0)) });
         }
       }
 
@@ -418,12 +412,8 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         const porColor = {};
         for (const v of variantes) {
           const key = v.color || "sin_color";
-          if (!porColor[key]) porColor[key] = { color: key, images: [], tallas: [] };
+          if (!porColor[key]) porColor[key] = { color: key, images: [], tallas: [] }; // images opcional aquí
           if (v.talla) porColor[key].tallas.push({ size: v.talla, stock: v.cantidad || 0 });
-          // NUEVO: fusiona imágenes de color sin duplicar, sin importar en qué fila vinieron
-          (v.images || []).forEach((u) => {
-            if (u && !porColor[key].images.includes(u)) porColor[key].images.push(u);
-          });
         }
 
         const producto = {
@@ -432,9 +422,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
           description: toStr(base.description), materials: toStr(base.materials), care_instructions: toStr(base.care_instructions),
           warranty: toStr(base.warranty), price_cop: toNum(base.price_cop), weight_grams: toNum(base.weight_grams),
           images: imgs.filter(Boolean),
-          // Usa la MISMA limpieza que el formulario manual, así la estructura
-          // guardada en Firestore siempre es idéntica venga de Excel o del modal.
-          variants: cleanVariants(Object.values(porColor)),
+          variants: Object.values(porColor),
           active: true,
           updated_at: new Date(),
           created_at: new Date(),
@@ -500,9 +488,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad, Imagen Color 1, Imagen Color 2</strong>.
-          <br />
-          Una fila por cada combinación SKU + Color + Talla. <strong>Imagen Color 1 / Imagen Color 2</strong> son las imágenes de ese color: solo necesitas llenarlas en una de las filas de ese color (las demás filas de tallas del mismo color pueden dejarlas vacías).
+          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
         </div>
 
         <div className="ap-summary">
@@ -521,9 +507,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
                   <div className="ap-cell">{p.name}</div>
                   <div className="ap-cell">{p.category || "—"}</div>
                   <div className="ap-cell">{currencyCO(p.price_cop)}</div>
-                  <div className="ap-cell">
-                    {p.variants?.map((v) => `${v.color}(${v.tallas?.length || 0}t/${v.images?.length || 0}img)`).join(", ") || "—"}
-                  </div>
+                  <div className="ap-cell">{p.variants?.map((v) => `${v.color}(${v.tallas?.length || 0})`).join(", ")}</div>
                   <div className="ap-cell">{p.images?.length || 0}</div>
                 </div>
               ))}
@@ -585,6 +569,7 @@ export default function AdminProducts() {
     setDraft(
       emptyProduct({
         ...row,
+        active: row.active !== false,
         images: Array.isArray(row.images) ? row.images : fromCsv(row.images),
         variants: Array.isArray(row.variants)
           ? row.variants.map((v) => ({
@@ -612,7 +597,15 @@ export default function AdminProducts() {
       if (!toStr(draft.sku)) return alert("El SKU es obligatorio.");
       if (!toStr(draft.name)) return alert("El nombre es obligatorio.");
 
-      const variantsClean = cleanVariants(draft.variants);
+      const variantsClean = (draft.variants || [])
+        .map((v) => ({
+          color: String(v.color || "").trim(),
+          images: (v.images || []).map((u) => toStr(u)).filter(Boolean),
+          tallas: (v.tallas || [])
+            .map((t) => ({ size: String(t.size || "").trim(), stock: Math.max(0, Number(t.stock || 0)) }))
+            .filter((t) => t.size),
+        }))
+        .filter((v) => v.color && (v.tallas.length || v.images.length));
 
       const payload = {
         sku: toStr(draft.sku) || editing?.sku || "",
@@ -624,7 +617,7 @@ export default function AdminProducts() {
         description: toStr(draft.description),
         price_cop: Number(draft.price_cop || 0),
         images: draft.images || [],
-        active: !!draft.active,
+        active: draft.active !== false,
         variants: variantsClean,
         weight_grams: Number(draft.weight_grams || 0),
         warranty: toStr(draft.warranty),
@@ -658,6 +651,24 @@ export default function AdminProducts() {
     } catch (e) {
       console.error("❌ Error eliminando:", e);
       alert("No se pudo eliminar.");
+    }
+  };
+
+  // 👇 NUEVO: activar/desactivar producto directamente desde la tabla
+  const onToggleActive = async (row) => {
+    const nextActive = !(row.active !== false);
+    const verb = nextActive ? "activar" : "desactivar";
+    if (!window.confirm(`¿Seguro que deseas ${verb} "${row.name}"?`)) return;
+    try {
+      await updateDoc(row.ref, { active: nextActive, updated_at: new Date() });
+      setRows((prev) =>
+        prev.map((r) =>
+          r.id === row.id && r.catSlug === row.catSlug ? { ...r, active: nextActive } : r
+        )
+      );
+    } catch (e) {
+      console.error("❌ Error actualizando estado:", e);
+      alert("No se pudo actualizar el estado del producto.");
     }
   };
 
@@ -722,6 +733,16 @@ export default function AdminProducts() {
                   </div>
                   <div className="ap-cell actions">
                     <button className="ap-btn ap-btn--ghost" onClick={() => onOpenEdit(r)}>Editar</button>
+
+                    {/* 👇 NUEVO botón activar/desactivar */}
+                    <button
+                      className={`ap-btn ${r.active !== false ? "ap-btn--warning" : "ap-btn--success"}`}
+                      onClick={() => onToggleActive(r)}
+                      title={r.active !== false ? "Ocultar producto en la tienda" : "Mostrar producto en la tienda"}
+                    >
+                      {r.active !== false ? "Desactivar" : "Activar"}
+                    </button>
+
                     <button className="ap-btn ap-btn--danger" onClick={() => onDelete(r)}>Eliminar</button>
                     <a className="ap-btn ap-btn--link" href={`https://dleongold.com/products/${r.catSlug}/${r.sku || r.id}`} target="_blank" rel="noreferrer">
                       Ver

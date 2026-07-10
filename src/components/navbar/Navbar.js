@@ -94,7 +94,8 @@ const Navbar = ({ onSearch }) => {
   const filtered = useMemo(() => {
     const q = normalize(debouncedTerm);
     if (!q) return [];
-    const byScore = products
+    const activeProducts = products.filter((p) => p?.active !== false); // 👈 NUEVO
+    const byScore = activeProducts
       .map((p) => {
         const name = p?.name || "";
         const sku = p?.sku || p?.id || "";

@@ -386,7 +386,10 @@ if (paymentMethod === "bold") {
 <button
   type="button"
   className="btn-whatsapp"
-  onClick={handleWhatsAppOrder}
+  onClick={() => {
+    handleWhatsAppOrder();
+    clearCart();
+  }}
 >
   Comprar por WhatsApp
 </button>
