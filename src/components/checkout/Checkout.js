@@ -5,13 +5,12 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
 import "./Checkout.css";
-
-const API_URL = "https://dleongold.com:3001";
-
+import BoldButton from "../payments/BoldButton";
+const API_URL = "http://localhost:3001";
 const Checkout = () => {
   const { cart, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
-
+const [boldCheckout, setBoldCheckout] = useState(null);
   const [shipping] = useState(15900);
   const [paymentMethod, setPaymentMethod] = useState("contraentrega");
   const [wompiType, setWompiType] = useState("PSE");
@@ -125,23 +124,49 @@ const Checkout = () => {
         return;
       }
 
-      /* BOLD */
-      if (paymentMethod === "bold") {
-        const res = await fetch(`${API_URL}/api/payments/bold`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            boldType,
-            customer: formData,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Bold no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
+      /* ===================== BOLD ===================== */
+
+if (paymentMethod === "bold") {
+  const res = await fetch(`${API_URL}/api/payments/bold`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      orderId: docRef.id,
+      customer: {
+        email: formData.email,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        phone: formData.phone,
+        document: formData.document,
+      },
+      metadata: {
+        boldType,
+      },
+      returnUrl: `${window.location.origin}/checkout/success?ref=${docRef.id}`,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(
+      data.message || "No fue posible iniciar el pago con Bold."
+    );
+  }
+
+  if (!data.checkout) {
+    throw new Error(
+      "El backend no devolvió la configuración del checkout de Bold."
+    );
+  }
+
+  // Mostrar el botón oficial de Bold
+  setBoldCheckout(data.checkout);
+
+  return;
+}
 
       /* SISTECREDITO */
       if (paymentMethod === "sistecredito") {
@@ -328,13 +353,28 @@ const Checkout = () => {
         <p>Envío <strong>${shipping.toLocaleString("es-CO")}</strong></p>
         <h4>Total ${total.toLocaleString("es-CO")}</h4>
 
-        <button type="button" className="btn-primary" onClick={handleSubmit} disabled={loading}>
-          {loading ? "Procesando..." : "Finalizar compra"}
-        </button>
+        <button
+  type="button"
+  className="btn-primary"
+  onClick={handleSubmit}
+  disabled={loading}
+>
+  {loading ? "Procesando..." : "Finalizar compra"}
+</button>
 
-        <button type="button" className="btn-whatsapp" onClick={handleWhatsAppOrder}>
-          Comprar por WhatsApp
-        </button>
+{boldCheckout && (
+  <div style={{ marginTop: "20px" }}>
+    <BoldButton checkout={boldCheckout} />
+  </div>
+)}
+
+<button
+  type="button"
+  className="btn-whatsapp"
+  onClick={handleWhatsAppOrder}
+>
+  Comprar por WhatsApp
+</button>
       </div>
 
     </div>
