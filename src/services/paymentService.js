@@ -1,30 +1,23 @@
-import {
-  createWompiPayment,
-  createAddiPayment,
-  createBoldPayment,
-  createSistecreditoPayment,
-} from "../api/paymentsApi";
+// src/services/paymentService.js
+
+import { createPayment } from "../api/paymentsApi";
 
 export async function startPayment(
   provider,
-  payload = {}
+  payload
 ) {
-  switch (provider?.toUpperCase()) {
-    case "WOMPI":
-      return createWompiPayment(payload);
+  const response =
+    await createPayment(
+      provider,
+      payload
+    );
 
-    case "ADDI":
-      return createAddiPayment(payload);
-
-    case "BOLD":
-      return createBoldPayment(payload);
-
-    case "SISTECREDITO":
-      return createSistecreditoPayment(payload);
-
-    default:
-      throw new Error(
-        `Proveedor no soportado: ${provider}`
-      );
+  if (!response.success) {
+    throw new Error(
+      response.message ||
+      "No fue posible iniciar el pago."
+    );
   }
+
+  return response;
 }

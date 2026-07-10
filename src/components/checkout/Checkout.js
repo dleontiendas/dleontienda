@@ -5,12 +5,18 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
 import "./Checkout.css";
-import BoldButton from "../payments/BoldButton";
+
+
+import PaymentGateway from "../payments/PaymentGateway";
 const API_URL = "http://localhost:3001";
+
+
 const Checkout = () => {
+  const [paymentData, setPaymentData] = useState(null);
+const [paymentError, setPaymentError] = useState(null);
+
   const { cart, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
-const [boldCheckout, setBoldCheckout] = useState(null);
   const [shipping] = useState(15900);
   const [paymentMethod, setPaymentMethod] = useState("contraentrega");
   const [wompiType, setWompiType] = useState("PSE");
@@ -163,7 +169,7 @@ if (paymentMethod === "bold") {
   }
 
   // Mostrar el botón oficial de Bold
-  setBoldCheckout(data.checkout);
+  setPaymentData(data);
 
   return;
 }
@@ -190,9 +196,18 @@ if (paymentMethod === "bold") {
       }
 
     } catch (error) {
-      console.error("Error checkout:", error);
-      M.toast({ html: "Error procesando el pago" });
-    } finally {
+  console.error(error);
+
+  setPaymentError(
+    error.message || "Error procesando el pago"
+  );
+
+  M.toast({
+    html:
+      error.message ||
+      "Error procesando el pago",
+  });
+} finally {
       setLoading(false);
     }
   };
@@ -362,11 +377,11 @@ if (paymentMethod === "bold") {
   {loading ? "Procesando..." : "Finalizar compra"}
 </button>
 
-{boldCheckout && (
-  <div style={{ marginTop: "20px" }}>
-    <BoldButton checkout={boldCheckout} />
-  </div>
-)}
+<PaymentGateway
+  paymentData={paymentData}
+  loading={loading}
+  error={paymentError}
+/>
 
 <button
   type="button"
