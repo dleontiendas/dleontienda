@@ -1,10 +1,9 @@
 // src/components/payments/PaymentGateway.js
 
-import React from "react";
-import PaymentLoader from "./PaymentLoader";
-import PaymentError from "./PaymentError";
 import PaymentRedirect from "./PaymentRedirect";
 import WompiCheckout from "./WompiCheckout";
+import PaymentLoader from "./PaymentLoader";
+import PaymentError from "./PaymentError";
 
 export default function PaymentGateway({
   paymentData,
@@ -12,12 +11,17 @@ export default function PaymentGateway({
   error,
 }) {
   if (loading) {
-    return <PaymentLoader />;
+    return (
+      <PaymentLoader message="Preparando el pago..." />
+    );
   }
 
   if (error) {
     return (
-      <PaymentError message={error} />
+      <PaymentError
+        title="Error de pago"
+        message={error}
+      />
     );
   }
 
@@ -25,14 +29,13 @@ export default function PaymentGateway({
     return null;
   }
 
-  switch (paymentData.provider) {
+  const { provider, checkout, redirectUrl } =
+    paymentData;
+
+  switch (provider) {
     case "WOMPI":
       return (
-        <WompiCheckout
-          checkout={
-            paymentData.checkout
-          }
-        />
+        <WompiCheckout checkout={checkout} />
       );
 
     case "BOLD":
@@ -40,16 +43,15 @@ export default function PaymentGateway({
     case "SISTECREDITO":
       return (
         <PaymentRedirect
-          redirectUrl={
-            paymentData.redirectUrl
-          }
+          redirectUrl={redirectUrl}
         />
       );
 
     default:
       return (
         <PaymentError
-          message="Proveedor no soportado."
+          title="Proveedor no soportado"
+          message={`El proveedor "${provider}" no está implementado.`}
         />
       );
   }

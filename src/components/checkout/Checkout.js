@@ -1,61 +1,135 @@
-import React, { useContext, useState, useEffect } from "react";
-import { CartContext } from "../../context/CartContext";
-import { db } from "../../Firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import React, {
+  useContext,
+  useState,
+  useEffect,
+} from "react";
+
+import {
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
-import "./Checkout.css";
 
+import { db } from "../../Firebase";
+
+import { CartContext } from "../../context/CartContext";
+
+import { startPayment } from "../../services/paymentService";
+
+import { PAYMENT_PROVIDER_MAP } from "../../components/utils/paymentProviderMap";
 
 import PaymentGateway from "../payments/PaymentGateway";
-const API_URL = "http://localhost:3001";
 
+import "./Checkout.css";
 
 const Checkout = () => {
-  const [paymentData, setPaymentData] = useState(null);
-const [paymentError, setPaymentError] = useState(null);
+  const { cart, clearCart } =
+    useContext(CartContext);
 
-  const { cart, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
-  const [shipping] = useState(15900);
-  const [paymentMethod, setPaymentMethod] = useState("contraentrega");
-  const [wompiType, setWompiType] = useState("PSE");
-  const [boldType, setBoldType] = useState("CARD");
-  const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    email: "",
-    first_name: "",
-    last_name: "",
-    document: "",
-    address: "",
-    city: "",
-    province: "",
-    postal_code: "",
-    phone: "",
-  });
+  const [loading, setLoading] =
+    useState(false);
+
+  const [paymentData, setPaymentData] =
+    useState(null);
+
+  const [paymentError, setPaymentError] =
+    useState(null);
+
+  const [shipping] =
+    useState(15900);
+
+  const [paymentMethod, setPaymentMethod] =
+    useState("contraentrega");
+
+  const [wompiType, setWompiType] =
+    useState("PSE");
+
+  const [boldType, setBoldType] =
+    useState("CARD");
+
+  const [formData, setFormData] =
+    useState({
+      email: "",
+      first_name: "",
+      last_name: "",
+      document: "",
+      address: "",
+      city: "",
+      province: "",
+      postal_code: "",
+      phone: "",
+    });
 
   useEffect(() => {
     M.AutoInit();
   }, []);
 
   const subtotal = cart.reduce(
-    (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
+    (acc, item) =>
+      acc +
+      (item.price_cop || 0) *
+        (item.quantity || 1),
     0
   );
-  const total = subtotal + shipping;
+
+  const total =
+    subtotal + shipping;
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value } =
+      e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  /* ================= SUBMIT ================= */
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
+    setPaymentError(null);
+
     if (!cart.length) {
-      M.toast({ html: "Tu carrito está vacío" });
+      M.toast({
+        html: "Tu carrito está vacío",
+      });
+
+      return;
+    }
+
+    if (
+      !formData.email ||
+      !formData.first_name ||
+      !formData.last_name ||
+      !formData.phone ||
+      !formData.address ||
+      !formData.city
+    ) {
+      M.toast({
+        html:
+          "Completa todos los datos requeridos",
+      });
+
+      return;
+    }
+
+    if (
+      ["addi", "sistecredito"].includes(
+        paymentMethod
+      ) &&
+      !formData.document
+    ) {
+      M.toast({
+        html:
+          "La cédula es obligatoria para este método de pago.",
+      });
+
       return;
     }
 
@@ -64,338 +138,549 @@ const [paymentError, setPaymentError] = useState(null);
     try {
       const order = {
         customer: formData,
+
         items: cart.map((item) => ({
-          id: item.id,
+          productId: item.id,
           name: item.name,
           price: item.price_cop,
           quantity: item.quantity,
-          color: item.selectedColor,
-          size: item.selectedSize,
+          color:
+            item.selectedColor,
+          size:
+            item.selectedSize,
         })),
+
         subtotal,
+
         shipping,
+
         total,
+
         paymentMethod,
+
+        paymentProvider:
+          PAYMENT_PROVIDER_MAP[
+            paymentMethod
+          ],
+
         wompiType,
+
         boldType,
-        status: "INITIATED",
-        createdAt: serverTimestamp(),
+
+        status: "Initiated",
+
+        paymentStatus:
+          "PENDING",
+
+        externalId: null,
+
+        providerData: {},
+
+        createdAt:
+          serverTimestamp(),
+
+        updatedAt:
+          serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, "orders"), order);
+      const docRef =
+        await addDoc(
+          collection(
+            db,
+            "orders"
+          ),
+          order
+        );
 
-      /* CONTRAENTREGA */
-      if (paymentMethod === "contraentrega") {
+      if (
+        paymentMethod ===
+        "contraentrega"
+      ) {
         clearCart();
-        navigate(`/checkout-success?ref=${docRef.id}`);
+
+        navigate(
+          `/checkout-success?ref=${docRef.id}`
+        );
+
         return;
       }
 
-      /* WOMPI */
-      if (paymentMethod === "wompi") {
-        const res = await fetch(`${API_URL}/api/payments/wompi`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            wompiType,
-            customer: formData,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Wompi no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
+      const provider =
+        PAYMENT_PROVIDER_MAP[
+          paymentMethod
+        ];
 
-      /* ADDI */
-      if (paymentMethod === "addi") {
-        const res = await fetch(`${API_URL}/api/payments/addi`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: docRef.id,
-            total,
-            email: formData.email,
-            phone: formData.phone,
-            document: formData.document,
-            firstName: formData.first_name,
-            lastName: formData.last_name,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Addi no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
+      const paymentResponse =
+        await startPayment(
+          provider,
+          {
+            orderId:
+              docRef.id,
 
-      /* ===================== BOLD ===================== */
+            customer:
+              formData,
 
-if (paymentMethod === "bold") {
-  const res = await fetch(`${API_URL}/api/payments/bold`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      orderId: docRef.id,
-      customer: {
-        email: formData.email,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone: formData.phone,
-        document: formData.document,
-      },
-      metadata: {
-        boldType,
-      },
-      returnUrl: `${window.location.origin}/checkout/success?ref=${docRef.id}`,
-    }),
-  });
+            metadata: {
+              wompiType,
+              boldType,
+            },
 
-  const data = await res.json();
+            returnUrl:
+              `${window.location.origin}/checkout-success?ref=${docRef.id}`,
+          }
+        );
 
-  if (!res.ok || !data.success) {
-    throw new Error(
-      data.message || "No fue posible iniciar el pago con Bold."
-    );
-  }
-
-  if (!data.checkout) {
-    throw new Error(
-      "El backend no devolvió la configuración del checkout de Bold."
-    );
-  }
-
-  // Mostrar el botón oficial de Bold
-  setPaymentData(data);
-
-  return;
-}
-
-      /* SISTECREDITO */
-      if (paymentMethod === "sistecredito") {
-        const res = await fetch(`${API_URL}/api/payments/sistecredito`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: docRef.id,
-            total,
-            document: formData.document,
-            email: formData.email,
-            phone: formData.phone,
-            firstName: formData.first_name,
-            lastName: formData.last_name,
-          }),
-        });
-        const data = await res.json();
-        if (!data.redirectUrl) throw new Error("Sistecrédito no devolvió redirectUrl");
-        window.location.href = data.redirectUrl;
-        return;
-      }
-
+      setPaymentData(
+        paymentResponse
+      );
     } catch (error) {
-  console.error(error);
+      console.error(error);
 
-  setPaymentError(
-    error.message || "Error procesando el pago"
-  );
+      setPaymentError(
+        error.message ||
+          "Error procesando el pago."
+      );
 
-  M.toast({
-    html:
-      error.message ||
-      "Error procesando el pago",
-  });
-} finally {
+      M.toast({
+        html:
+          error.message ||
+          "Error procesando el pago.",
+      });
+    } finally {
       setLoading(false);
     }
   };
 
-  /* ================= WHATSAPP ================= */
-  const handleWhatsAppOrder = () => {
-    const phoneNumber = "573104173201";
-    const message = encodeURIComponent(
-      `Nuevo pedido\n\n` +
-        `${formData.first_name} ${formData.last_name}\n${formData.email}\n${formData.phone}\n${formData.address}, ${formData.city}\n\n` +
-        cart
-          .map(
-            (item) =>
-              `• ${item.name} x${item.quantity} - $${Number(item.price_cop).toLocaleString("es-CO")}`
-          )
-          .join("\n") +
-        `\n\nTotal: $${total.toLocaleString("es-CO")}`
-    );
-    window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
-  };
+  const handleWhatsAppOrder =
+    () => {
+      const phoneNumber =
+        "573104173201";
 
-  return (
+      const message =
+        encodeURIComponent(
+          `Nuevo pedido\n\n` +
+            `${formData.first_name} ${formData.last_name}\n` +
+            `${formData.email}\n` +
+            `${formData.phone}\n` +
+            `${formData.address}, ${formData.city}\n\n` +
+            cart
+              .map(
+                (item) =>
+                  `• ${item.name} x${item.quantity} - $${Number(
+                    item.price_cop
+                  ).toLocaleString(
+                    "es-CO"
+                  )}`
+              )
+              .join("\n") +
+            `\n\nTotal: $${total.toLocaleString(
+              "es-CO"
+            )}`
+        );
+
+      window.open(
+        `https://wa.me/${phoneNumber}?text=${message}`,
+        "_blank"
+      );
+    };
+    
+
+    return (
     <div className="checkout-page">
-
       <div className="checkout-form">
         <h3>Datos del comprador</h3>
 
         <label>Email</label>
-        <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+        />
 
         <div className="checkout-row">
           <div>
             <label>Nombre</label>
-            <input type="text" name="first_name" value={formData.first_name} onChange={handleChange} required />
+
+            <input
+              type="text"
+              name="first_name"
+              value={formData.first_name}
+              onChange={handleChange}
+              required
+            />
           </div>
+
           <div>
             <label>Apellidos</label>
-            <input type="text" name="last_name" value={formData.last_name} onChange={handleChange} required />
+
+            <input
+              type="text"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleChange}
+              required
+            />
           </div>
         </div>
 
         <label>Cédula</label>
-        <input type="text" name="document" value={formData.document} onChange={handleChange} required />
+
+        <input
+          type="text"
+          name="document"
+          value={formData.document}
+          onChange={handleChange}
+        />
 
         <label>Dirección</label>
-        <input type="text" name="address" value={formData.address} onChange={handleChange} required />
+
+        <input
+          type="text"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          required
+        />
 
         <div className="checkout-row">
           <div>
             <label>Ciudad</label>
-            <input type="text" name="city" value={formData.city} onChange={handleChange} required />
+
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              required
+            />
           </div>
+
           <div>
             <label>Departamento</label>
-            <input type="text" name="province" value={formData.province} onChange={handleChange} />
+
+            <input
+              type="text"
+              name="province"
+              value={formData.province}
+              onChange={handleChange}
+            />
           </div>
         </div>
 
         <label>Teléfono</label>
-        <input type="text" name="phone" value={formData.phone} onChange={handleChange} required />
+
+        <input
+          type="text"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          required
+        />
 
         <div className="payment-section">
           <h4>Método de pago</h4>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="contraentrega"
-                checked={paymentMethod === "contraentrega"}
-                onChange={(e) => setPaymentMethod(e.target.value)} />
-              <span>Pago contra entrega</span>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="contraentrega"
+                checked={
+                  paymentMethod ===
+                  "contraentrega"
+                }
+                onChange={(e) =>
+                  setPaymentMethod(
+                    e.target.value
+                  )
+                }
+              />
+
+              <span>
+                Pago contra entrega
+              </span>
             </label>
           </p>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="addi"
-                checked={paymentMethod === "addi"}
-                onChange={(e) => setPaymentMethod(e.target.value)} />
-              <span>Financiación con ADDI</span>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="addi"
+                checked={
+                  paymentMethod ===
+                  "addi"
+                }
+                onChange={(e) =>
+                  setPaymentMethod(
+                    e.target.value
+                  )
+                }
+              />
+
+              <span>
+                Financiación con ADDI
+              </span>
             </label>
           </p>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="sistecredito"
-                checked={paymentMethod === "sistecredito"}
-                onChange={(e) => setPaymentMethod(e.target.value)} />
-              <span>Financiación con Sistecrédito</span>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="sistecredito"
+                checked={
+                  paymentMethod ===
+                  "sistecredito"
+                }
+                onChange={(e) =>
+                  setPaymentMethod(
+                    e.target.value
+                  )
+                }
+              />
+
+              <span>
+                Financiación con
+                Sistecrédito
+              </span>
             </label>
           </p>
 
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="wompi"
-                checked={paymentMethod === "wompi"}
-                onChange={(e) => setPaymentMethod(e.target.value)} />
-              <span>Pago electrónico (Wompi)</span>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="wompi"
+                checked={
+                  paymentMethod ===
+                  "wompi"
+                }
+                onChange={(e) =>
+                  setPaymentMethod(
+                    e.target.value
+                  )
+                }
+              />
+
+              <span>
+                Pago con Wompi
+              </span>
             </label>
           </p>
 
-          {paymentMethod === "wompi" && (
-            <div style={{ marginLeft: "25px", marginTop: "10px" }}>
-              {[["PSE", "PSE"], ["CARD", "Tarjeta"], ["NEQUI", "Nequi"]].map(([val, label]) => (
-                <p key={val}>
-                  <label>
-                    <input name="wompiType" type="radio" value={val}
-                      checked={wompiType === val}
-                      onChange={(e) => setWompiType(e.target.value)} />
-                    <span>{label}</span>
-                  </label>
-                </p>
-              ))}
+          {paymentMethod ===
+            "wompi" && (
+            <div
+              style={{
+                marginLeft: 25,
+                marginTop: 10,
+              }}
+            >
+              {[
+                ["PSE", "PSE"],
+                [
+                  "CARD",
+                  "Tarjeta",
+                ],
+                [
+                  "NEQUI",
+                  "Nequi",
+                ],
+              ].map(
+                ([value, label]) => (
+                  <p key={value}>
+                    <label>
+                      <input
+                        type="radio"
+                        name="wompiType"
+                        value={value}
+                        checked={
+                          wompiType ===
+                          value
+                        }
+                        onChange={(e) =>
+                          setWompiType(
+                            e.target
+                              .value
+                          )
+                        }
+                      />
+
+                      <span>
+                        {label}
+                      </span>
+                    </label>
+                  </p>
+                )
+              )}
             </div>
           )}
 
-          {/* ── BOLD ── */}
           <p>
             <label>
-              <input name="paymentMethod" type="radio" value="bold"
-                checked={paymentMethod === "bold"}
-                onChange={(e) => setPaymentMethod(e.target.value)} />
-              <span>Pago con Bold</span>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="bold"
+                checked={
+                  paymentMethod ===
+                  "bold"
+                }
+                onChange={(e) =>
+                  setPaymentMethod(
+                    e.target.value
+                  )
+                }
+              />
+
+              <span>
+                Pago con Bold
+              </span>
             </label>
           </p>
 
-          {paymentMethod === "bold" && (
-            <div style={{ marginLeft: "25px", marginTop: "10px" }}>
-              {[["CARD", "Tarjeta crédito / débito"], ["NEQUI", "Nequi"], ["PSE", "PSE"]].map(([val, label]) => (
-                <p key={val}>
-                  <label>
-                    <input name="boldType" type="radio" value={val}
-                      checked={boldType === val}
-                      onChange={(e) => setBoldType(e.target.value)} />
-                    <span>{label}</span>
-                  </label>
-                </p>
-              ))}
+          {paymentMethod ===
+            "bold" && (
+            <div
+              style={{
+                marginLeft: 25,
+                marginTop: 10,
+              }}
+            >
+              {[
+                [
+                  "CARD",
+                  "Tarjeta",
+                ],
+                [
+                  "NEQUI",
+                  "Nequi",
+                ],
+                [
+                  "PSE",
+                  "PSE",
+                ],
+              ].map(
+                ([value, label]) => (
+                  <p key={value}>
+                    <label>
+                      <input
+                        type="radio"
+                        name="boldType"
+                        value={value}
+                        checked={
+                          boldType ===
+                          value
+                        }
+                        onChange={(e) =>
+                          setBoldType(
+                            e.target
+                              .value
+                          )
+                        }
+                      />
+
+                      <span>
+                        {label}
+                      </span>
+                    </label>
+                  </p>
+                )
+              )}
             </div>
           )}
         </div>
       </div>
-
-      <div className="checkout-summary">
-        <h3>Resumen del Pedido</h3>
+       <div className="checkout-summary">
+        <h3>Resumen del pedido</h3>
 
         <ul>
-          {cart.map((item, i) => (
-            <li key={i}>
-              <span>{item.name} x{item.quantity}</span>
-              <span>${Number(item.price_cop).toLocaleString("es-CO")}</span>
+          {cart.map((item) => (
+            <li
+              key={`${item.id}-${item.selectedColor}-${item.selectedSize}`}
+            >
+              <span>
+                {item.name} x{item.quantity}
+              </span>
+
+              <span>
+                $
+                {Number(
+                  item.price_cop
+                ).toLocaleString("es-CO")}
+              </span>
             </li>
           ))}
         </ul>
 
         <hr />
 
-        <p>Subtotal <strong>${subtotal.toLocaleString("es-CO")}</strong></p>
-        <p>Envío <strong>${shipping.toLocaleString("es-CO")}</strong></p>
-        <h4>Total ${total.toLocaleString("es-CO")}</h4>
+        <p>
+          Subtotal
+
+          <strong>
+            $
+            {subtotal.toLocaleString(
+              "es-CO"
+            )}
+          </strong>
+        </p>
+
+        <p>
+          Envío
+
+          <strong>
+            $
+            {shipping.toLocaleString(
+              "es-CO"
+            )}
+          </strong>
+        </p>
+
+        <h4>
+          Total $
+
+          {total.toLocaleString("es-CO")}
+        </h4>
 
         <button
-  type="button"
-  className="btn-primary"
-  onClick={handleSubmit}
-  disabled={loading}
->
-  {loading ? "Procesando..." : "Finalizar compra"}
-</button>
+          type="button"
+          className="btn-primary"
+          disabled={loading}
+          onClick={handleSubmit}
+        >
+          {loading
+            ? "Procesando..."
+            : "Finalizar compra"}
+        </button>
 
-<PaymentGateway
-  paymentData={paymentData}
-  loading={loading}
-  error={paymentError}
-/>
+        <PaymentGateway
+          paymentData={paymentData}
+          loading={loading}
+          error={paymentError}
+        />
 
-<button
-  type="button"
-  className="btn-whatsapp"
-  onClick={() => {
-    handleWhatsAppOrder();
-    clearCart();
-  }}
->
-  Comprar por WhatsApp
-</button>
+        <button
+          type="button"
+          className="btn-whatsapp"
+          onClick={() => {
+            handleWhatsAppOrder();
+            clearCart();
+          }}
+        >
+          Comprar por WhatsApp
+        </button>
       </div>
-
     </div>
+    
   );
 };
 

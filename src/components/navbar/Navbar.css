@@ -348,17 +348,14 @@ mark {
   left: 0;
   right: 0;
   top: 100%;
-  z-index: 30;
+  z-index: 999;
+
+  background: #fff;
 
   max-height: 0;
   overflow: hidden;
 
-  transition:
-    max-height 0.3s ease,
-    opacity 0.2s ease;
-
-  box-shadow: none;
-  border: 0;
+  transition: max-height .35s ease;
 }
 
 .navbar-bottom.is-open {
@@ -367,7 +364,9 @@ mark {
 }
 
 .navbar-bottom-content {
-  background: transparent;
+   background: #ffffff;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.12);
   width: 100%;
   max-width: 1300px;
   margin: 0 auto;
@@ -375,7 +374,7 @@ mark {
   flex-direction: column;
   align-items: stretch;
 
-  gap: 2px;
+  gap:8px;
 
   font-size: 15px;
   font-weight: 500;
@@ -388,22 +387,31 @@ mark {
 }
 
 .nav-link {
-  color: #000000;
-  text-decoration: none;
+    display: block;
 
-  padding: 12px 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px 18px;
 
-  transition: color 0.2s;
+    color: #222;
+
+    text-decoration: none;
+
+    border-radius: 10px;
+
+    transition: .25s;
+
+    border-bottom: none;
 }
 
 .nav-link:last-child {
-  border-bottom: 0;
 }
 
-.nav-link:hover,
-.nav-link.active {
-  color: goldenrod;
+.nav-link:hover{
+    background:#f4f4f4;
+    color:#c99b17;
+}
+.nav-link.active{
+    background:#d4af37;
+    color:white;
 }
 
 /* ==========================================================
@@ -541,7 +549,10 @@ mark {
     border-bottom: 0;
   }
 
-  .navbar-mobile-overlay {
-    display: none;
-  }
+  .navbar-mobile-overlay{
+
+    backdrop-filter:blur(4px);
+
+    background:rgba(0,0,0,.35);
+}
 }
