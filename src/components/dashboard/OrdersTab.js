@@ -56,7 +56,7 @@ export default function OrdersAdmin() {
     (async () => {
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, "pedidos"));
+        const snap = await getDocs(collection(db, "orders"));
         const rows = snap.docs
           .map((d) => {
             const data = d.data() || {};
