@@ -15,13 +15,14 @@ export default function WompiCheckout({
     async function openCheckout() {
       try {
         await loadExternalScript(WOMPI_SDK);
+console.log("Checkout:", checkout);
+        const widget = new window.WidgetCheckout(checkout);
 
-        const widget =
-          new window.WidgetCheckout(
-            checkout
-          );
+widget.open((result) => {
+  console.log("Wompi result:", result);
 
-        widget.open();
+  // aquí luego podremos redirigir o actualizar el estado
+});
       } catch (error) {
         console.error(
           "Error cargando Wompi:",

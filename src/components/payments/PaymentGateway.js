@@ -1,7 +1,6 @@
-// src/components/payments/PaymentGateway.js
-
 import PaymentRedirect from "./PaymentRedirect";
 import WompiCheckout from "./WompiCheckout";
+import BoldCheckout from "./BoldCheckout";
 import PaymentLoader from "./PaymentLoader";
 import PaymentError from "./PaymentError";
 
@@ -29,16 +28,27 @@ export default function PaymentGateway({
     return null;
   }
 
-  const { provider, checkout, redirectUrl } =
-    paymentData;
+  const {
+    provider,
+    checkout,
+    redirectUrl,
+  } = paymentData;
 
   switch (provider) {
     case "WOMPI":
       return (
-        <WompiCheckout checkout={checkout} />
+        <WompiCheckout
+          checkout={checkout}
+        />
       );
 
     case "BOLD":
+      return (
+        <BoldCheckout
+          checkout={checkout}
+        />
+      );
+
     case "ADDI":
     case "SISTECREDITO":
       return (
