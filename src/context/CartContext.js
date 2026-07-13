@@ -108,33 +108,26 @@ export const CartProvider = ({
   };
 
   const updateQuantity = (
-    id,
-    selectedSize = null,
-    selectedColor = null,
-    quantity
-  ) => {
-    const safeQuantity =
-      Math.max(
-        1,
-        Number(quantity) || 1
-      );
+  id,
+  selectedSize = null,
+  selectedColor = null,
+  quantity
+) => {
+  const safeQuantity = Math.max(1, Number(quantity) || 1);
 
-    setCart((prevCart) =>
-      prevCart.map((item) =>
-        item.id === id &&
-        item.selectedSize ===
-          selectedSize &&
-        item.selectedColor ===
-          selectedColor
-          ? {
-              ...item,
-              quantity:
-                safeQuantity,
-            }
-          : item
-      )
-    );
-  };
+  setCart((prevCart) =>
+    prevCart.map((item) =>
+      item.id === id &&
+      item.selectedSize === selectedSize &&
+      item.selectedColor === selectedColor
+        ? {
+            ...item,
+            quantity: safeQuantity,
+          }
+        : item
+    )
+  );
+};
 
   const clearCart = () => {
     setCart([]);

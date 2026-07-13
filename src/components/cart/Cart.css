@@ -109,9 +109,15 @@
 
 /* ===== Controles ===== */
 .cart-qty-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cart-qty-control span {
+    width: 28px;
+    text-align: center;
+    font-weight: 600;
 }
 
 .qty-btn {

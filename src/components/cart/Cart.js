@@ -4,17 +4,13 @@ import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 
 const Cart = () => {
-  const {
-  cart,
-  removeFromCart,
-  updateQuantity,
-  clearCart,
-} = useContext(CartContext);
+  const { cart, removeFromCart, updateQuantity, clearCart } =
+    useContext(CartContext);
   const navigate = useNavigate();
 
   const subtotal = cart.reduce(
     (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
-    0
+    0,
   );
 
   const discount = subtotal * 0; //0.1; // Ejemplo: 10% de descuento
@@ -47,10 +43,14 @@ const Cart = () => {
                     className="cart-item-img"
                   />
                   <div className="cart-item-info">
-                    <p className="cart-item-brand">{item.brand || "Producto"}</p>
+                    <p className="cart-item-brand">
+                      {item.brand || "Producto"}
+                    </p>
                     <p className="cart-item-name">{item.name}</p>
                     {item.selectedColor && (
-                      <p className="cart-variant">Color: {item.selectedColor}</p>
+                      <p className="cart-variant">
+                        Color: {item.selectedColor}
+                      </p>
                     )}
                     {item.selectedSize && (
                       <p className="cart-variant">Talla: {item.selectedSize}</p>
@@ -69,7 +69,9 @@ const Cart = () => {
                       onClick={() =>
                         updateQuantity(
                           item.id,
-                          Math.max((item.quantity || 1) - 1, 1)
+                          item.selectedSize,
+                          item.selectedColor,
+                          Math.max((item.quantity || 1) - 1, 1),
                         )
                       }
                     >
@@ -79,7 +81,12 @@ const Cart = () => {
                     <button
                       className="qty-btn"
                       onClick={() =>
-                        updateQuantity(item.id, (item.quantity || 1) + 1)
+                        updateQuantity(
+                          item.id,
+                          item.selectedSize,
+                          item.selectedColor,
+                          (item.quantity || 1) + 1,
+                        )
                       }
                     >
                       +
@@ -88,7 +95,13 @@ const Cart = () => {
 
                   <button
                     className="remove-btn"
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() =>
+                      removeFromCart(
+                        item.id,
+                        item.selectedSize,
+                        item.selectedColor,
+                      )
+                    }
                   >
                     ✕
                   </button>
@@ -120,18 +133,22 @@ const Cart = () => {
               className="btn orange darken-2 w-100"
               onClick={() => navigate("/checkout")}
             >
-              Ir a pagar 
+              Ir a pagar
             </button>
-<button
-  className="btn red darken-2 w-100"
-  onClick={() => {
-    if (window.confirm("¿Estás seguro de que deseas eliminar todos los productos del carrito?")) {
-      clearCart();
-    }
-  }}
->
-  Eliminar todo
-</button>
+            <button
+              className="btn red darken-2 w-100"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    "¿Estás seguro de que deseas eliminar todos los productos del carrito?",
+                  )
+                ) {
+                  clearCart();
+                }
+              }}
+            >
+              Eliminar todo
+            </button>
             <button
               className="btn-flat blue-text w-100"
               onClick={() => navigate("/")}
