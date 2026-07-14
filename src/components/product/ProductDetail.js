@@ -298,7 +298,7 @@ export default function ProductDetail() {
           <span className="current">{product?.name}</span>
         </nav>
 
-        <div className="col s2 hide-on-small-only">
+       <div className="col l1 m2 hide-on-small-only">
           <ul className="collection product-thumbs">
             {thumbItems.map((t, i) => (
               <li
@@ -332,8 +332,8 @@ export default function ProductDetail() {
           />
         </div>
 
-        <div className="col s12 m5 pd-panel">
-          <h5 className="pd-title">{product.name}</h5>
+          <div className="col s12 l5 m5 pd-panel">         
+             <h5 className="pd-title">{product.name}</h5>
           <div className="pd-price">
             ${Number(product.price_cop).toLocaleString("es-CO")}
           </div>

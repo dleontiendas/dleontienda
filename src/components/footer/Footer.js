@@ -116,7 +116,7 @@ export default function Footer() {
           <div className="footer-social">
             <a
               className="footer-social-btn"
-              href="https://www.instagram.com/tiendadleon/"
+              href="https://www.instagram.com/dleongold/"
               target="_blank"
               rel="noopener noreferrer"
             >
