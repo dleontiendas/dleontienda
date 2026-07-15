@@ -1,28 +1,38 @@
 import React from "react";
 
-export default function PaymentMethods({
-  payment,
-}) {
-  const {
-    paymentMethod,
-    setPaymentMethod,
-    wompiType,
-    setWompiType,
-    boldType,
-    setBoldType,
-  } = payment;
+const providers = [
+  {
+    id: "addi",
+    title: "Addi",
+    description: "Compra ahora y paga a cuotas.",
+    icon: "/images/providers/addi-com-logo.png",
+    enabled: false,
+  },
+  {
+    id: "wompi",
+    title: "Wompi",
+    description: "Tarjetas, PSE, Nequi y más.",
+    icon: "/images/providers/wompi-com-logo.png",
+    enabled: false,
+  },
+  {
+    id: "bold",
+    title: "Bold",
+    description: "Tarjetas, PSE y billeteras digitales.",
+    icon: "/images/providers/bold-logo.png",
+    enabled: false,
+  },
+  {
+    id: "sistecredito",
+    title: "Sistecrédito",
+    description: "Financia tu compra fácilmente.",
+    icon: "/images/providers/sistecredito-com-logo.png",
+    enabled: false,
+  },
+];
 
-  const handlePaymentChange = (e) => {
-    setPaymentMethod(e.target.value);
-  };
-
-  const handleWompiChange = (e) => {
-    setWompiType(e.target.value);
-  };
-
-  const handleBoldChange = (e) => {
-    setBoldType(e.target.value);
-  };
+export default function PaymentMethods({ payment }) {
+  const { paymentMethod, setPaymentMethod } = payment;
 
   return (
     <section className="checkout-card">
@@ -32,121 +42,41 @@ export default function PaymentMethods({
         <div>
           <h2>Método de pago</h2>
 
-          <p>
-            Selecciona la forma de pago que prefieras.
-          </p>
+          <p>Selecciona el proveedor con el que deseas finalizar tu compra.</p>
         </div>
       </div>
 
-      <div className="payment-options">
+      <div className="payment-grid">
+        {providers.map((provider) => (
+          <label
+            key={provider.id}
+            className={`payment-card ${
+              paymentMethod === provider.id ? "active" : ""
+            } ${!provider.enabled ? "disabled" : ""}`}
+          >
+            <input
+              type="radio"
+              name="payment"
+              value={provider.id}
+              checked={paymentMethod === provider.id}
+              disabled={!provider.enabled}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            />
 
-        <label className="payment-option">
-          <input
-            type="radio"
-            value="contraentrega"
-            checked={paymentMethod === "contraentrega"}
-            onChange={handlePaymentChange}
-          />
+            
 
-          <span>Pago contra entrega</span>
-        </label>
+            <div className="payment-icon">
+              <img src={provider.icon} alt={provider.title} loading="lazy" />
+            </div>
 
-        <label className="payment-option">
-          <input
-            type="radio"
-            value="addi"
-            checked={paymentMethod === "addi"}
-            onChange={handlePaymentChange}
-          />
+            <div className="payment-info">
+              <h3>{provider.title}</h3>
 
-          <span>Financiación con Addi</span>
-        </label>
-
-        <label className="payment-option">
-          <input
-            type="radio"
-            value="sistecredito"
-            checked={paymentMethod === "sistecredito"}
-            onChange={handlePaymentChange}
-          />
-
-          <span>Financiación con Sistecrédito</span>
-        </label>
-
-        <label className="payment-option">
-          <input
-            type="radio"
-            value="wompi"
-            checked={paymentMethod === "wompi"}
-            onChange={handlePaymentChange}
-          />
-
-          <span>Pago con Wompi</span>
-        </label>
-
-        {paymentMethod === "wompi" && (
-          <div className="payment-suboptions">
-
-            {[
-              ["CARD", "Tarjeta"],
-              ["PSE", "PSE"],
-              ["NEQUI", "Nequi"],
-            ].map(([value, label]) => (
-              <label
-                key={value}
-                className="payment-option"
-              >
-                <input
-                  type="radio"
-                  value={value}
-                  checked={wompiType === value}
-                  onChange={handleWompiChange}
-                />
-
-                <span>{label}</span>
-              </label>
-            ))}
-
-          </div>
-        )}
-
-        <label className="payment-option">
-          <input
-            type="radio"
-            value="bold"
-            checked={paymentMethod === "bold"}
-            onChange={handlePaymentChange}
-          />
-
-          <span>Pago con Bold</span>
-        </label>
-
-        {paymentMethod === "bold" && (
-          <div className="payment-suboptions">
-
-            {[
-              ["CARD", "Tarjeta"],
-              ["PSE", "PSE"],
-              ["NEQUI", "Nequi"],
-            ].map(([value, label]) => (
-              <label
-                key={value}
-                className="payment-option"
-              >
-                <input
-                  type="radio"
-                  value={value}
-                  checked={boldType === value}
-                  onChange={handleBoldChange}
-                />
-
-                <span>{label}</span>
-              </label>
-            ))}
-
-          </div>
-        )}
-
+              <p>{provider.description}</p>
+            </div>
+          </label>
+          
+        ))}
       </div>
     </section>
   );
