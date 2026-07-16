@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { loadExternalScript } from "../../components/utils/loadExternalScript";
+import axiosClient from "../../api/axiosClient";
 
 const WOMPI_SDK =
   "https://checkout.wompi.co/widget.js";
@@ -18,10 +19,33 @@ export default function WompiCheckout({
 console.log("Checkout:", checkout);
         const widget = new window.WidgetCheckout(checkout);
 
-widget.open((result) => {
-  console.log("Wompi result:", result);
+widget.open(async (result) => {
+  const transaction = result?.transaction;
 
-  // aquí luego podremos redirigir o actualizar el estado
+  if (!transaction?.id) {
+    console.error("Wompi no devolvió el identificador de la transacción");
+    return;
+  }
+
+  try {
+    const response = await axiosClient.post(
+      "/api/payments/wompi/confirm",
+      {
+        transactionId: transaction.id,
+      }
+    );
+
+    console.log("Pago verificado:", response.data);
+
+    if (
+      response.data?.paymentStatus === "APPROVED" &&
+      checkout.redirectUrl
+    ) {
+      window.location.assign(checkout.redirectUrl);
+    }
+  } catch (error) {
+    console.error("No fue posible verificar el pago:", error);
+  }
 });
       } catch (error) {
         console.error(

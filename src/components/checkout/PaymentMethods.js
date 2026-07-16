@@ -13,7 +13,7 @@ const providers = [
     title: "Wompi",
     description: "Tarjetas, PSE, Nequi y más.",
     icon: "/images/providers/wompi-com-logo.png",
-    enabled: false,
+    enabled: true,
   },
   {
     id: "bold",

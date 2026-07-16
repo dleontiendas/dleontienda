@@ -37,7 +37,7 @@ const Checkout = () => {
 
   const [shipping] = useState(15900);
 
-  const [paymentMethod, setPaymentMethod] = useState("contraentrega");
+  const [paymentMethod, setPaymentMethod] = useState("wompi");
 
   const [wompiType, setWompiType] = useState("PSE");
 
