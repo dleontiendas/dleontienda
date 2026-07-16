@@ -6,7 +6,7 @@ const providers = [
     title: "Addi",
     description: "Compra ahora y paga a cuotas.",
     icon: "/images/providers/addi-com-logo.png",
-    enabled: false,
+    enabled: true,
   },
   {
     id: "wompi",
