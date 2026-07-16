@@ -372,6 +372,9 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         const img1 = normalizeDriveLink(r["Imagen1"]);
         const img2 = normalizeDriveLink(r["Imagen2"]);
 
+        const imgColor1 = normalizeDriveLink(r["Imagen Color 1"]);
+        const imgColor2 = normalizeDriveLink(r["Imagen Color 2"]);
+
         const color = toStr(r["Color"]);
         const talla = toStr(r["Talla"]);
         const cantidad = toNum(r["Cantidad"]);
@@ -402,18 +405,44 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
 
         [imgPrincipal, img1, img2].forEach((u) => { if (u && !entry.imgs.includes(u)) entry.imgs.push(u); });
 
-        if (color || talla || Number.isFinite(cantidad)) {
-          entry.variantes.push({ color, talla, cantidad: Math.max(0, Math.trunc(cantidad || 0)) });
+        if (color || talla || cantidad > 0 || imgColor1 || imgColor2) {
+            entry.variantes.push({
+              color,
+              talla,
+              cantidad: Math.max(0, Math.trunc(cantidad || 0)),
+              images: [imgColor1, imgColor2].filter(Boolean),
+          });
         }
-      }
 
       const productos = [];
       for (const { base, variantes, imgs } of acc.values()) {
         const porColor = {};
+
         for (const v of variantes) {
           const key = v.color || "sin_color";
-          if (!porColor[key]) porColor[key] = { color: key, images: [], tallas: [] }; // images opcional aquí
-          if (v.talla) porColor[key].tallas.push({ size: v.talla, stock: v.cantidad || 0 });
+
+          if (!porColor[key]) {
+            porColor[key] = {
+              color: key,
+              images: [],
+              tallas: [],
+            };
+          }
+
+          // Asigna las imágenes a la variación del color correspondiente
+          (v.images || []).forEach((imagen) => {
+            if (imagen && !porColor[key].images.includes(imagen)) {
+              porColor[key].images.push(imagen);
+            }
+          });
+        
+          // Agrega las tallas y cantidades del color
+          if (v.talla) {
+            porColor[key].tallas.push({
+              size: v.talla,
+              stock: v.cantidad || 0,
+            });
+          }
         }
 
         const producto = {
