@@ -413,8 +413,9 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
               images: [imgColor1, imgColor2].filter(Boolean),
           });
         }
+      }
 
-        const productos = [];
+      const productos = [];
       for (const { base, variantes, imgs } of acc.values()) {
         const porColor = {};
 
