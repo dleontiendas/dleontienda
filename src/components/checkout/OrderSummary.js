@@ -106,7 +106,7 @@ export default function OrderSummary({
       <button
         className="btn-primary"
         //disabled={loading}
-        disabled={true}
+        disabled={loading}
         onClick={onSubmit}
       >
         {loading

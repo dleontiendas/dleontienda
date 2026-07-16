@@ -5,7 +5,7 @@ import axios from "axios";
 const axiosClient = axios.create({
   baseURL:
     process.env.REACT_APP_API_URL ||
-    "https://dleontiendabackend.onrender.com",
+    "https://dleontienda-backend.onrender.com",
 
   timeout: 50000,
 
