@@ -27,7 +27,7 @@ const providers = [
     title: "Sistecrédito",
     description: "Financia tu compra fácilmente.",
     icon: "/images/providers/sistecredito-com-logo.png",
-    enabled: false,
+    enabled: true,
   },
 ];
 
