@@ -8,7 +8,6 @@ import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
 import TechProductList from "./components/product/techProductList/techProductList";
 import ModaProductList from "./components/product/modaProductList/modaProductList";
-import BolsosProductList from "./components/product/bolsosProductList/BolsosProductList";
 
 
 import ProductList from "./components/product/ProductList";
@@ -49,7 +48,7 @@ const App = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/moda" element={<ModaProductList />} />
                   <Route path="/tecnologia" element={<TechProductList />} />
-                  <Route path="/bolsos" element={<BolsosProductList />} />
+                  
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/:category/:productId" element={<ProductDetail />} />
                   <Route path="/products/:productId" element={<ProductDetail />} />

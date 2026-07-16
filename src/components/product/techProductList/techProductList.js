@@ -356,8 +356,9 @@ export default function TechProductList() {
         c.includes("Tecnología") ||
         c.includes("technology") ||
         c.includes("Accesorios") ||
-        c.includes("Accesorios")
-        
+        c.includes("Accesorios") ||
+        c.includes("bolsos") ||
+        c.includes("BOLSOS") 
        
       );
     };
