@@ -414,7 +414,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
           });
         }
 
-      const productos = [];
+        const productos = [];
       for (const { base, variantes, imgs } of acc.values()) {
         const porColor = {};
 
