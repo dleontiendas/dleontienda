@@ -1,4 +1,4 @@
-// src/pages/TechProductList.jsx
+// src/pages/ModaProductList.jsx
 import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
@@ -81,7 +81,6 @@ function DepartmentChipImage({ slug, alt }) {
   const candidates = DEPARTMENT_IMAGE_SOURCES(slug);
   const idxRef = useRef(0);
   const [src, setSrc] = useState(candidates[0]);
-
   const handleError = () => {
     const next = idxRef.current + 1;
     if (next < candidates.length) {
@@ -89,7 +88,6 @@ function DepartmentChipImage({ slug, alt }) {
       setSrc(candidates[next]);
     }
   };
-
   return <img src={src} alt={alt} loading="lazy" onError={handleError} />;
 }
 
@@ -106,6 +104,7 @@ const depToSlug = (p) => {
     return "niño";
   if (d.includes("infantil") || d.includes("kids")) return "infantil";
   if (d.includes("complement") || d.includes("accesorio")) return "complementos";
+  if (d.includes("complement") || d.includes("bolsos")) return "complementos";
   return "otros";
 };
 
@@ -130,6 +129,8 @@ const firstVariantImage = (variants = []) => {
   }
   return null;
 };
+
+
 
 const collectImages = (product, limit = 8) => {
   const pool = [];
@@ -225,7 +226,7 @@ const ProductCard = ({ product }) => {
     <div className="col s12 m6 l4 xl3">
       <div className="card product-card-airbnb">
         <Link
-          to={`/products/${product.catSlug || "tecnologia"}/${product.id}`}
+          to={`/products/${product.catSlug || "bolsos"}/${product.id}`}
           className="product-card-link"
         >
           <div
@@ -340,33 +341,25 @@ const ProductCard = ({ product }) => {
   );
 };
 
-/* ---------- Main (solo TECNOLOGÍA) ---------- */
-export default function TechProductList() {
+/* ---------- Main (solo MODA) ---------- */
+export default function ModaProductList() {
   const { products, loading, error } = useContext(ProductsContext);
 
-  // Filtra solo categoría "Tecnología" (tolerante a acentos/idiomas)
-  const techBase = useMemo(() => {
-    const isTech = (cat = "") => {
+  // Filtro robusto para Moda (why: cubre múltiples etiquetas comunes)
+  const modaBase = useMemo(() => {
+    const isModa = (cat = "") => {
       const c = normalizeText(cat);
-      // why: cubre "tecnologia", "tecnología", "technology", "tech", "electrónicos"
       return (
-        c.includes("tecnologia") ||
-        c.includes("tecnología") ||
-        c.includes("Tecnologia") ||
-        c.includes("Tecnología") ||
-        c.includes("technology") ||
-        c.includes("Accesorios") ||
-        c.includes("Accesorios")
-        
-       
+        c.includes("bolsos") ||
+        c.includes("BOLSOS") 
       );
     };
-    return (products || []).filter((p) => isTech(p?.category) || isTech(p?.catSlug));
+    return (products || []).filter((p) => isModa(p?.category) || isModa(p?.catSlug));
   }, [products]);
 
   const enriched = useMemo(
-    () => techBase.map((p) => ({ ...p, depSlug: depToSlug(p) })),
-    [techBase]
+    () => modaBase.map((p) => ({ ...p, depSlug: depToSlug(p) })),
+    [modaBase]
   );
 
   const departmentChips = useMemo(() => {
@@ -386,6 +379,8 @@ export default function TechProductList() {
 
   const [dep, setDep] = useState("");
   const [subFilter, setSubFilter] = useState("");
+    const [openGroup, setOpenGroup] = useState(null); // ✅ AQUÍ
+
   const [sort, setSort] = useState("");
 
   const subcatGroups = useMemo(() => {
@@ -442,9 +437,9 @@ export default function TechProductList() {
 
   return (
     <div className="container product-list-container">
-      <h4 className="left-align product-list-title">Tecnología</h4>
+      <h4 className="left-align product-list-title">Bolsos</h4>
 
-      {/* Chips por departamento (sobre los productos tech) */}
+      {/* Chips por departamento (sobre productos de moda) */}
       <div className="gender-filters">
         <button
           className={`gender-chip ${dep === "" ? "gender-chip--active" : ""}`}
@@ -453,7 +448,7 @@ export default function TechProductList() {
             setSubFilter("");
           }}
         >
-          Todos <span className="count">({techBase.length})</span>
+          Todos <span className="count">({modaBase.length})</span>
         </button>
 
         {departmentChips.map(({ key, label, count }) => (
@@ -511,26 +506,52 @@ export default function TechProductList() {
           </div>
 
           <div className="row subcat-grid">
-            {subcatGroups.map((g) => (
-              <div className="col s12 m6 l4 xl3" key={g.category}>
-                <div className="subcat-card text-only card-border">
-                  <h6 className="subcat-title">{g.category}</h6>
-                  <ul className="subcat-list">
-                    {g.subcats.slice(0, 12).map((s) => (
-                      <li key={s}>
-                        <button
-                          type="button"
-                          className={`subcat-link ${subFilter === s ? "active" : ""}`}
-                          onClick={() => setSubFilter(subFilter === s ? "" : s)}
-                        >
-                          {s}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
+  {subcatGroups.map((g) => {
+    const isOpen = openGroup === g.category;
+
+    return (
+      <div className="col s12 m6 l4 xl3" key={g.category}>
+        <div
+          className={`subcat-card text-only card-border accordion-item ${
+            isOpen ? "open" : ""
+          }`}
+        >
+          <button
+            type="button"
+            className="accordion-header"
+            onClick={() =>
+              setOpenGroup(isOpen ? null : g.category)
+            }
+            aria-expanded={isOpen}
+          >
+            <h6 className="subcat-title">{g.category}</h6>
+            <span className="accordion-arrow">⌄</span>
+          </button>
+
+          <div className="subcat-chips">
+            {g.subcats.slice(0, 12).map((s) => {
+              const active = subFilter === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  className={`subcat-chip ${active ? "active" : ""}`}
+                  onClick={() => setSubFilter(active ? "" : s)}
+                  aria-pressed={active}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  })}
+
+       
+
+         
           </div>
         </>
       )}
@@ -539,10 +560,10 @@ export default function TechProductList() {
       <div className="product-grid">
         {sorted.length ? (
           sorted.map((p) => (
-            <ProductCard key={`${p.catSlug || "tecnologia"}-${p.id}`} product={p} />
+            <ProductCard key={`${p.catSlug || "bolsos"}-${p.id}`} product={p} />
           ))
         ) : (
-          <p className="center-align">No se encontraron productos de tecnología</p>
+          <p className="center-align">No se encontraron bolsos</p>
         )}
       </div>
     </div>
