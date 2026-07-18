@@ -140,7 +140,7 @@ export default function Footer() {
             </a>
             <a
               className="footer-social-btn"
-              href="https://chat.whatsapp.com/HjivrzlnGBY3Jwe5QQz5BZ"
+              href="https://wa.me/573104173201?text=Hola%20D%27LEON%20GOLD%2C%20quiero%20recibir%20informaci%C3%B3n%20sobre%20sus%20productos."
               target="_blank"
               rel="noopener noreferrer"
             >

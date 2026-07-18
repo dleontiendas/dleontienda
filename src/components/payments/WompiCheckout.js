@@ -17,7 +17,15 @@ export default function WompiCheckout({
       try {
         await loadExternalScript(WOMPI_SDK);
 console.log("Checkout:", checkout);
-        const widget = new window.WidgetCheckout(checkout);
+        const checkoutConfig = {
+  ...checkout,
+  customerData: {
+    ...(checkout.customerData || {}),
+    legalId: checkout.customerData?.legalId || "1039683327",
+    legalIdType: checkout.customerData?.legalIdType || "CC",
+  },
+};
+        const widget = new window.WidgetCheckout(checkoutConfig);
 
 widget.open(async (result) => {
   const transaction = result?.transaction;
