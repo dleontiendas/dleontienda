@@ -185,7 +185,17 @@ const Checkout = () => {
         returnUrl: `${window.location.origin}/checkout-success?ref=${docRef.id}`,
       });
 
-      setPaymentData(paymentResponse);
+      setPaymentData({
+  ...paymentResponse,
+  checkout: {
+    ...paymentResponse.checkout,
+    customerData: {
+      ...(paymentResponse.checkout?.customerData || {}),
+      legalId: customer.document,
+      legalIdType: "CC",
+    },
+  },
+  });
     } catch (error) {
       console.error(error);
 

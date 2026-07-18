@@ -21,7 +21,7 @@ console.log("Checkout:", checkout);
   ...checkout,
   customerData: {
     ...(checkout.customerData || {}),
-    legalId: checkout.customerData?.legalId || "1039683327",
+    legalId: checkout.customerData?.legalId,
     legalIdType: checkout.customerData?.legalIdType || "CC",
   },
 };
