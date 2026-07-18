@@ -104,15 +104,15 @@ const Checkout = () => {
     }
 
     if (
-      ["addi", "sistecredito"].includes(paymentMethod) &&
-      !customer.document
-    ) {
-      M.toast({
-        html: "La cédula es obligatoria para este método de pago.",
-      });
+  ["wompi", "addi", "sistecredito"].includes(paymentMethod) &&
+  !customer.document.trim()
+) {
+  M.toast({
+    html: "Ingresa la cédula del comprador para continuar con el pago.",
+  });
 
-      return;
-    }
+  return;
+}
 
     setLoading(true);
 
@@ -191,7 +191,7 @@ const Checkout = () => {
     ...paymentResponse.checkout,
     customerData: {
       ...(paymentResponse.checkout?.customerData || {}),
-      legalId: customer.document,
+      legalId: customer.document.trim(),
       legalIdType: "CC",
     },
   },
