@@ -8,7 +8,7 @@ import Navbar from "./components/navbar/Navbar";
 import Home from "./components/home/Home";
 import TechProductList from "./components/product/techProductList/techProductList";
 import ModaProductList from "./components/product/modaProductList/modaProductList";
-
+import BolsosProductList from "./components/product/bolsosProductList/bolsosProductList";
 
 import ProductList from "./components/product/ProductList";
 import ProductDetail from "./components/product/ProductDetail";
@@ -47,6 +47,7 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/moda" element={<ModaProductList />} />
+                  <Route path="/bolsos" element={<BolsosProductList />} />
                   <Route path="/tecnologia" element={<TechProductList />} />
                   
                   <Route path="/products" element={<ProductList />} />
