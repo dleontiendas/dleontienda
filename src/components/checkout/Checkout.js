@@ -35,7 +35,7 @@ const Checkout = () => {
 
   const [paymentError, setPaymentError] = useState(null);
 
-  const [shipping] = useState(15900);
+  const [shipping] = useState(25000);
 
   const [paymentMethod, setPaymentMethod] = useState("wompi");
 
