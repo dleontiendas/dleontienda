@@ -16,31 +16,15 @@ export default function WompiCheckout({
     async function openCheckout() {
       try {
         await loadExternalScript(WOMPI_SDK);
-const legalId = String(
-  checkout?.customerData?.legalId || ""
-)
-  .replace(/\D/g, "")
-  .trim();
-
-if (!legalId) {
-  throw new Error(
-    "Wompi no recibió la cédula del comprador."
-  );
-}
-
-const checkoutConfig = {
+console.log("Checkout:", checkout);
+        const checkoutConfig = {
   ...checkout,
-  collectCustomerLegalId: true,
   customerData: {
     ...(checkout.customerData || {}),
-  
+    legalId: checkout.customerData?.legalId,
+    legalIdType: checkout.customerData?.legalIdType || "CC",
   },
 };
-
-console.log(
-  "Datos enviados a Wompi:",
-  checkoutConfig.customerData
-);
         const widget = new window.WidgetCheckout(checkoutConfig);
 
 widget.open(async (result) => {
