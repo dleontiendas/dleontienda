@@ -33,8 +33,7 @@ const checkoutConfig = {
   collectCustomerLegalId: true,
   customerData: {
     ...(checkout.customerData || {}),
-    legalId,
-    legalIdType: "CC",
+  
   },
 };
 
