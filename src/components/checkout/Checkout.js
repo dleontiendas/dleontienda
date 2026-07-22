@@ -133,7 +133,7 @@ const Checkout = () => {
 
         subtotal,
 
-        shipping,
+        shippingCost: shipping,
 
         total,
 
