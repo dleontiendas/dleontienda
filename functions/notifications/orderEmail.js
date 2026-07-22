@@ -24,9 +24,9 @@ function buildEmail(order, orderId) {
   const itemRows = items.map((item) => {
     const details = [item.quantity > 1 ? `Cantidad: ${item.quantity}` : "", item.color ? `Color: ${item.color}` : "", item.size ? `Talla: ${item.size}` : ""].filter(Boolean).join(" · ");
     const image = item.image
-      ? `<img src="${escapeHtml(item.image)}" alt="" width="64" height="64" style="width:64px;height:64px;object-fit:cover;border-radius:8px;display:block">`
-      : `<div style="width:64px;height:64px;background:#f1f5f9;border-radius:8px"></div>`;
-    return `<tr><td style="padding:14px 8px 14px 0;border-bottom:1px solid #e5e7eb;width:72px">${image}</td><td style="padding:14px 8px;border-bottom:1px solid #e5e7eb"><strong>${escapeHtml(item.name || "Producto")}</strong>${details ? `<div style="color:#64748b;font-size:13px;margin-top:5px">${escapeHtml(details)}</div>` : ""}</td><td style="padding:14px 0 14px 8px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap">${money((item.price || 0) * (item.quantity || 1))}</td></tr>`;
+      ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name || "Producto")}" width="120" height="140" style="width:120px;height:140px;object-fit:cover;border-radius:10px;display:block">`
+      : `<div style="width:120px;height:140px;background:#f1f5f9;border-radius:10px"></div>`;
+    return `<tr><td style="padding:14px 12px 14px 0;border-bottom:1px solid #e5e7eb;width:132px">${image}</td><td style="padding:14px 8px;border-bottom:1px solid #e5e7eb"><strong>${escapeHtml(item.name || "Producto")}</strong>${details ? `<div style="color:#64748b;font-size:13px;margin-top:5px">${escapeHtml(details)}</div>` : ""}</td><td style="padding:14px 0 14px 8px;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap">${money((item.price || 0) * (item.quantity || 1))}</td></tr>`;
   }).join("");
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ");
   const recipientName = [delivery.first_name, delivery.last_name].filter(Boolean).join(" ");

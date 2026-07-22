@@ -59,6 +59,7 @@ export default function CheckoutSuccess() {
           order.paymentStatus
         ) {
           case "APPROVED":
+          case "PAID":
             localStorage.removeItem(
               "lastOrderId"
             );

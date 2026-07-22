@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import { CartContext } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
+import { getSelectedProductImage } from "../utils/productImage";
 import "./Cart.css";
 
 const Cart = () => {
@@ -36,7 +37,7 @@ const Cart = () => {
                 <div className="cart-item-left">
                   <img
                     src={
-                      (item.images && item.images[0]) ||
+                      getSelectedProductImage(item, item.selectedColor) ||
                       "https://via.placeholder.com/80x80?text=No+Image"
                     }
                     alt={item.name}

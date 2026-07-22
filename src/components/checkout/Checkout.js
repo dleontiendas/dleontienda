@@ -22,6 +22,7 @@ import {
   buildWhatsAppMessage,
   openWhatsApp,
 } from "./checkout.utils";
+import { getEmailProductImage } from "../utils/productImage";
 import "./Checkout.css";
 
 const Checkout = () => {
@@ -129,6 +130,7 @@ const Checkout = () => {
           quantity: item.quantity,
           color: item.selectedColor,
           size: item.selectedSize,
+          image: getEmailProductImage(item, item.selectedColor),
         })),
 
         subtotal,

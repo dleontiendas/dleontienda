@@ -46,8 +46,9 @@ widget.open(async (result) => {
     console.log("Pago verificado:", response.data);
 
     if (
-      response.data?.paymentStatus === "APPROVED" &&
-      checkout.redirectUrl
+      ["APPROVED", "PAID"].includes(
+        response.data?.paymentStatus
+      ) && checkout.redirectUrl
     ) {
       window.location.assign(checkout.redirectUrl);
     }
