@@ -120,7 +120,7 @@ const Checkout = () => {
       const order = {
         customer,
 
-        shipping: shippingInfo,
+        shippingAddress: shippingInfo,
 
         items: cart.map((item) => ({
           productId: item.id,
@@ -133,7 +133,7 @@ const Checkout = () => {
 
         subtotal,
 
-        shippingCost: shipping,
+        shipping,
 
         total,
 

@@ -19,7 +19,7 @@ function infoRow(label, value) {
 
 function buildEmail(order, orderId) {
   const customer = order.customer || {};
-  const delivery = typeof order.shipping === "object" ? order.shipping : customer;
+  const delivery = order.shippingAddress || (typeof order.shipping === "object" ? order.shipping : customer);
   const items = Array.isArray(order.items) ? order.items : [];
   const itemRows = items.map((item) => {
     const details = [item.quantity > 1 ? `Cantidad: ${item.quantity}` : "", item.color ? `Color: ${item.color}` : "", item.size ? `Talla: ${item.size}` : ""].filter(Boolean).join(" · ");
@@ -31,7 +31,7 @@ function buildEmail(order, orderId) {
   const customerName = [customer.first_name, customer.last_name].filter(Boolean).join(" ");
   const recipientName = [delivery.first_name, delivery.last_name].filter(Boolean).join(" ");
   const address = [delivery.address, delivery.city, delivery.province].filter(Boolean).join(", ");
-  const shippingCost = Number(order.shippingCost) || (Number(order.total) || 0) - (Number(order.subtotal) || 0);
+  const shippingCost = Number(order.shippingCost) || Number(order.shipping) || (Number(order.total) || 0) - (Number(order.subtotal) || 0);
 
   const html = `<!doctype html><html><body style="margin:0;background:#f4f7fb;font-family:Arial,sans-serif;color:#0f172a"><div style="max-width:680px;margin:0 auto;padding:28px 14px"><div style="background:#173b78;color:#fff;border-radius:14px 14px 0 0;padding:24px 28px"><div style="font-size:13px;opacity:.85;text-transform:uppercase;letter-spacing:1px">Nueva venta confirmada</div><h1 style="font-size:25px;margin:8px 0 0">Orden #${escapeHtml(orderId)}</h1></div><div style="background:#fff;border:1px solid #dbe5f1;border-top:0;padding:26px 28px"><h2 style="font-size:20px;margin:0 0 10px">Resumen de la compra</h2><table role="presentation" width="100%" cellspacing="0" cellpadding="0">${itemRows}</table><table role="presentation" width="100%" style="margin-top:16px"><tr><td style="padding:4px 0;color:#64748b">Subtotal</td><td style="padding:4px 0;text-align:right">${money(order.subtotal)}</td></tr><tr><td style="padding:4px 0;color:#64748b">Envío</td><td style="padding:4px 0;text-align:right">${money(shippingCost)}</td></tr><tr><td style="padding:12px 0 0;font-size:19px;font-weight:700">Total</td><td style="padding:12px 0 0;text-align:right;font-size:19px;font-weight:700;color:#173b78">${money(order.total)}</td></tr></table></div><div style="background:#fff;border:1px solid #dbe5f1;border-radius:0 0 14px 14px;margin-top:12px;padding:26px 28px"><h2 style="font-size:20px;margin:0 0 12px">Información del cliente</h2><table role="presentation" cellspacing="0" cellpadding="0">${infoRow("Nombre", customerName)}${infoRow("Documento", customer.document)}${infoRow("Email", customer.email)}${infoRow("Teléfono", customer.phone)}</table><h2 style="font-size:20px;margin:24px 0 12px">Datos de entrega</h2><table role="presentation" cellspacing="0" cellpadding="0">${infoRow("Recibe", recipientName || customerName)}${infoRow("Teléfono", delivery.phone)}${infoRow("Dirección", address)}${infoRow("Código postal", delivery.postal_code)}${infoRow("Referencia", delivery.reference)}${infoRow("Medio de pago", order.paymentProvider || order.paymentMethod)}</table></div></div></body></html>`;
   const textItems = items.map((item) => `- ${item.name || "Producto"} x${item.quantity || 1}: ${money((item.price || 0) * (item.quantity || 1))}`).join("\n");

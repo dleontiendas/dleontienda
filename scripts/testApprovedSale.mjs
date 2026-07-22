@@ -36,7 +36,7 @@ const testOrder = {
     email: "dleongold@dleongold.com",
     phone: "3000000000",
   },
-  shipping: {
+  shippingAddress: {
     first_name: "Cliente",
     last_name: "Prueba",
     phone: "3000000000",
@@ -55,7 +55,7 @@ const testOrder = {
     size: "M",
   }],
   subtotal: 240000,
-  shippingCost: 25000,
+  shipping: 25000,
   total: 265000,
   paymentMethod: "prueba",
   paymentProvider: "PRUEBA CONTROLADA",
