@@ -31,9 +31,9 @@ try {
   const result = await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,
     to: process.env.ORDER_NOTIFICATION_EMAIL,
-    subject: "Prueba local de correo - D'Leon Tienda",
+    subject: "Prueba local de correo - D'LEON GOLD STORE",
     text: "La conexión SMTP de Hostinger funciona correctamente. Este mensaje fue enviado desde una prueba local.",
-    html: `<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:#173b78">Prueba local exitosa</h2><p>La conexión SMTP de Hostinger funciona correctamente.</p><p><strong>D'Leon Tienda</strong></p></div>`,
+    html: `<div style="font-family:Arial,sans-serif;padding:24px"><h2 style="color:#173b78">Prueba local exitosa</h2><p>La conexión SMTP de Hostinger funciona correctamente.</p><p><strong>D'LEON GOLD STORE</strong></p></div>`,
   });
 
   console.log(`Correo de prueba enviado: ${result.messageId}`);
