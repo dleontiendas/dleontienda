@@ -25,6 +25,13 @@ service cloud.firestore {
       }
     }
 
+    // The storefront loads product documents through collectionGroup("items").
+    // Firestore requires a recursive match for collection-group queries.
+    match /{path=**}/items/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /orders/{orderId} {
       allow read, write: if false;
     }

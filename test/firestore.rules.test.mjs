@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { collection, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
+import { collection, collectionGroup, doc, getDoc, getDocs, setDoc, updateDoc } from "firebase/firestore";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST) throw new Error("FIRESTORE_EMULATOR_HOST es obligatorio.");
 const [host, portText] = process.env.FIRESTORE_EMULATOR_HOST.split(":");
@@ -37,6 +37,7 @@ test("productos activos son legibles públicamente pero nadie escribe directamen
   const anonymous = environment.unauthenticatedContext().firestore();
   const admin = environment.authenticatedContext("admin-1").firestore();
   assert.equal((await assertSucceeds(getDoc(doc(anonymous, "productos/ropa/items/CKG0002")))).exists(), true);
+  assert.equal((await assertSucceeds(getDocs(collectionGroup(anonymous, "items")))).size, 1);
   await assertFails(updateDoc(doc(anonymous, "productos/ropa/items/CKG0002"), { active: false }));
   await assertFails(updateDoc(doc(admin, "productos/ropa/items/CKG0002"), { active: false }));
 });
