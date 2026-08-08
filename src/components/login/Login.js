@@ -5,7 +5,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { auth } from "../../Firebase";
 
 export default function Login() {
-  const { loginEmail, user } = useContext(AuthContext);
+  const { loginEmail, logout, user, isAdmin } = useContext(AuthContext);
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -16,8 +16,13 @@ export default function Login() {
 
   useEffect(() => {
     // WHY: si ya hay sesión, evitar ver la pantalla de login
-    if (user?.uid) navigate("/dashboard", { replace: true });
-  }, [user, navigate]);
+    if (user?.uid && isAdmin) navigate("/dashboard", { replace: true });
+  }, [user, isAdmin, navigate]);
+
+  const handleSwitchAccount = async () => {
+    setError("");
+    await logout();
+  };
 
   const onChange = (e) => setForm((s) => ({ ...s, [e.target.name]: e.target.value }));
 
@@ -46,7 +51,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       await loginEmail(form.email.trim(), form.password);
-      navigate("/dashboard", { replace: true }); // ← redirige al dashboard
+      navigate(from, { replace: true });
     } catch (err) {
       console.error("Login error:", err);
       setError(mapAuthError(err?.code));
@@ -73,6 +78,14 @@ export default function Login() {
   return (
     <div className="container" style={{ maxWidth: 420 }}>
       <h5>Iniciar sesión</h5>
+      {user?.uid && !isAdmin ? (
+        <div style={{ margin: "16px 0", padding: 16, background: "#fff3cd" }}>
+          <p>La sesiÃ³n actual no tiene permisos de administrador.</p>
+          <button type="button" className="btn" onClick={handleSwitchAccount}>
+            Cerrar sesiÃ³n y cambiar de cuenta
+          </button>
+        </div>
+      ) : null}
       <form onSubmit={handleSubmit} autoComplete="on">
         <div className="input-field">
           <input id="email" name="email" type="email" value={form.email} onChange={onChange} required autoComplete="email" />
