@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
-import { db } from "../../Firebase";
+import { listOrders, updateOrderStatus as updateOrderStatusApi } from "../../api/ordersApi";
 import "./OrdersTab.css";
 
 /* ---------- Utils (WHY: coherencia visual/datos) ---------- */
@@ -56,15 +55,13 @@ export default function OrdersAdmin() {
     (async () => {
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, "orders"));
-        const rows = snap.docs
-          .map((d) => {
-            const data = d.data() || {};
+        const result = await listOrders();
+        const rows = result
+          .map((data) => {
             const cliente = data.cliente || data.customer || {};
-            const fecha = toDate(data.fecha || data.date);
+            const fecha = toDate(data.fecha || data.date || data.createdAtMs);
             return {
-              id: d.id,
-              ref: d.ref,
+              id: data.id,
               estado: data.estado || data.status || "Pendiente",
               metodoPago: data.metodoPago || data.paymentMethod || "N/A",
               total: Number(data.total || 0),
@@ -117,7 +114,7 @@ export default function OrdersAdmin() {
   const updateStatus = async (order, newStatus) => {
     try {
       setSaving(true);
-      await updateDoc(order.ref, { estado: newStatus });
+      await updateOrderStatusApi(order.id, newStatus);
       setOrders((prev) => prev.map((o) => (o.id === order.id ? { ...o, estado: newStatus } : o)));
       setActive((prev) => (prev && prev.id === order.id ? { ...prev, estado: newStatus } : prev));
     } catch (e) {

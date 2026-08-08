@@ -8,6 +8,12 @@ import { addiCallback } from "./payment_gateway/addi/callback.js";
 import { processBoldWebhook }
 from "./payment_gateway/bold/webhook.js";
 import { sendOrderNotification } from "./notifications/orderEmail.js";
+import { importProducts } from "./products/importProducts.js";
+import { createOrderWithReservation } from "./orders/createOrder.js";
+import { expireInventoryReservations } from "./orders/expireReservations.js";
+import { updateOrderStatus } from "./orders/updateOrderStatus.js";
+import { getOrderStatus, listOrders } from "./orders/readOrders.js";
+import { manageProduct } from "./products/manageProducts.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -19,8 +25,17 @@ export const wompiWebhook = onRequest(processWompiWebhook);
 
 export const addiWebhook = onRequest(addiCallback);
 
-export const boldWebhook =
-  onRequest(processBoldWebhook);
+export const boldWebhook = onRequest(processBoldWebhook);
+
+export {
+  importProducts,
+  manageProduct,
+  createOrderWithReservation,
+  expireInventoryReservations,
+  updateOrderStatus,
+  getOrderStatus,
+  listOrders,
+};
 
 export const notifyNewSale = onDocumentWritten(
   {

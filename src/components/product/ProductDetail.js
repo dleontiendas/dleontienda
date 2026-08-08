@@ -9,8 +9,7 @@ import "materialize-css/dist/css/materialize.min.css";
 import "./ProductDetail.css";
 import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
 
-const env = (vite, cra) =>
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env[vite]) ||
+const env = (_vite, cra) =>
   (typeof process !== "undefined" && process.env && process.env[cra]) || "";
 
 const WHATSAPP_NUMBER =
@@ -109,12 +108,15 @@ export default function ProductDetail() {
         if (category && productId) {
           const ref = doc(db, "productos", category, "items", productId);
           const snap = await getDoc(ref);
-          if (snap.exists()) data = { id: snap.id, ...snap.data() };
+          if (snap.exists()) data = { id: snap.id, catSlug: category, ...snap.data() };
         }
         if (!data && productId) {
           const q = query(collectionGroup(db, "items"), where("sku", "==", productId));
           const cg = await getDocs(q);
-          if (!cg.empty) data = { id: cg.docs[0].id, ...cg.docs[0].data() };
+          if (!cg.empty) {
+            const found = cg.docs[0];
+            data = { id: found.id, catSlug: found.ref.parent?.parent?.id || "sin_categoria", ...found.data() };
+          }
         }
 
         if (!alive) return;

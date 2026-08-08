@@ -1,13 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
 
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
 
-import { db } from "../../Firebase";
-
 import { CartContext } from "../../context/CartContext";
+import { createOrder } from "../../api/ordersApi";
 
 import { startPayment } from "../../services/paymentService";
 
@@ -125,8 +122,11 @@ const Checkout = () => {
 
         items: cart.map((item) => ({
           productId: item.id,
-          name: item.name,
-          price: item.price_cop,
+          catSlug: item.catSlug,
+          skuMaster: (item.variants || [])
+            .find((variant) => variant.color === item.selectedColor)
+            ?.tallas?.find((size) => String(size.size) === String(item.selectedSize))
+            ?.sku_master || "",
           quantity: item.quantity,
           color: item.selectedColor,
           size: item.selectedSize,
@@ -147,25 +147,17 @@ const Checkout = () => {
 
         boldType,
 
-        status: "Initiated",
-
-        paymentStatus: "PENDING",
-
-        externalId: null,
-
-        providerData: {},
-
-        createdAt: serverTimestamp(),
-
-        updatedAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, "orders"), order);
+      const createdOrder = await createOrder(order);
+      const orderId = createdOrder.id;
+      localStorage.setItem(`orderAccessToken:${orderId}`, createdOrder.accessToken);
+      localStorage.setItem("lastOrderId", orderId);
 
       if (paymentMethod === "contraentrega") {
         clearCart();
 
-        navigate(`/checkout-success?ref=${docRef.id}`);
+        navigate(`/checkout-success?ref=${orderId}`);
 
         return;
       }
@@ -173,7 +165,7 @@ const Checkout = () => {
       const provider = PAYMENT_PROVIDER_MAP[paymentMethod];
 
       const paymentResponse = await startPayment(provider, {
-        orderId: docRef.id,
+        orderId,
 
         customer,
 
@@ -184,7 +176,7 @@ const Checkout = () => {
           boldType,
         },
 
-        returnUrl: `${window.location.origin}/checkout-success?ref=${docRef.id}`,
+        returnUrl: `${window.location.origin}/checkout-success?ref=${orderId}`,
       });
 
       setPaymentData({
@@ -211,20 +203,39 @@ const Checkout = () => {
     }
   };
 
-  const handleWhatsAppOrder = () => {
-  const message =
-    buildWhatsAppMessage({
-      customer,
-      shipping: shippingInfo,
-      cart,
-      total,
-    });
-
-  openWhatsApp({
-    phone: "573104173201",
-    message,
-  });
-};
+  const handleWhatsAppOrder = async () => {
+    if (!cart.length) return;
+    setLoading(true);
+    try {
+      const createdOrder = await createOrder({
+        customer,
+        shippingAddress: shippingInfo,
+        items: cart.map((item) => ({
+          productId: item.id,
+          catSlug: item.catSlug,
+          skuMaster: (item.variants || [])
+            .find((variant) => variant.color === item.selectedColor)
+            ?.tallas?.find((size) => String(size.size) === String(item.selectedSize))
+            ?.sku_master || "",
+          quantity: item.quantity,
+          color: item.selectedColor,
+          size: item.selectedSize,
+          image: getEmailProductImage(item, item.selectedColor),
+        })),
+        shipping,
+        paymentMethod: "whatsapp",
+        paymentProvider: "WHATSAPP",
+      });
+      localStorage.setItem(`orderAccessToken:${createdOrder.id}`, createdOrder.accessToken);
+      const message = buildWhatsAppMessage({ customer, shipping: shippingInfo, cart, total });
+      openWhatsApp({ phone: "573104173201", message });
+      clearCart();
+    } catch (error) {
+      setPaymentError(error.message || "No fue posible reservar el inventario.");
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="checkout-page">
       <div className="checkout-left">
@@ -263,10 +274,7 @@ const Checkout = () => {
           paymentData,
           paymentError,
           onSubmit: handleSubmit,
-          onWhatsApp: () => {
-            handleWhatsAppOrder();
-            clearCart();
-          },
+          onWhatsApp: handleWhatsAppOrder,
         }}
       />
     </div>

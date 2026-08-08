@@ -4,4 +4,5 @@ export const PAYMENT_PROVIDER_MAP = {
   addi: "ADDI",
   bold: "BOLD",
   sistecredito: "SISTECREDITO",
+  whatsapp: "WHATSAPP",
 };

@@ -11,6 +11,7 @@
   flex-direction: column;
   align-items: center;
   padding-top: 1rem;
+  padding-bottom: 1rem;
 }
 
 .sidebar-btn {
@@ -30,4 +31,17 @@
   flex: 1;
   padding: 2rem;
   background: #f5f6fa;
+}
+
+.sidebar-logout {
+  margin-top: auto;
+}
+
+.sidebar-logout:hover {
+  color: #ff5252;
+}
+
+.sidebar-logout:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }

@@ -71,7 +71,7 @@ const App = () => {
                   <Route
                     path="/dashboard"
                     element={
-                      <RequireAuth>
+                      <RequireAuth role="admin">
                         <Dashboard />
                       </RequireAuth>
                     }

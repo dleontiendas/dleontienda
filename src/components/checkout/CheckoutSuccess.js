@@ -10,9 +10,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 
-import {
-  listenOrder,
-} from "../../services/orderStatusService";
+import { getOrderStatus } from "../../api/ordersApi";
 
 import "./CheckoutSuccess.css";
 
@@ -40,10 +38,18 @@ export default function CheckoutSuccess() {
     return;
   }
 
-  const unsubscribe =
-    listenOrder(
-      orderId,
-      (order) => {
+  const accessToken = localStorage.getItem(`orderAccessToken:${orderId}`);
+  if (!accessToken) {
+    setErrorMessage("No se encontró el token seguro de la orden.");
+    setStatus("error");
+    return;
+  }
+  let active = true;
+  let timeoutId;
+  const refresh = async () => {
+    try {
+      const order = await getOrderStatus(orderId, accessToken);
+      if (!active) return;
         if (!order) {
           setErrorMessage(
             "La orden no existe."
@@ -63,6 +69,7 @@ export default function CheckoutSuccess() {
             localStorage.removeItem(
               "lastOrderId"
             );
+            localStorage.removeItem(`orderAccessToken:${orderId}`);
 
             setStatus(
               "success"
@@ -87,8 +94,11 @@ export default function CheckoutSuccess() {
               "loading"
             );
         }
-      },
-      (error) => {
+      if (active && ["PENDING", "PROCESSING"].includes(order.paymentStatus || "PENDING")) {
+        timeoutId = window.setTimeout(refresh, 2000);
+      }
+    } catch (error) {
+      if (!active) return;
         console.error(error);
 
         setErrorMessage(
@@ -96,11 +106,13 @@ export default function CheckoutSuccess() {
         );
 
         setStatus("error");
-      }
-    );
+    }
+  };
+  refresh();
 
   return () => {
-    unsubscribe?.();
+    active = false;
+    if (timeoutId) window.clearTimeout(timeoutId);
   };
 }, [orderId]);
 

@@ -3,16 +3,12 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   collectionGroup,
   getDocs,
-  updateDoc,
-  deleteDoc,
-  addDoc, // compat
-  collection,
-  writeBatch,
-  setDoc,
   doc,
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
+import { importProducts, manageProduct } from "../../api/productsApi";
+import { parseProductRows } from "./productImport";
 import "./ProductsTab.css";
 
 /* ---------- Helpers ---------- */
@@ -46,16 +42,8 @@ const emptyProduct = (over = {}) => ({
 
 /* ---------- Normalizadores ---------- */
 const toStr = (v) => (v === undefined || v === null ? "" : String(v).trim());
-const toNum = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const sanitizeId = (s) =>
   toStr(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "_").toLowerCase().slice(0, 120);
-const normalizeDriveLink = (url) => {
-  const u = toStr(url);
-  if (!u) return null;
-  const m = u.match(/\/d\/([a-zA-Z0-9-_]+)/) || u.match(/[?&]id=([a-zA-Z0-9-_]+)/);
-  const id = m ? m[1] : null;
-  return id ? `https://drive.google.com/thumbnail?authuser=0&sz=w1200&id=${id}` : u;
-};
 
 /* ---------- Modal (no cierra por clic fuera) ---------- */
 function Modal({ open, title, onClose, children, footer }) {
@@ -352,118 +340,11 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { defval: "" });
       setRawCount(rows.length);
 
-      const acc = new Map();
-      for (const r of rows) {
-        const sku = toStr(r["COD Ref SKU"]);
-        if (!sku) { appendLog("Fila sin SKU, se omite."); continue; }
-        const nombre = toStr(r["Nombre"]);
-        const marca = toStr(r["Marca"]);
-        const categoria = toStr(r["Categoría"]);
-        const subcat = toStr(r["Sub-Categoría"]);
-        const depto = toStr(r["Departamento"]);
-        const desc = toStr(r["Descripción"]);
-        const materiales = toStr(r["Materiales y composición"]);
-        const cuidados = toStr(r["Cuidados y lavado"]);
-        const garantia = toStr(r["Garantía"]);
-        const precio = toNum(r["Precio (COL)"]);
-        const peso = toNum(r["Peso (Gr)"]);
-
-        const imgPrincipal = normalizeDriveLink(r["Imagen Principal"]);
-        const img1 = normalizeDriveLink(r["Imagen1"]);
-        const img2 = normalizeDriveLink(r["Imagen2"]);
-
-        const imgColor1 = normalizeDriveLink(r["Imagen Color 1"]);
-        const imgColor2 = normalizeDriveLink(r["Imagen Color 2"]);
-
-        const color = toStr(r["Color"]);
-        const talla = toStr(r["Talla"]);
-        const cantidad = toNum(r["Cantidad"]);
-
-        if (!acc.has(sku)) {
-          acc.set(sku, {
-            base: {
-              sku, name: nombre, brand: marca, category: categoria, subcategory: subcat,
-              department: depto, description: desc, materials: materiales, care_instructions: cuidados,
-              warranty: garantia, price_cop: precio, weight_grams: peso,
-            },
-            variantes: [],
-            imgs: [],
-          });
-        }
-        const entry = acc.get(sku);
-        if (nombre && !entry.base.name) entry.base.name = nombre;
-        if (marca && !entry.base.brand) entry.base.brand = marca;
-        if (categoria && !entry.base.category) entry.base.category = categoria;
-        if (subcat && !entry.base.subcategory) entry.base.subcategory = subcat;
-        if (depto && !entry.base.department) entry.base.department = depto;
-        if (desc && !entry.base.description) entry.base.description = desc;
-        if (materiales && !entry.base.materials) entry.base.materials = materiales;
-        if (cuidados && !entry.base.care_instructions) entry.base.care_instructions = cuidados;
-        if (garantia && !entry.base.warranty) entry.base.warranty = garantia;
-        if (precio && !entry.base.price_cop) entry.base.price_cop = precio;
-        if (peso && !entry.base.weight_grams) entry.base.weight_grams = peso;
-
-        [imgPrincipal, img1, img2].forEach((u) => { if (u && !entry.imgs.includes(u)) entry.imgs.push(u); });
-
-        if (color || talla || cantidad > 0 || imgColor1 || imgColor2) {
-            entry.variantes.push({
-              color,
-              talla,
-              cantidad: Math.max(0, Math.trunc(cantidad || 0)),
-              images: [imgColor1, imgColor2].filter(Boolean),
-          });
-        }
-      }
-
-      const productos = [];
-      for (const { base, variantes, imgs } of acc.values()) {
-        const porColor = {};
-
-        for (const v of variantes) {
-          const key = v.color || "sin_color";
-
-          if (!porColor[key]) {
-            porColor[key] = {
-              color: key,
-              images: [],
-              tallas: [],
-            };
-          }
-
-          // Asigna las imágenes a la variación del color correspondiente
-          (v.images || []).forEach((imagen) => {
-            if (imagen && !porColor[key].images.includes(imagen)) {
-              porColor[key].images.push(imagen);
-            }
-          });
-        
-          // Agrega las tallas y cantidades del color
-          if (v.talla) {
-            porColor[key].tallas.push({
-              size: v.talla,
-              stock: v.cantidad || 0,
-            });
-          }
-        }
-
-        const producto = {
-          sku: toStr(base.sku), name: toStr(base.name), brand: toStr(base.brand),
-          category: toStr(base.category), subcategory: toStr(base.subcategory), department: toStr(base.department),
-          description: toStr(base.description), materials: toStr(base.materials), care_instructions: toStr(base.care_instructions),
-          warranty: toStr(base.warranty), price_cop: toNum(base.price_cop), weight_grams: toNum(base.weight_grams),
-          images: imgs.filter(Boolean),
-          variants: Object.values(porColor),
-          active: true,
-          updated_at: new Date(),
-          created_at: new Date(),
-        };
-
-        if (!producto.sku) { appendLog("Producto sin SKU, se omite."); continue; }
-        productos.push(producto);
-      }
-
-      setParsed(productos);
-      appendLog(`Leídas ${rows.length} filas → ${productos.length} productos únicos por SKU.`);
+      const result = parseProductRows(rows);
+      result.errors.forEach((error) => appendLog(`❌ Fila ${error.row} · ${error.field}: ${error.message}`));
+      setParsed(result.products);
+      if (!result.errors.length) appendLog(`✅ Leídas ${rows.length} filas → ${result.products.length} productos por referencia base.`);
+      else appendLog(`Se encontraron ${result.errors.length} errores. No se habilitará la carga hasta corregirlos.`);
     } catch (err) {
       console.error(err);
       appendLog(`❌ Error leyendo archivo: ${err.message}`);
@@ -476,21 +357,13 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
     if (!parsed.length) return;
     setLoading(true);
     try {
-      const chunkSize = 450;
-      for (let i = 0; i < parsed.length; i += chunkSize) {
-        const batch = writeBatch(db);
-        const slice = parsed.slice(i, i + chunkSize);
-        slice.forEach((p) => {
-          const categoriaId = sanitizeId(p.category || "sin_categoria");
-          const ref = doc(db, "productos", categoriaId, "items", p.sku);
-          setDoc(ref, { ...p, updated_at: new Date() }, { merge: true });
-        });
-        await batch.commit();
-      }
+      const result = await importProducts(parsed);
+      appendLog(`✅ Importación terminada: ${result.created} creados y ${result.updated} actualizados.`);
       onMergeRows(parsed);
       setLoading(false);
     } catch (err) {
       console.error(err);
+      appendLog(`❌ No se pudo importar: ${err.message}`);
       setLoading(false);
     }
   };
@@ -518,7 +391,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
+          Columnas esperadas: <strong>COD Ref SKU, SKU Maestro, Actualizar inventario, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
         </div>
 
         <div className="ap-summary">
@@ -632,7 +505,11 @@ export default function AdminProducts() {
           color: String(v.color || "").trim(),
           images: (v.images || []).map((u) => toStr(u)).filter(Boolean),
           tallas: (v.tallas || [])
-            .map((t) => ({ size: String(t.size || "").trim(), stock: Math.max(0, Number(t.stock || 0)) }))
+            .map((t) => ({
+              size: String(t.size || "").trim(),
+              stock: Math.max(0, Number(t.stock || 0)),
+              ...(t.sku_master ? { sku_master: toStr(t.sku_master) } : {}),
+            }))
             .filter((t) => t.size),
         }))
         .filter((v) => v.color && (v.tallas.length || v.images.length));
@@ -659,11 +536,11 @@ export default function AdminProducts() {
 
       if (creating) {
         const categoriaId = sanitizeId(payload.category || "sin_categoria");
-        const ref = doc(db, "productos", categoriaId, "items", payload.sku);
-        await setDoc(ref, { ...payload, created_at: new Date() }, { merge: true });
+        const result = await manageProduct("save", { product: payload });
+        const ref = doc(db, result.path || `productos/${categoriaId}/items/${payload.sku}`);
         setRows((prev) => [...prev, { id: payload.sku, ref, catSlug: categoriaId, ...payload }]);
       } else if (editing?.ref) {
-        await updateDoc(editing.ref, payload);
+        await manageProduct("save", { path: editing.ref.path, product: payload });
         setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...editing, ...payload } : r)));
       }
       onCloseModal();
@@ -676,7 +553,7 @@ export default function AdminProducts() {
   const onDelete = async (row) => {
     if (!window.confirm(`Eliminar "${row.name}"?`)) return;
     try {
-      await deleteDoc(row.ref);
+      await manageProduct("delete", { path: row.ref.path });
       setRows((prev) => prev.filter((r) => r.id !== row.id));
     } catch (e) {
       console.error("❌ Error eliminando:", e);
@@ -690,7 +567,7 @@ export default function AdminProducts() {
     const verb = nextActive ? "activar" : "desactivar";
     if (!window.confirm(`¿Seguro que deseas ${verb} "${row.name}"?`)) return;
     try {
-      await updateDoc(row.ref, { active: nextActive, updated_at: new Date() });
+      await manageProduct("toggle", { path: row.ref.path, active: nextActive });
       setRows((prev) =>
         prev.map((r) =>
           r.id === row.id && r.catSlug === row.catSlug ? { ...r, active: nextActive } : r

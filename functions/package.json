@@ -6,6 +6,8 @@
     "node": "20"
   },
   "scripts": {
+    "test": "node --test orders/inventoryDomain.test.js products/importProducts.test.js",
+    "test:emulator": "node --test test/inventory.emulator.test.js",
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log"

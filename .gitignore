@@ -8,6 +8,10 @@ node_modules
 
 # testing
 /coverage
+/firestore-debug.log
+/.firebase/configstore/
+/.codex-remote-attachments/
+/render-backend/
 
 # production
 /build
