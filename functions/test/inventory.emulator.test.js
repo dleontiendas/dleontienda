@@ -122,10 +122,10 @@ test("estado público de la orden exige el token secreto correcto", async () => 
   assert.equal("customer" in visible, false);
 });
 
-test("compra aprobada reserva la cantidad exacta y webhook duplicado es idempotente", async () => {
+test("solo la compra aprobada descuenta y el webhook duplicado es idempotente", async () => {
   await seedProduct(5);
   const { orderId } = await createOrderWithReservationHandler(orderRequest(2));
-  assert.equal(await stock(), 3);
+  assert.equal(await stock(), 5);
   const first = await applyPaymentStatus({ orderId, status: "APPROVED", provider: "WOMPI", eventId: "evt-approved" });
   const repeated = await applyPaymentStatus({ orderId, status: "APPROVED", provider: "WOMPI", eventId: "evt-approved" });
   assert.equal(first.inventoryStatus, "committed");
@@ -133,10 +133,10 @@ test("compra aprobada reserva la cantidad exacta y webhook duplicado es idempote
   assert.equal(await stock(), 3);
 });
 
-test("pago rechazado libera la reserva", async () => {
+test("pago rechazado no modifica inventario", async () => {
   await seedProduct(5);
   const { orderId } = await createOrderWithReservationHandler(orderRequest(2));
-  assert.equal(await stock(), 3);
+  assert.equal(await stock(), 5);
   await applyPaymentStatus({ orderId, status: "REJECTED", provider: "WOMPI", eventId: "evt-rejected" });
   assert.equal(await stock(), 5);
 });
@@ -144,7 +144,7 @@ test("pago rechazado libera la reserva", async () => {
 test("un webhook no puede confirmar una orden de otra pasarela ni con otro monto", async () => {
   await seedProduct(5);
   const { orderId } = await createOrderWithReservationHandler(orderRequest(1, "WOMPI"));
-  assert.equal(await stock(), 4);
+  assert.equal(await stock(), 5);
   await assert.rejects(
     () => applyPaymentStatus({ orderId, status: "APPROVED", provider: "BOLD", eventId: "wrong-provider" }),
     /PAYMENT_PROVIDER_MISMATCH/,
@@ -154,9 +154,9 @@ test("un webhook no puede confirmar una orden de otra pasarela ni con otro monto
     /PAYMENT_AMOUNT_MISMATCH/,
   );
   const order = (await db.collection("orders").doc(orderId).get()).data();
-  assert.equal(order.inventoryStatus, "reserved");
+  assert.equal(order.inventoryStatus, "pending_payment");
   assert.equal(order.paymentStatus, "PENDING");
-  assert.equal(await stock(), 4);
+  assert.equal(await stock(), 5);
 });
 
 test("reserva abandonada vencida se libera automáticamente", async () => {
@@ -164,16 +164,23 @@ test("reserva abandonada vencida se libera automáticamente", async () => {
   const { orderId } = await createOrderWithReservationHandler(orderRequest(1));
   await db.collection("orders").doc(orderId).update({ reservationExpiresAt: admin.firestore.Timestamp.fromMillis(Date.now() - 1000) });
   const result = await releaseExpiredReservations();
-  assert.equal(result.released, 1);
+  assert.equal(result.released, 0);
   assert.equal(await stock(), 5);
 });
 
 test("dos clientes compitiendo por la última unidad no producen sobreventa", async () => {
   await seedProduct(1);
-  const results = await Promise.allSettled([
+  const orders = await Promise.all([
     createOrderWithReservationHandler(orderRequest(1)),
     createOrderWithReservationHandler(orderRequest(1)),
   ]);
+  assert.equal(await stock(), 1);
+  const results = await Promise.allSettled(orders.map(({ orderId }, index) => applyPaymentStatus({
+    orderId,
+    status: "APPROVED",
+    provider: "WOMPI",
+    eventId: `concurrent-${index}`,
+  })));
   assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
   assert.equal(results.filter((result) => result.status === "rejected").length, 1);
   assert.equal(await stock(), 0);

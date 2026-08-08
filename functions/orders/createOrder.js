@@ -3,8 +3,6 @@ import admin, { db } from "../firebasebaseAdmin.js";
 import { changeItemStock, findSizeLocation } from "./inventoryDomain.js";
 import crypto from "node:crypto";
 
-const RESERVATION_MINUTES = 30;
-
 const requireText = (value, field) => {
   const text = String(value || "").trim();
   if (!text) throw new HttpsError("invalid-argument", `Falta ${field}.`);
@@ -35,26 +33,26 @@ export async function createOrderWithReservationHandler(request) {
       const uniqueRefs = Array.from(new Map(itemRefs.map((ref) => [ref.path, ref])).values());
       const snapshots = await Promise.all(uniqueRefs.map((ref) => transaction.get(ref)));
       const byPath = new Map(snapshots.map((snapshot) => [snapshot.ref.path, snapshot]));
-      const nextProducts = new Map();
+      const validatedProducts = new Map();
       const orderItems = [];
 
       requestedItems.forEach((requested, index) => {
         const ref = itemRefs[index];
         const snapshot = byPath.get(ref.path);
         if (!snapshot?.exists) throw new HttpsError("not-found", `El producto ${requested.productId} no existe.`);
-        const current = nextProducts.get(ref.path) || snapshot.data();
+        const current = validatedProducts.get(ref.path) || snapshot.data();
         const quantity = Math.trunc(Number(requested.quantity));
         if (!Number.isInteger(quantity) || quantity <= 0) throw new HttpsError("invalid-argument", "La cantidad debe ser un entero positivo.");
         const location = findSizeLocation(current, requested);
         if (!location) throw new HttpsError("not-found", `No existe la variante ${requested.skuMaster || `${requested.color}/${requested.size}`}.`);
-        let updated;
+        let validated;
         try {
-          updated = changeItemStock(current, { ...requested, quantity }, -1);
+          validated = changeItemStock(current, { ...requested, quantity }, -1);
         } catch (error) {
           if (error.message === "INSUFFICIENT_STOCK") throw new HttpsError("failed-precondition", `No hay inventario suficiente para ${current.name || requested.productId}.`);
           throw error;
         }
-        nextProducts.set(ref.path, updated);
+        validatedProducts.set(ref.path, validated);
         const size = current.variants[location.variantIndex].tallas[location.sizeIndex];
         orderItems.push({
           productId: snapshot.id,
@@ -69,13 +67,8 @@ export async function createOrderWithReservationHandler(request) {
         });
       });
 
-      for (const [path, product] of nextProducts) {
-        transaction.update(db.doc(path), { variants: product.variants, updated_at: admin.firestore.FieldValue.serverTimestamp() });
-      }
       const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
       const shipping = Math.max(0, Number(data.shipping) || 0);
-      const expiresAt = admin.firestore.Timestamp.fromMillis(Date.now() + RESERVATION_MINUTES * 60 * 1000);
-      const immediateCommit = new Set(["CASH", "WHATSAPP"]).has(String(data.paymentProvider || "").toUpperCase());
       transaction.set(orderRef, {
         customer: data.customer || {},
         shippingAddress: data.shippingAddress || {},
@@ -87,22 +80,20 @@ export async function createOrderWithReservationHandler(request) {
         paymentProvider: data.paymentProvider || "",
         wompiType: data.wompiType || null,
         boldType: data.boldType || null,
-        status: immediateCommit ? "APPROVED" : "PENDING",
-        paymentStatus: immediateCommit ? "APPROVED" : "PENDING",
-        inventoryStatus: immediateCommit ? "committed" : "reserved",
-        reservationExpiresAt: expiresAt,
+        status: "PENDING",
+        paymentStatus: "PENDING",
+        inventoryStatus: "pending_payment",
         processedPaymentEvents: [],
         accessTokenHash,
         externalId: null,
         providerData: {},
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        ...(immediateCommit ? { inventoryCommittedAt: admin.firestore.FieldValue.serverTimestamp() } : {}),
       });
     });
   } catch (error) {
     if (error instanceof HttpsError) throw error;
-    throw new HttpsError("internal", error.message || "No fue posible reservar el inventario.");
+    throw new HttpsError("internal", error.message || "No fue posible validar el inventario.");
   }
   return { success: true, orderId: orderRef.id, accessToken };
 }

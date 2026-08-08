@@ -9,6 +9,11 @@ const product = (stock = 2) => ({
   ],
 });
 
+test("solo la aprobacion descuenta una orden pendiente de pago", () => {
+  assert.deepEqual(transitionInventoryStatus("pending_payment", "APPROVED"), { next: "committed", stockDelta: -1 });
+  assert.deepEqual(transitionInventoryStatus("pending_payment", "REJECTED"), { next: "released", stockDelta: 0 });
+});
+
 test("identifica la variante exacta por SKU Maestro", () => {
   assert.deepEqual(findSizeLocation(product(), { skuMaster: "BIXLER-584-AZUL-32" }), { variantIndex: 0, sizeIndex: 0 });
 });

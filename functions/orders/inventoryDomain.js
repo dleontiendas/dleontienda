@@ -44,12 +44,14 @@ export function changeItemStock(product, item, delta) {
 export function transitionInventoryStatus(currentStatus, paymentStatus) {
   const normalized = normalizePaymentStatus(paymentStatus);
   if (APPROVED_STATUSES.has(normalized)) {
+    if (currentStatus === "pending_payment") return { next: "committed", stockDelta: -1 };
     if (currentStatus === "reserved") return { next: "committed", stockDelta: 0 };
     if (currentStatus === "committed") return { next: "committed", stockDelta: 0 };
     if (currentStatus === "released") return { next: "committed", stockDelta: -1 };
     return { next: currentStatus || "not_managed", stockDelta: 0 };
   }
   if (RELEASE_STATUSES.has(normalized)) {
+    if (currentStatus === "pending_payment") return { next: "released", stockDelta: 0 };
     if (currentStatus === "reserved") return { next: "released", stockDelta: 1 };
     if (currentStatus === "committed" && RESTORE_AFTER_COMMIT_STATUSES.has(normalized)) return { next: "released", stockDelta: 1 };
     return { next: currentStatus || "not_managed", stockDelta: 0 };
