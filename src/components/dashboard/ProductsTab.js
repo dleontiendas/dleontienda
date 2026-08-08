@@ -1,5 +1,5 @@
 // ========================= src/admin/ProductsTab.jsx =========================
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   collectionGroup,
   getDocs,
@@ -439,21 +439,23 @@ export default function AdminProducts() {
 
   const [batchOpen, setBatchOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      try {
-        const snap = await getDocs(collectionGroup(db, "items"));
-        const items = snap.docs.map((d) => ({ id: d.id, ref: d.ref, catSlug: d.ref.parent?.parent?.id || "sin_categoria", ...d.data() }));
-        items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-        setRows(items);
-      } catch (e) {
-        console.error("❌ Error listando productos:", e);
-      } finally {
-        setLoading(false);
-      }
-    })();
+  const loadProducts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const snap = await getDocs(collectionGroup(db, "items"));
+      const items = snap.docs.map((d) => ({ id: d.id, ref: d.ref, catSlug: d.ref.parent?.parent?.id || "sin_categoria", ...d.data() }));
+      items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      setRows(items);
+    } catch (e) {
+      console.error("❌ Error listando productos:", e);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -579,20 +581,6 @@ export default function AdminProducts() {
     }
   };
 
-  const mergeUploadedRows = (uploaded) => {
-    setRows((prev) => {
-      const byKey = new Map(prev.map((r) => [`${r.catSlug}-${r.id}`, r]));
-      uploaded.forEach((p) => {
-        const catSlug = sanitizeId(p.category || "sin_categoria");
-        const key = `${catSlug}-${p.sku}`;
-        const ref = doc(db, "productos", catSlug, "items", p.sku);
-        const base = { id: p.sku, ref, catSlug, ...p };
-        byKey.set(key, { ...(byKey.get(key) || {}), ...base });
-      });
-      return Array.from(byKey.values());
-    });
-  };
-
   return (
     <div className="ap-wrap">
       <header className="ap-header">
@@ -671,7 +659,7 @@ export default function AdminProducts() {
       <BatchUploadModal
         open={batchOpen}
         onClose={() => setBatchOpen(false)}
-        onMergeRows={(uploaded) => { mergeUploadedRows(uploaded); setBatchOpen(false); }}
+        onMergeRows={() => { setBatchOpen(false); loadProducts(); }}
       />
 
       <Modal
