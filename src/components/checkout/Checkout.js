@@ -35,7 +35,7 @@ const Checkout = () => {
 
   const [shipping] = useState(25000);
 
-  const [paymentMethod, setPaymentMethod] = useState("wompi");
+  const [paymentMethod, setPaymentMethod] = useState("");
 
   const [wompiType, setWompiType] = useState("PSE");
 
@@ -81,6 +81,14 @@ const Checkout = () => {
     if (!cart.length) {
       M.toast({
         html: "Tu carrito está vacío",
+      });
+
+      return;
+    }
+
+    if (!paymentMethod) {
+      M.toast({
+        html: "Selecciona un mÃ©todo de pago",
       });
 
       return;
