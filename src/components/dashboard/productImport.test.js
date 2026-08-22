@@ -1,4 +1,4 @@
-import { normalizeMasterSku, parseProductRows } from "./productImport";
+import { buildMasterSku, normalizeMasterSku, parseProductRows } from "./productImport";
 
 const row = (overrides = {}) => ({
   "COD Ref SKU": "CKG0002",
@@ -19,6 +19,24 @@ test("normaliza SKU Maestro en mayúsculas, sin tildes, espacios o caracteres es
   expect(normalizeMasterSku(" Cool Kids-Ázul 1-32 / ")).toBe("COOLKIDS-AZUL1-32");
 });
 
+test("genera SKU Maestro automáticamente desde marca, referencia, color y talla", () => {
+  expect(buildMasterSku({ brand: "Cool Kids", baseSku: "CKG0002", color: "SÓNIC 1", size: 4 }))
+    .toBe("COOLKIDS-CKG0002-SONIC1-4");
+});
+
+test("importa una matriz sin columna SKU Maestro y lo asocia a cada talla", () => {
+  const first = row();
+  const second = row({ Talla: 6 });
+  delete first["SKU Maestro"];
+  delete second["SKU Maestro"];
+  const result = parseProductRows([first, second]);
+  expect(result.errors).toEqual([]);
+  expect(result.products[0].variants[0].tallas.map((item) => item.sku_master)).toEqual([
+    "COOLKIDS-CKG0002-SONIC1-4",
+    "COOLKIDS-CKG0002-SONIC1-6",
+  ]);
+});
+
 test("agrupa filas por referencia base y conserva SKU Maestro por talla", () => {
   const result = parseProductRows([row(), row({ Talla: 6, "SKU Maestro": "COOLKIDS-CKG0002-SONIC1-6" })]);
   expect(result.errors).toEqual([]);
@@ -33,9 +51,9 @@ test("rechaza SKU Maestro duplicado indicando la fila", () => {
   expect(result.errors).toContainEqual(expect.objectContaining({ row: 3, field: "SKU Maestro" }));
 });
 
-test("rechaza SKU Maestro vacío", () => {
-  const result = parseProductRows([row({ "SKU Maestro": "" })]);
-  expect(result.errors).toContainEqual(expect.objectContaining({ row: 2, field: "SKU Maestro" }));
+test("rechaza una fila sin marca porque no puede generar el SKU Maestro", () => {
+  const result = parseProductRows([row({ Marca: "", "SKU Maestro": "" })]);
+  expect(result.errors).toContainEqual(expect.objectContaining({ row: 2, field: "Marca" }));
 });
 
 test("rechaza una fila inválida con cantidad negativa", () => {

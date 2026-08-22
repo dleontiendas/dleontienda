@@ -1,6 +1,6 @@
 const REQUIRED_HEADERS = [
   "COD Ref SKU",
-  "SKU Maestro",
+  "Marca",
   "Actualizar inventario",
   "Color",
   "Talla",
@@ -19,6 +19,12 @@ export const normalizeMasterSku = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase()
     .replace(/[^A-Z0-9-]/g, "");
+
+export const buildMasterSku = ({ brand, baseSku, color, size }) =>
+  [brand, baseSku, color, size]
+    .map((part) => normalizeMasterSku(part).replace(/-+/g, ""))
+    .filter(Boolean)
+    .join("-");
 
 export const normalizeInventoryFlag = (value) =>
   toImportString(value)
@@ -58,15 +64,19 @@ export function parseProductRows(rows, headers = null) {
     const excelRow = index + 2;
     const baseSku = toImportString(row["COD Ref SKU"]);
     const rawMasterSku = toImportString(row["SKU Maestro"]);
-    const masterSku = normalizeMasterSku(rawMasterSku);
+    const brand = toImportString(row.Marca);
     const inventoryFlag = normalizeInventoryFlag(row["Actualizar inventario"]);
     const color = toImportString(row.Color);
     const size = toImportString(row.Talla);
+    const masterSku = rawMasterSku
+      ? normalizeMasterSku(rawMasterSku)
+      : buildMasterSku({ brand, baseSku, color, size });
     const rawQuantity = row.Cantidad;
     const quantity = Number(rawQuantity);
 
     if (!baseSku) errors.push({ row: excelRow, field: "COD Ref SKU", message: "La referencia base está vacía." });
-    if (!rawMasterSku || !masterSku) errors.push({ row: excelRow, field: "SKU Maestro", message: "El SKU Maestro está vacío o no contiene caracteres válidos." });
+    if (!brand) errors.push({ row: excelRow, field: "Marca", message: "La marca está vacía; se necesita para generar el SKU Maestro." });
+    if (!masterSku) errors.push({ row: excelRow, field: "SKU Maestro", message: "No fue posible generar un SKU Maestro válido." });
     if (masterSku && seenMasterSkus.has(masterSku)) {
       errors.push({
         row: excelRow,
@@ -85,13 +95,13 @@ export function parseProductRows(rows, headers = null) {
       errors.push({ row: excelRow, field: "Actualizar inventario", message: "Debe contener SÍ o NO." });
     }
 
-    if (!baseSku || !masterSku || !color || !size || !Number.isFinite(quantity) || quantity < 0 || !Number.isInteger(quantity) || !new Set(["SI", "NO"]).has(inventoryFlag)) return;
+    if (!baseSku || !brand || !masterSku || !color || !size || !Number.isFinite(quantity) || quantity < 0 || !Number.isInteger(quantity) || !new Set(["SI", "NO"]).has(inventoryFlag)) return;
 
     if (!grouped.has(baseSku)) {
       grouped.set(baseSku, {
         sku: baseSku,
         name: toImportString(row.Nombre),
-        brand: toImportString(row.Marca),
+        brand,
         category: toImportString(row["Categoría"]),
         subcategory: toImportString(row["Sub-Categoría"]),
         department: toImportString(row.Departamento),

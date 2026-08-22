@@ -399,7 +399,7 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas: <strong>COD Ref SKU, SKU Maestro, Actualizar inventario, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>.
+          Columnas esperadas: <strong>COD Ref SKU, Actualizar inventario, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>. El <strong>SKU Maestro se genera automáticamente</strong> para cada variación.
         </div>
 
         <div className="ap-summary">
