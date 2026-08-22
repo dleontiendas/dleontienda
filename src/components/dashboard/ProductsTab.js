@@ -117,7 +117,7 @@ function VariantsEditor({ value = [], onChange }) {
   return (
     <div className="var-wrap">
       <div className="var-head">
-        <h4>Variantes (Color / Imágenes por color / Tallas y stock)</h4>
+        <h4>Variantes (Color / Imágenes / Talla / SKU Maestro / Stock)</h4>
         <button type="button" className="ap-btn ap-btn--primary" onClick={addColor}>+ Color</button>
       </div>
 
@@ -161,6 +161,7 @@ function VariantsEditor({ value = [], onChange }) {
             <div className="size-table">
               <div className="size-head">
                 <div>Talla</div>
+                <div>SKU Maestro asociado</div>
                 <div>Stock</div>
                 <div>Acción</div>
               </div>
@@ -168,6 +169,13 @@ function VariantsEditor({ value = [], onChange }) {
                 {(v.tallas || [{ size: "", stock: 0 }]).map((s, j) => (
                   <div className="size-row" key={`size-${i}-${j}`}>
                     <input className="size-input" placeholder="S / 30 / Única…" value={s.size || ""} onChange={(e) => setSizeRow(i, j, "size", e.target.value)} />
+                    <input
+                      className="master-sku-input mono"
+                      value={s.sku_master || "Sin SKU Maestro"}
+                      readOnly
+                      title={s.sku_master || "Esta variante no tiene un SKU Maestro asociado"}
+                      aria-label={`SKU Maestro de ${v.color || "color sin nombre"}, talla ${s.size || "sin talla"}`}
+                    />
                     <input type="number" min="0" step="1" className="stock-input" value={Number(s.stock || 0)} onChange={(e) => setSizeRow(i, j, "stock", e.target.value)} />
                     <button type="button" className="ap-btn ap-btn--ghost" onClick={() => removeSizeRow(i, j)}>Quitar</button>
                   </div>

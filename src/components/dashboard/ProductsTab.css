@@ -92,11 +92,18 @@
 .var-remove{ white-space:nowrap; }
 
 .size-table{ margin-top:8px; border:1px solid #eee; border-radius:10px; overflow:hidden; }
-.size-head, .size-row{ display:grid; grid-template-columns: 1fr 120px 120px; gap:0; }
+.size-head, .size-row{ display:grid; grid-template-columns: minmax(90px, .7fr) minmax(280px, 1.8fr) 110px 110px; gap:8px; align-items:center; }
 .size-head{ background:#fafafa; font-weight:800; padding:8px 10px; border-bottom:1px solid #eee; }
 .size-body .size-row{ padding:8px 10px; border-bottom:1px solid #eee; }
-.size-input, .stock-input{
+.size-input, .master-sku-input, .stock-input{
   width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; outline:none;
 }
+.master-sku-input{ background:#f7f7f7; color:#333; cursor:text; }
+.master-sku-input[value="Sin SKU Maestro"]{ color:#b3261e; font-family:inherit; font-weight:700; }
 .size-input:focus, .stock-input:focus{ border-color:#d4af37; box-shadow:0 0 0 3px rgba(212,175,55,.18); }
 .var-actions{ margin-top:8px; }
+
+@media (max-width: 720px){
+  .size-table{ overflow-x:auto; }
+  .size-head, .size-row{ min-width:650px; }
+}
