@@ -105,6 +105,11 @@ export async function importProductsHandler(request) {
   const products = request.data?.products;
   if (!Array.isArray(products) || !products.length) throw new HttpsError("invalid-argument", "No se recibieron productos válidos.");
   if (products.length > 500) throw new HttpsError("invalid-argument", "La carga supera el máximo de 500 productos.");
+  const confirmedExistingSkus = new Set(
+    (Array.isArray(request.data?.confirmedExistingSkus) ? request.data.confirmedExistingSkus : [])
+      .map((sku) => String(sku || "").trim())
+      .filter(Boolean),
+  );
 
   const seen = new Set();
   const seenMasterSkus = new Map();
@@ -126,11 +131,31 @@ export async function importProductsHandler(request) {
 
   let created = 0;
   let updated = 0;
+  const targets = [];
+  const unconfirmed = [];
   for (const product of products) {
     const existingRef = await findExistingProduct(product.sku);
+    if (existingRef && !confirmedExistingSkus.has(product.sku)) {
+      const snapshot = await existingRef.get();
+      unconfirmed.push({ sku: product.sku, name: snapshot.data()?.name || "Producto sin nombre" });
+    }
     const productRef = existingRef || db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(product.sku);
+    targets.push({ product, productRef });
+  }
+  if (unconfirmed.length) {
+    throw new HttpsError(
+      "failed-precondition",
+      "La carga contiene referencias que ya existen y requieren confirmación.",
+      { conflicts: unconfirmed },
+    );
+  }
+
+  for (const { product, productRef } of targets) {
     const existed = await db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(productRef);
+      if (snapshot.exists && !confirmedExistingSkus.has(product.sku)) {
+        throw new HttpsError("failed-precondition", `La referencia ${product.sku} ya existe y requiere confirmación.`);
+      }
       const merged = mergeImportedProduct(snapshot.exists ? snapshot.data() : null, product);
       const now = admin.firestore.FieldValue.serverTimestamp();
       transaction.set(productRef, {

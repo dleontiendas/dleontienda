@@ -1,4 +1,4 @@
-import { buildMasterSku, normalizeMasterSku, parseProductRows } from "./productImport";
+import { buildMasterSku, findExistingProductConflicts, normalizeMasterSku, parseProductRows } from "./productImport";
 
 const row = (overrides = {}) => ({
   "COD Ref SKU": "CKG0002",
@@ -64,4 +64,16 @@ test("rechaza una fila inválida con cantidad negativa", () => {
 test("rechaza valores de control de inventario distintos de SÍ o NO", () => {
   const result = parseProductRows([row({ "Actualizar inventario": "QUIZÁS" })]);
   expect(result.errors).toContainEqual(expect.objectContaining({ row: 2, field: "Actualizar inventario" }));
+});
+
+test("identifica referencias base existentes antes de importar", () => {
+  const conflicts = findExistingProductConflicts(
+    [{ sku: "CKG0002", name: "Nombre desde Excel" }, { sku: "NUEVO1", name: "Nuevo" }],
+    [{ sku: "CKG0002", name: "Producto almacenado" }],
+  );
+  expect(conflicts).toEqual([{
+    sku: "CKG0002",
+    existingName: "Producto almacenado",
+    incomingName: "Nombre desde Excel",
+  }]);
 });

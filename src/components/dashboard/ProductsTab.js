@@ -8,7 +8,7 @@ import {
 import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
 import { importProducts, manageProduct } from "../../api/productsApi";
-import { parseProductRows } from "./productImport";
+import { findExistingProductConflicts, parseProductRows } from "./productImport";
 import "./ProductsTab.css";
 
 /* ---------- Helpers ---------- */
@@ -329,18 +329,24 @@ function ProductForm({ value, onChange }) {
 }
 
 /* ---------- Modal: Carga por lotes (sin cambios funcionales) ---------- */
-function BatchUploadModal({ open, onClose, onMergeRows }) {
+function BatchUploadModal({ open, onClose, onMergeRows, existingProducts }) {
   const [parsed, setParsed] = useState([]);
   const [rawCount, setRawCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [log, setLog] = useState([]);
+  const [confirmedExisting, setConfirmedExisting] = useState(false);
   const appendLog = (m) => setLog((prev) => [...prev, m]);
+  const conflicts = useMemo(
+    () => findExistingProductConflicts(parsed, existingProducts),
+    [parsed, existingProducts],
+  );
 
   const handleFile = async (file) => {
     if (!file) return;
     setLoading(true);
     setParsed([]);
     setLog([]);
+    setConfirmedExisting(false);
     try {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: "array" });
@@ -363,9 +369,13 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
 
   const uploadAll = async () => {
     if (!parsed.length) return;
+    if (conflicts.length && !confirmedExisting) return;
     setLoading(true);
     try {
-      const result = await importProducts(parsed);
+      const result = await importProducts(
+        parsed,
+        confirmedExisting ? conflicts.map((conflict) => conflict.sku) : [],
+      );
       appendLog(`✅ Importación terminada: ${result.created} creados y ${result.updated} actualizados.`);
       onMergeRows(parsed);
       setLoading(false);
@@ -385,8 +395,8 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
       footer={
         <>
           <button className="ap-btn" onClick={onClose} disabled={loading}>Cerrar</button>
-          <button className="ap-btn ap-btn--primary" onClick={uploadAll} disabled={!parsed.length || loading}
-            title={!parsed.length ? "Sube un archivo primero" : "Subir a Firestore"}>
+          <button className="ap-btn ap-btn--primary" onClick={uploadAll} disabled={!parsed.length || loading || (conflicts.length > 0 && !confirmedExisting)}
+            title={!parsed.length ? "Sube un archivo primero" : conflicts.length && !confirmedExisting ? "Confirma las referencias existentes" : "Subir a Firestore"}>
             {loading ? "Procesando…" : `Subir ${parsed.length} productos`}
           </button>
         </>
@@ -405,6 +415,30 @@ function BatchUploadModal({ open, onClose, onMergeRows }) {
         <div className="ap-summary">
           {rawCount ? `Filas leídas: ${rawCount}. ` : ""}{parsed.length ? `Productos únicos: ${parsed.length}.` : ""}
         </div>
+
+        {conflicts.length > 0 && (
+          <div className="ap-import-warning span-2" role="alert">
+            <strong>⚠️ {conflicts.length} referencia{conflicts.length === 1 ? " ya existe" : "s ya existen"}</strong>
+            <p>Estos códigos actualizarán productos existentes; no crearán productos nuevos.</p>
+            <div className="ap-import-conflicts">
+              {conflicts.map((conflict) => (
+                <div key={conflict.sku} className="ap-import-conflict">
+                  <span className="mono">{conflict.sku}</span>
+                  <span>Actual: <strong>{conflict.existingName}</strong></span>
+                  <span>Excel: <strong>{conflict.incomingName}</strong></span>
+                </div>
+              ))}
+            </div>
+            <label className="ap-import-confirm">
+              <input
+                type="checkbox"
+                checked={confirmedExisting}
+                onChange={(event) => setConfirmedExisting(event.target.checked)}
+              />
+              Confirmo que deseo actualizar estos productos existentes.
+            </label>
+          </div>
+        )}
 
         {parsed.length > 0 && (
           <div className="ap-table preview">
@@ -668,6 +702,7 @@ export default function AdminProducts() {
         open={batchOpen}
         onClose={() => setBatchOpen(false)}
         onMergeRows={() => { setBatchOpen(false); loadProducts(); }}
+        existingProducts={rows}
       />
 
       <Modal

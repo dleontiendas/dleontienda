@@ -83,12 +83,18 @@ test("importador crea, conserva con NO y actualiza con SÍ", async () => {
   assert.equal(await stock(), 5);
 
   product.variants[0].tallas[0].stock = 99;
-  const preserved = await importProductsHandler({ auth: { uid: "admin-test" }, data: { products: [product] } });
+  await assert.rejects(
+    () => importProductsHandler({ auth: { uid: "admin-test" }, data: { products: [product] } }),
+    /requieren confirmación/i,
+  );
+  assert.equal(await stock(), 5);
+
+  const preserved = await importProductsHandler({ auth: { uid: "admin-test" }, data: { products: [product], confirmedExistingSkus: ["CKG0002"] } });
   assert.equal(preserved.updated, 1);
   assert.equal(await stock(), 5);
 
   product.variants[0].tallas[0].update_inventory = true;
-  const updated = await importProductsHandler({ auth: { uid: "admin-test" }, data: { products: [product] } });
+  const updated = await importProductsHandler({ auth: { uid: "admin-test" }, data: { products: [product], confirmedExistingSkus: ["CKG0002"] } });
   assert.equal(updated.updated, 1);
   assert.equal(await stock(), 99);
 });

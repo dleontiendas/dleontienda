@@ -32,6 +32,24 @@ export const normalizeInventoryFlag = (value) =>
     .replace(/[\u0300-\u036f]/g, "")
     .toUpperCase();
 
+export const findExistingProductConflicts = (products, existingProducts) => {
+  const existingBySku = new Map(
+    (Array.isArray(existingProducts) ? existingProducts : [])
+      .map((product) => [toImportString(product?.sku), product])
+      .filter(([sku]) => sku),
+  );
+
+  return (Array.isArray(products) ? products : []).flatMap((incoming) => {
+    const sku = toImportString(incoming?.sku);
+    const existing = existingBySku.get(sku);
+    return existing ? [{
+      sku,
+      existingName: toImportString(existing.name) || "Producto sin nombre",
+      incomingName: toImportString(incoming.name) || "Producto sin nombre",
+    }] : [];
+  });
+};
+
 const normalizeDriveLink = (value) => {
   const url = toImportString(value);
   if (!url) return null;

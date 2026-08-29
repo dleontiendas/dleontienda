@@ -1,9 +1,9 @@
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../Firebase";
 
-export async function importProducts(products) {
+export async function importProducts(products, confirmedExistingSkus = []) {
   const callable = httpsCallable(functions, "importProducts");
-  const response = await callable({ products });
+  const response = await callable({ products, confirmedExistingSkus });
   return response.data;
 }
 
