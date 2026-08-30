@@ -3,6 +3,7 @@ import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
 import "../ProductList.css";
+import { getModaDepartmentGroup, MODA_DEPARTMENT_GROUPS } from "./modaDepartment";
 
 /* ---------- Helpers ---------- */
 const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
@@ -37,8 +38,7 @@ const resolveImage = (img) => {
 const DEPARTMENT_LABELS = {
   mujer: "Mujer",
   hombre: "Hombre",
-  niña: "Niña",
-  niño: "Niño",
+  unisex: "Unisex",
   infantil: "Infantil",
   complementos: "Complementos",
   otros: "Otros",
@@ -50,25 +50,12 @@ const DEPARTMENT_IMAGE_SOURCES = (slug) => {
       return ["/images/departments/mujer.jpg", "/images/departments/otros.jpg"];
     case "hombre":
       return ["/images/departments/hombre.jpg", "/images/departments/otros.jpg"];
-    case "niña":
-      return [
-        "/images/departments/nina.jpg",
-        "/images/departments/niña.jpg",
-        "/images/departments/infantil.jpg",
-        "/images/departments/otros.jpg",
-      ];
-    case "niño":
-      return [
-        "/images/departments/nino.jpg",
-        "/images/departments/niño.jpg",
-        "/images/departments/infantil.jpg",
-        "/images/departments/otros.jpg",
-      ];
+    case "unisex":
+      return ["/images/departments/unisex.jpg", "/images/departments/hombre.jpg"];
     case "infantil":
       return [
-        "/images/departments/infantil.jpg",
-        "/images/departments/ninos.jpg",
-        "/images/departments/otros.jpg",
+        "/images/departments/niño.jpg",
+        "/images/departments/niña.jpg",
       ];
     case "complementos":
       return ["/images/departments/otros.jpg"];
@@ -93,18 +80,7 @@ function DepartmentChipImage({ slug, alt }) {
 
 /* -------- Slug de departamento -------- */
 const depToSlug = (p) => {
-  const d = normalizeText(p?.department || "");
-  if (d.includes("mujer") || d.includes("dama") || d.includes("damas") || d.includes("women"))
-    return "mujer";
-  if (d.includes("hombre") || d.includes("caballero") || d.includes("caballeros") || d.includes("men"))
-    return "hombre";
-  if (d.includes("nina") || d.includes("ninas") || d.includes("girl") || d.includes("girls"))
-    return "niña";
-  if (d.includes("nino") || d.includes("ninos") || d.includes("boy") || d.includes("boys"))
-    return "niño";
-  if (d.includes("infantil") || d.includes("kids")) return "infantil";
-  if (d.includes("complement") || d.includes("accesorio")) return "complementos";
-  return "otros";
+  return getModaDepartmentGroup(p?.department || "");
 };
 
 /* -------- Price & variants -------- */
@@ -367,18 +343,14 @@ export default function ModaProductList() {
   );
 
   const departmentChips = useMemo(() => {
-    const bySlug = new Map();
+    const counts = new Map();
     for (const p of enriched) {
       const s = p.depSlug || "otros";
-      const label =
-        p.department || DEPARTMENT_LABELS[s] || (s === "otros" ? "Otros" : s);
-      if (!bySlug.has(s)) bySlug.set(s, { label, count: 0 });
-      bySlug.get(s).count++;
+      counts.set(s, (counts.get(s) || 0) + 1);
     }
-    const order = ["mujer", "hombre", "niña", "niño", "infantil", "complementos", "otros"];
-    return Array.from(bySlug.entries())
-      .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
-      .map(([key, v]) => ({ key, label: v.label, count: v.count }));
+    return MODA_DEPARTMENT_GROUPS
+      .map(({ key, label }) => ({ key, label, count: counts.get(key) || 0 }))
+      .filter(({ count }) => count > 0);
   }, [enriched]);
 
   const [dep, setDep] = useState("");
