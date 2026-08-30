@@ -39,6 +39,8 @@ const DEPARTMENT_LABELS = {
   mujer: "Mujer",
   hombre: "Hombre",
   unisex: "Unisex",
+  niña: "Niña",
+  niño: "Niño",
   infantil: "Infantil",
   complementos: "Complementos",
   otros: "Otros",
@@ -52,6 +54,10 @@ const DEPARTMENT_IMAGE_SOURCES = (slug) => {
       return ["/images/departments/hombre.jpg", "/images/departments/otros.jpg"];
     case "unisex":
       return ["/images/departments/unisex.jpg", "/images/departments/hombre.jpg"];
+    case "niña":
+      return ["/images/departments/niña.jpg", "/images/departments/niño.jpg"];
+    case "niño":
+      return ["/images/departments/niño.jpg", "/images/departments/niña.jpg"];
     case "infantil":
       return [
         "/images/departments/niño.jpg",
