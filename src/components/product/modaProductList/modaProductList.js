@@ -60,6 +60,7 @@ const DEPARTMENT_IMAGE_SOURCES = (slug) => {
       return ["/images/departments/niño.jpg", "/images/departments/niña.jpg"];
     case "infantil":
       return [
+        "/images/departments/infantil.png",
         "/images/departments/niño.jpg",
         "/images/departments/niña.jpg",
       ];
