@@ -34,10 +34,10 @@
   flex-wrap: nowrap;               /* no romper línea */
   gap: 18px;
   margin: 20px 0 30px;
-  padding: 6px 8px;                /* espacio para scroll-snap */
+  padding: 6px 8px;
   overflow-x: auto;                /* scroll horizontal */
   overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;   /* snapping */
+  scroll-snap-type: none;          /* desplazamiento libre, sin rebote automático */
   -webkit-overflow-scrolling: touch;
 }
 /* ocultar scrollbar (opcional, mantiene accesibilidad) */
@@ -65,7 +65,6 @@
               border-color .2s ease;
 
   flex: 0 0 220px;                 /* ancho fijo en la fila */
-  scroll-snap-align: start;        /* snap por tarjeta */
 }
 
 .gender-chip--image:hover {
