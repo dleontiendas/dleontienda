@@ -121,7 +121,7 @@
 }
 
 .qty-btn {
-  background: #fdd835;
+  background: #d4af37;
   border: none;
   border-radius: 50%;
   width: 26px;
@@ -133,7 +133,7 @@
 }
 
 .qty-btn:hover {
-  background: #fbc02d;
+  background: #b9922c;
 }
 
 .remove-btn {
@@ -170,6 +170,17 @@
   width: 100%;
   margin-top: 10px;
   border-radius: 8px;
+}
+
+.cart-checkout-btn,
+.cart-checkout-btn:hover,
+.cart-checkout-btn:focus {
+  background: #d4af37;
+  color: #111;
+}
+
+.cart-checkout-btn:hover {
+  background: #b9922c;
 }
 
 /* ===== Responsive ===== */

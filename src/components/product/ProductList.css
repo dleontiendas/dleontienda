@@ -174,7 +174,7 @@
 
 /* Precio */
 .product-price { margin-top: 6px; }
-.price-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 900; letter-spacing: .2px; color: #111; background: gold; border: 1px solid rgba(0,0,0,.06); }
+.price-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-weight: 900; letter-spacing: .2px; color: #111; background: var(--gold); border: 1px solid rgba(0,0,0,.06); }
 .price-pill .currency { font-size: .92rem; opacity: .85; }
 .price-pill .amount { font-size: 1.08rem; background: linear-gradient(180deg, #111, #333); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .price-pill .save { padding: 5px 8px; border-radius: 999px; font-size: .72rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #ff5a5a, #e60023); box-shadow: 0 4px 12px rgba(230,0,35,.28); margin-left: 2px; }
@@ -253,11 +253,11 @@
 }
 
 .subcat-chip.active {
-  background: #ff6f00;
-  border-color: #ff6f00;
+  background: var(--gold);
+  border-color: var(--gold);
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(255, 111, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.35);
 }
 
 
@@ -385,11 +385,11 @@
 
 /* ACTIVO */
 .subcat-chip.active {
-  background: linear-gradient(135deg, #ff7a18, #ff6f00);
-  border-color: #ff6f00;
+  background: var(--gold);
+  border-color: var(--gold);
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(255, 111, 0, 0.35);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
 }
 
 /* ===============================

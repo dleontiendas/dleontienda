@@ -131,7 +131,7 @@ const Cart = () => {
             </div>
 
             <button
-              className="btn orange darken-2 w-100"
+              className="btn cart-checkout-btn w-100"
               onClick={() => navigate("/checkout")}
             >
               Ir a pagar
