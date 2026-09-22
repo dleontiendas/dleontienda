@@ -45,14 +45,23 @@ const DEPARTMENT_LABELS = {
   otros: "Otros",
 };
 
+const BAGS_DEPARTMENT_GROUPS = [
+  { key: "mujer", label: "Mujer" },
+  { key: "hombre", label: "Hombre" },
+  { key: "niño", label: "Niño" },
+  { key: "niña", label: "Niña" },
+  { key: "unisex", label: "Unisex" },
+];
+
 const DEPARTMENT_IMAGE_SOURCES = (slug) => {
   switch (slug) {
     case "mujer":
-      return ["/images/departments/mujer.jpg", "/images/departments/otros.jpg"];
+      return ["/images/bags/mujer.jpg", "/images/departments/mujer.jpg"];
     case "hombre":
-      return ["/images/departments/hombre.jpg", "/images/departments/otros.jpg"];
+      return ["/images/bags/hombre.jpg", "/images/departments/hombre.jpg"];
     case "niña":
       return [
+        "/images/bags/nina.jpg",
         "/images/departments/nina.jpg",
         "/images/departments/niña.jpg",
         "/images/departments/infantil.jpg",
@@ -60,6 +69,7 @@ const DEPARTMENT_IMAGE_SOURCES = (slug) => {
       ];
     case "niño":
       return [
+        "/images/bags/nino.jpg",
         "/images/departments/nino.jpg",
         "/images/departments/niño.jpg",
         "/images/departments/infantil.jpg",
@@ -75,6 +85,7 @@ const DEPARTMENT_IMAGE_SOURCES = (slug) => {
       return ["/images/departments/otros.jpg"];
     case "unisex":
       return [
+        "/images/bags/unisex.jpg",
         "/images/departments/unisex.jpg",
         "/images/departments/otros.jpg",
     ];
@@ -245,6 +256,9 @@ const ProductCard = ({ product }) => {
               alt={product.name || "Sin nombre"}
               className="product-image"
               onError={onError}
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
 
             {images.length > 1 && (
@@ -382,22 +396,21 @@ export default function BolsosProductList() {
   );
 
   const departmentChips = useMemo(() => {
-    const bySlug = new Map();
+    const counts = new Map();
     for (const p of enriched) {
       const s = p.depSlug || "otros";
-      const label =
-        p.department || DEPARTMENT_LABELS[s] || (s === "otros" ? "Otros" : s);
-      if (!bySlug.has(s)) bySlug.set(s, { label, count: 0 });
-      bySlug.get(s).count++;
+      counts.set(s, (counts.get(s) || 0) + 1);
     }
-    const order = ["mujer", "hombre", "niña", "niño", "infantil", "complementos", "otros"];
-    return Array.from(bySlug.entries())
-      .sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]))
-      .map(([key, v]) => ({ key, label: v.label, count: v.count }));
+    return BAGS_DEPARTMENT_GROUPS.map(({ key, label }) => ({
+      key,
+      label,
+      count: counts.get(key) || 0,
+    }));
   }, [enriched]);
 
   const [dep, setDep] = useState("");
   const [subFilter, setSubFilter] = useState("");
+  const [openGroup, setOpenGroup] = useState(null);
   const [sort, setSort] = useState("");
 
   const subcatGroups = useMemo(() => {
@@ -405,17 +418,18 @@ export default function BolsosProductList() {
     const map = new Map();
 
     for (const p of base) {
-      const cat = p.category || "Otros";
-      if (!map.has(cat)) map.set(cat, new Set());
-      if (p.subcategory) map.get(cat).add(p.subcategory);
+      const department = p.depSlug || "otros";
+      if (!map.has(department)) map.set(department, new Set());
+      if (p.subcategory) map.get(department).add(p.subcategory);
     }
 
-    return Array.from(map.entries())
-      .map(([category, set]) => ({
-        category,
-        subcats: Array.from(set).sort(),
-      }))
-      .sort((a, b) => a.category.localeCompare(b.category));
+    return BAGS_DEPARTMENT_GROUPS
+      .filter(({ key }) => map.has(key))
+      .map(({ key, label }) => ({
+        key,
+        label,
+        subcats: Array.from(map.get(key)).sort((a, b) => a.localeCompare(b, "es")),
+      }));
   }, [enriched, dep]);
 
   const filtered = useMemo(() => {
@@ -463,6 +477,7 @@ export default function BolsosProductList() {
           onClick={() => {
             setDep("");
             setSubFilter("");
+            setOpenGroup(null);
           }}
         >
           Todos <span className="count">({bolsosBase.length})</span>
@@ -477,6 +492,7 @@ export default function BolsosProductList() {
             onClick={() => {
               setDep(key);
               setSubFilter("");
+              setOpenGroup(key);
             }}
           >
             <DepartmentChipImage slug={key} alt={DEPARTMENT_LABELS[key] || label} />
@@ -523,26 +539,25 @@ export default function BolsosProductList() {
           </div>
 
           <div className="row subcat-grid">
-            {subcatGroups.map((g) => (
-              <div className="col s12 m6 l4 xl3" key={g.category}>
-                <div className="subcat-card text-only card-border">
-                  <h6 className="subcat-title">{g.category}</h6>
-                  <ul className="subcat-list">
-                    {g.subcats.slice(0, 12).map((s) => (
-                      <li key={s}>
-                        <button
-                          type="button"
-                          className={`subcat-link ${subFilter === s ? "active" : ""}`}
-                          onClick={() => setSubFilter(subFilter === s ? "" : s)}
-                        >
-                          {s}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+            {subcatGroups.map((g) => {
+              const isOpen = openGroup === g.key;
+              return (
+                <div className="col s12 m6 l4 xl3" key={g.key}>
+                  <div className={`subcat-card text-only card-border accordion-item ${isOpen ? "open" : ""}`}>
+                    <button type="button" className="accordion-header" onClick={() => setOpenGroup(isOpen ? null : g.key)} aria-expanded={isOpen}>
+                      <h6 className="subcat-title">{g.label}</h6>
+                      <span className="accordion-arrow">⌄</span>
+                    </button>
+                    <div className="subcat-chips">
+                      {g.subcats.slice(0, 12).map((s) => {
+                        const active = subFilter === s;
+                        return <button key={s} type="button" className={`subcat-chip ${active ? "active" : ""}`} onClick={() => setSubFilter(active ? "" : s)} aria-pressed={active}>{s}</button>;
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

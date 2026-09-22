@@ -9,6 +9,7 @@ export default function OrderSummary({
     cart,
     subtotal,
     shipping,
+    deliveryMethod,
     total,
   } = summary;
 
@@ -86,7 +87,7 @@ export default function OrderSummary({
         </div>
 
         <div>
-          <span>Envío</span>
+          <span>{deliveryMethod === "pickup" ? "Recogida en tienda" : "Envío a domicilio"}</span>
 
           <strong>
             ${shipping.toLocaleString("es-CO")}

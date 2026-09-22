@@ -26,10 +26,11 @@ const CATEGORY_LINKS = [
   { to: "/moda", label: "Moda" },
   { to: "/bolsos", label: "Bolsos" },
   { to: "/tecnologia", label: "Tecnología" },
+  { to: "/hogar", label: "Hogar" },
 ];
 
 const Navbar = ({ onSearch }) => {
-  const { cart } = useContext(CartContext);
+  const { cart, subtotal } = useContext(CartContext);
   const { products } = useContext(ProductsContext);
   const navigate = useNavigate();
 
@@ -178,12 +179,11 @@ const Navbar = ({ onSearch }) => {
       <div className="navbar-top z-depth-1">
         <div className="container navbar-top-content">
           <div className="navbar-left">
-            <Link to="/" className="navbar-logo">
+            <Link to="/" className="navbar-logo navbar-logo-gold">
               <img
-                src="/logodleon.png"
-                alt="D'Leon Gold"
+                src="/images/dleon-header-reference.png"
+                alt="D'LEON GOLD STORE"
                 className="brand-logo-img"
-                style={{ height: "115px" }}
               />
             </Link>
           </div>
@@ -201,7 +201,7 @@ const Navbar = ({ onSearch }) => {
             <input
               ref={inputRef}
               type="search"
-              placeholder="Buscar productos…"
+              placeholder="Buscar productos, marcas y más…"
               value={searchTerm}
               onChange={handleChange}
               onFocus={() => setOpen(true)}
@@ -276,10 +276,11 @@ const Navbar = ({ onSearch }) => {
 
           {/*  Acciones */}
           <div className="navbar-right">
-            <Link to="/cart" className="nav-icon tooltipped" data-tooltip="Carrito">
-              <ShoppingCart size={24} color="#000" />
+            <Link to="/cart" className="nav-icon nav-cart-summary" aria-label={`Carrito: ${totalItems} productos, ${currencyCO(subtotal)}`}>
+              <span className="nav-cart-symbol"><ShoppingCart size={32} color="#000" />
               {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
-               <span className="nav-icon-label">Carrito</span>
+              </span>
+              <span className="nav-cart-text"><strong>Carrito</strong><span className="nav-cart-total" aria-live="polite">{currencyCO(subtotal)}</span></span>
             </Link>
             {/* Toggle menú de categorías (solo móvil) */}
             <button

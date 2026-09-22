@@ -10,6 +10,13 @@ export const CartContext = createContext();
 export const CartProvider = ({
   children,
 }) => {
+  const [deliveryMethod, setDeliveryMethod] = useState(() => {
+    try { return localStorage.getItem("cartDeliveryMethod") === "pickup" ? "pickup" : "delivery"; }
+    catch { return "delivery"; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("cartDeliveryMethod", deliveryMethod); } catch { /* Storage may be unavailable. */ }
+  }, [deliveryMethod]);
   const [cart, setCart] = useState(() => {
     try {
       const saved =
@@ -131,6 +138,7 @@ export const CartProvider = ({
 
   const clearCart = () => {
     setCart([]);
+    setDeliveryMethod("delivery");
   };
 
   const getCartItem = (
@@ -176,13 +184,15 @@ export const CartProvider = ({
       cart,
       totalItems,
       subtotal,
+      deliveryMethod,
+      setDeliveryMethod,
       addToCart,
       removeFromCart,
       updateQuantity,
       getCartItem,
       clearCart,
     }),
-    [cart, totalItems, subtotal]
+    [cart, totalItems, subtotal, deliveryMethod]
   );
 
   return (

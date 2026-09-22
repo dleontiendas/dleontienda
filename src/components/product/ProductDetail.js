@@ -8,6 +8,8 @@ import { CartContext } from "../../context/CartContext";
 import "materialize-css/dist/css/materialize.min.css";
 import "./ProductDetail.css";
 import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
+import { Tag, Share2, Ruler, ShoppingCart, Truck, ShieldCheck, RefreshCw, Store, MessageCircle, ChevronRight } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 
 const env = (_vite, cra) =>
   (typeof process !== "undefined" && process.env && process.env[cra]) || "";
@@ -226,7 +228,17 @@ export default function ProductDetail() {
   };
 
   // --- WhatsApp con hack de imagen ---
-  const shareUrl = window.location.href;
+  const shareUrl = (() => {
+    const url = new URL(window.location.href);
+    const updatedAt = product?.updated_at || product?.updatedAt;
+    const version =
+      updatedAt?.seconds ||
+      (typeof updatedAt?.toMillis === "function" ? updatedAt.toMillis() : "1");
+    // Cambiar esta revisión fuerza a las apps de mensajería a volver a
+    // consultar la vista previa cuando ajustamos sus metadatos o imagen.
+    url.searchParams.set("v", `${version}-2`);
+    return url.toString();
+  })();
   const ogImage = toAbsoluteUrl(
     mainImage || (mainFallbackList[0] ?? "https://placehold.co/800x1000?text=Sin+Imagen")
   );
@@ -249,8 +261,6 @@ export default function ProductDetail() {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: product?.name || "Producto",
-          text: product?.description || "Mira este producto",
           url: shareUrl,
         });
       } else {
@@ -265,6 +275,11 @@ export default function ProductDetail() {
   const canonicalUrl = toAbsoluteUrl(shareUrl);
   const ADDI_ALLY_SLUG = "247serviciosgold-ecommerce";
   const price = Number(product.price_cop);
+  const oldPrice = Number(product.oldPrice);
+  const hasDiscount = Number.isFinite(price) && price > 0 && Number.isFinite(oldPrice) && oldPrice > price;
+  const savings = hasDiscount ? oldPrice - price : 0;
+  const savingsPercent = hasDiscount ? Math.round((savings / oldPrice) * 100) : 0;
+  const formatPrice = (value) => `$${value.toLocaleString("es-CO")}`;
 
   return (
     <div className="container section product-detail">
@@ -291,7 +306,7 @@ export default function ProductDetail() {
         <meta name="twitter:image" content={ogImage} />
       </Helmet>
 
-      <div className="row">
+      <div className="pd-layout">
         <nav className="crumbs-bar">
           <span>{product?.department || "—"}</span>
           <span className="sep">/</span>
@@ -300,28 +315,34 @@ export default function ProductDetail() {
           <span className="current">{product?.name}</span>
         </nav>
 
-       <div className="col l1 m2 hide-on-small-only">
-          <ul className="collection product-thumbs">
+       <div className="pd-thumbnails">
+          <ul className="product-thumbs" aria-label="Imágenes del producto">
             {thumbItems.map((t, i) => (
               <li
                 key={t.primary + i}
-                className={`collection-item ${mainImage === t.primary ? "active-thumb" : ""}`}
+                className={t.fallbacks.includes(mainImage) ? "active-thumb" : ""}
+              >
+                <button type="button" aria-label={`Ver imagen ${i + 1} de ${product.name}`}
+                aria-pressed={t.fallbacks.includes(mainImage)}
                 onClick={() => {
                   setMainImage(t.primary);
                   setMainFallbackList(t.fallbacks);
                 }}
               >
-                <img src={t.primary} alt={`thumb-${i}`} className="responsive-img" />
+                <img src={t.primary} alt="" className="responsive-img" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+                </button>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="col s12 m5 center">
+        <div className="pd-gallery">
           <img
             src={mainImage}
             alt={product.name}
-            className="responsive-img z-depth-2 main-hero"
+            className="responsive-img main-hero"
+            referrerPolicy="no-referrer"
+            decoding="async"
             onError={() => {
               const i = mainFallbackList.indexOf(mainImage);
               const next = i + 1;
@@ -334,14 +355,19 @@ export default function ProductDetail() {
           />
         </div>
 
-          <div className="col s12 l5 m5 pd-panel">         
-             <h5 className="pd-title">{product.name}</h5>
-          <div className="pd-price">
-            ${Number(product.price_cop).toLocaleString("es-CO")}
+          <div className="pd-panel">
+            <span className="pd-web-label"><Tag size={16} aria-hidden="true" />Precio exclusivo web</span>
+            <h1 className="pd-title">{product.name}</h1>
+          <div className="pd-price-block">
+            <div className="pd-price-line">
+              <span className="pd-price">{formatPrice(price)}</span>
+              {hasDiscount && <del className="pd-old-price"><span className="pd-sr-only">Precio anterior: </span>{formatPrice(oldPrice)}</del>}
+            </div>
+            {hasDiscount && <p className="pd-savings">Ahorras {formatPrice(savings)} ({savingsPercent}%)</p>}
           </div>
  {/* Botón Compartir */}
               <button className="btn-share" onClick={handleShare} aria-label="Compartir producto">
-                Compartir
+                <Share2 size={17} aria-hidden="true" /> Compartir
               </button>
           {colorCards.length > 0 && (
             <>
@@ -361,6 +387,7 @@ export default function ProductDetail() {
                       setSelectedSize(s?.size || "");
                     }}
                     type="button"
+                    aria-pressed={selectedColor === c.color}
                   >
                     {/*<div className="color-thumb" />*/}
                     <div className="color-name">{c.color}</div>
@@ -376,7 +403,7 @@ export default function ProductDetail() {
               <div className="pd-label size-label">
                 TALLA
                 <button className="size-guide" type="button">
-                  &nbsp;GUIA DE TALLAS
+                  <Ruler size={17} aria-hidden="true" /> Guía de tallas
                 </button>
               </div>
 
@@ -393,6 +420,7 @@ export default function ProductDetail() {
                       onClick={() => !disabled && setSelectedSize(s.size)}
                       disabled={disabled}
                       type="button"
+                      aria-pressed={isSel}
                     >
                       {s.size}
                       {disabled && <span className="strike">—</span>}
@@ -409,13 +437,13 @@ export default function ProductDetail() {
               onClick={handleAddToCart}
               disabled={!selectedColor || !selectedSize}
             >
-              AÑADIR AL CARRITO{/*} •{" "}
+              <ShoppingCart size={22} aria-hidden="true" /> AÑADIR AL CARRITO{/*} •{" "}
               {product.price_cop
                 ? `$${Number(product.price_cop).toLocaleString("es-CO")}`
                 : "—"}*/}
             </button>
 
-            <div className="cta-row" style={{ gap: 8, flexWrap: "wrap" }}>
+            <div className="cta-row">
               
              {/* <button
                 className="btn-secondary"
@@ -426,7 +454,7 @@ export default function ProductDetail() {
               </button>*/}
 
               <button className="btn-outline" onClick={handleWhatsApp}>
-                Comprar por WhatsApp
+                <FaWhatsapp size={24} aria-hidden="true" /> Comprar por WhatsApp
               </button>
               
               {/* ===== ADDI WIDGET (CORRECTO) ===== */}
@@ -441,19 +469,29 @@ export default function ProductDetail() {
             </div>
           </div>
 
-          <div className="tip-card">
-            
-            <div>
-              <div className="tip-title">¿Dudas con tu talla?</div>
-              <div className="tip-text">
-                Escríbenos y te ayudamos a elegir la mejor opción según tu fit.
-              </div>
-            </div>
+          <div className="pd-benefits" aria-label="Beneficios de compra">
+            <div className="pd-benefit"><Truck aria-hidden="true" /><div><strong>Envíos nacionales</strong><p>Envíos a toda Colombia</p></div></div>
+            <div className="pd-benefit"><ShieldCheck aria-hidden="true" /><div><strong>Pago seguro</strong><p>Compra segura y confiable</p></div></div>
+            <div className="pd-benefit"><RefreshCw aria-hidden="true" /><div><strong>Cambios fáciles</strong><p>Consulta nuestras políticas de cambio</p></div></div>
           </div>
 
-          <p className="pd-desc">{product.description}</p>
         </div>
       </div>
+
+      <div className="pd-information-row">
+      <section className="pd-store-benefits" aria-label="Comprar en D’LEON GOLD">
+        <div><Tag aria-hidden="true" /><div><h2>MEJORES PRECIOS ONLINE</h2><p>Compra en dleongold.com y encuentra promociones exclusivas.</p></div></div>
+        <div><Store aria-hidden="true" /><div><h2>ATENCIÓN EN TIENDA FÍSICA</h2><p>Visítanos y recibe asesoría personalizada.</p></div></div>
+        <div className="pd-addi-benefit"><span className="pd-addi-wordmark" aria-label="Addi">Addi</span><div><h2>COMPRA CON ADDI</h2><p>Compra ahora y paga después con Addi.</p></div></div>
+      </section>
+      <button className="tip-card pd-size-help" type="button" onClick={handleWhatsApp}>
+        <MessageCircle aria-hidden="true" />
+        <span><strong className="tip-title">¿Dudas con tu talla?</strong><span className="tip-text">Escríbenos y te ayudamos a elegir la mejor opción según tu fit.</span></span>
+        <ChevronRight className="pd-help-arrow" aria-hidden="true" />
+      </button>
+      </div>
+
+      <p className="pd-desc">{product.description}</p>
 
       <section className="pd-specs">
         <table className="spec-table">

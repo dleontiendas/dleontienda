@@ -108,6 +108,14 @@ export default function ShippingForm({
         </div>
 
         <div className="checkout-field full">
+          <label htmlFor="recipient-postal-code">Código postal de entrega</label>
+          <input id="recipient-postal-code" type="text" inputMode="numeric"
+            name="postal_code" value={shipping.postal_code || ""}
+            onChange={handleChange} placeholder="Ej. 052810" />
+          <small>Envío al código 052810: $10.000. Resto del país: $25.000.</small>
+        </div>
+
+        <div className="checkout-field full">
           <label>Barrio / Referencia</label>
 
           <input

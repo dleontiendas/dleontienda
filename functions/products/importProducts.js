@@ -12,6 +12,24 @@ export const sanitizeCategoryId = (value) =>
     .toLowerCase()
     .slice(0, 120) || "sin_categoria";
 
+const normalizeColor = (value) => String(value || "").trim().toLocaleLowerCase("es");
+
+export function validateImportedPrices(product) {
+  for (const field of ["price_cop", "oldPrice"]) {
+    if (field === "oldPrice" && (product[field] === undefined || product[field] === null || product[field] === "")) continue;
+    const value = product[field];
+    if (!["number", "string"].includes(typeof value) || !Number.isFinite(Number(value)) || Number(value) <= 0) {
+      throw new HttpsError("invalid-argument", `Precio inválido (${field}) para ${product.sku || "producto"}. Debe ser mayor que cero.`);
+    }
+  }
+}
+
+const replaceImportedImages = (current, incoming) => {
+  const imported = Array.isArray(incoming) ? incoming.filter(Boolean) : [];
+  // Empty image cells leave the current gallery unchanged.
+  return Array.from(new Set(imported.length ? imported : (Array.isArray(current) ? current : [])));
+};
+
 const cleanSize = (size) => ({
   ...size,
   size: String(size?.size || "").trim(),
@@ -20,6 +38,7 @@ const cleanSize = (size) => ({
 });
 
 export function mergeImportedProduct(existing, incoming) {
+  validateImportedPrices(incoming);
   const isNewProduct = !existing;
   const current = existing || {};
   const existingVariants = Array.isArray(current.variants)
@@ -31,12 +50,12 @@ export function mergeImportedProduct(existing, incoming) {
     : [];
 
   for (const importedVariant of incoming.variants || []) {
-    let targetVariant = existingVariants.find((variant) => String(variant.color || "").trim() === String(importedVariant.color || "").trim());
+    let targetVariant = existingVariants.find((variant) => normalizeColor(variant.color) === normalizeColor(importedVariant.color));
     if (!targetVariant) {
       targetVariant = { color: String(importedVariant.color || "").trim(), images: [], tallas: [] };
       existingVariants.push(targetVariant);
     }
-    targetVariant.images = Array.from(new Set([...(targetVariant.images || []), ...(importedVariant.images || [])].filter(Boolean)));
+    targetVariant.images = replaceImportedImages(targetVariant.images, importedVariant.images);
 
     for (const rawSize of importedVariant.tallas || []) {
       const importedSize = cleanSize(rawSize);
@@ -86,7 +105,10 @@ export function mergeImportedProduct(existing, incoming) {
   for (const field of metadata) {
     if (incoming[field] !== undefined && incoming[field] !== null) result[field] = incoming[field];
   }
-  result.images = Array.from(new Set([...(current.images || []), ...(incoming.images || [])].filter(Boolean)));
+  result.price_cop = Number(incoming.price_cop);
+  // Missing oldPrice from older clients preserves existing data; an empty cell clears it.
+  if (incoming.oldPrice !== undefined) result.oldPrice = incoming.oldPrice === null || incoming.oldPrice === "" ? null : Number(incoming.oldPrice);
+  result.images = replaceImportedImages(current.images, incoming.images);
   result.variants = existingVariants;
   result.active = isNewProduct ? true : current.active !== false;
   return result;
@@ -114,6 +136,7 @@ export async function importProductsHandler(request) {
   const seen = new Set();
   const seenMasterSkus = new Map();
   for (const product of products) {
+    validateImportedPrices(product);
     const sku = String(product?.sku || "").trim();
     if (!sku || sku.includes("/") || seen.has(sku)) throw new HttpsError("invalid-argument", `Referencia base vacía, inválida o duplicada: ${sku || "(vacía)"}.`);
     seen.add(sku);
@@ -139,8 +162,8 @@ export async function importProductsHandler(request) {
       const snapshot = await existingRef.get();
       unconfirmed.push({ sku: product.sku, name: snapshot.data()?.name || "Producto sin nombre" });
     }
-    const productRef = existingRef || db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(product.sku);
-    targets.push({ product, productRef });
+    const destinationRef = db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(product.sku);
+    targets.push({ product, existingRef, destinationRef });
   }
   if (unconfirmed.length) {
     throw new HttpsError(
@@ -150,19 +173,26 @@ export async function importProductsHandler(request) {
     );
   }
 
-  for (const { product, productRef } of targets) {
+  for (const { product, existingRef, destinationRef } of targets) {
     const existed = await db.runTransaction(async (transaction) => {
-      const snapshot = await transaction.get(productRef);
+      const sourceRef = existingRef || destinationRef;
+      const isCategoryMove = sourceRef.path !== destinationRef.path;
+      const snapshot = await transaction.get(sourceRef);
+      const destinationSnapshot = isCategoryMove ? await transaction.get(destinationRef) : snapshot;
       if (snapshot.exists && !confirmedExistingSkus.has(product.sku)) {
         throw new HttpsError("failed-precondition", `La referencia ${product.sku} ya existe y requiere confirmación.`);
       }
+      if (isCategoryMove && destinationSnapshot.exists) {
+        throw new HttpsError("already-exists", `Ya existe un documento para ${product.sku} en la categoría ${product.category}.`);
+      }
       const merged = mergeImportedProduct(snapshot.exists ? snapshot.data() : null, product);
       const now = admin.firestore.FieldValue.serverTimestamp();
-      transaction.set(productRef, {
+      transaction.set(destinationRef, {
         ...merged,
         updated_at: now,
         ...(snapshot.exists ? {} : { created_at: now }),
       }, { merge: true });
+      if (isCategoryMove && snapshot.exists) transaction.delete(sourceRef);
       return snapshot.exists;
     });
     if (existed) updated += 1;

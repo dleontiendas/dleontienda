@@ -20,11 +20,22 @@
   margin: 1rem 0;
   color: #fff;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
 
 .sidebar-btn.active {
-  color: #ff9800;
+  color: #d4af37;
+  filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.32));
+}
+
+.sidebar-btn:not(.sidebar-logout):hover {
+  color: #d4af37;
+}
+
+.sidebar-btn:focus-visible {
+  outline: 2px solid #d4af37;
+  outline-offset: 5px;
+  border-radius: 4px;
 }
 
 .dashboard-main {

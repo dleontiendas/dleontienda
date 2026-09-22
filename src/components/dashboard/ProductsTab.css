@@ -3,16 +3,18 @@
 .ap-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
 .ap-controls{ display:flex; gap:8px; }
 .ap-search{
-  min-width:320px; padding:10px 12px; border-radius:10px; border:1px solid #ddd; outline:none;
+  min-width:320px; padding:10px 12px; border-radius:10px; border:1px solid #d4af37 !important; outline:none;
+  box-sizing:border-box; background:#fff !important; box-shadow:none !important;
 }
-.ap-search:focus{ border-color:#d4af37; box-shadow:0 0 0 3px rgba(212,175,55,.18); }
+.ap-search:focus{ border-color:#d4af37 !important; box-shadow:0 0 0 3px rgba(212,175,55,.18) !important; }
 
 .ap-btn{
   border:1px solid #d4af37; background:#fff; color:#111; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700;
 }
 .ap-btn:hover{ background:#fff6cc; }
 .ap-btn:disabled{ opacity:.5; cursor:not-allowed; }
-.ap-btn--primary{ background:#ffe100; border-color:#ffe100; }
+.ap-btn--primary{ background:#d4af37; border-color:#d4af37; color:#111; }
+.ap-btn--primary:hover{ background:#b9922c; border-color:#b9922c; }
 .ap-btn--danger{ border-color:#e53935; color:#e53935; }
 .ap-btn--danger:hover{ background:#fde7e6; }
 .ap-btn--ghost{ border-color:#aaa; }
@@ -58,6 +60,10 @@
   align-items:center; justify-content:flex-end; background:#fff;
 }
 .ap-cat-select{ margin-right:auto; display:flex; align-items:center; gap:8px; }
+.ap-cat-select select{
+  border:1px solid #d4af37; border-radius:8px; background:#fff; outline:none;
+}
+.ap-cat-select select:focus{ box-shadow:0 0 0 3px rgba(212,175,55,.18); }
 
 /* Form */
 .ap-form-grid{
@@ -65,11 +71,16 @@
 }
 .ap-form-grid .span-2{ grid-column: span 2; }
 .ap-form-grid label{ font-weight:700; font-size:.9rem; color:#333; display:flex; flex-direction:column; gap:6px; }
-.ap-form-grid input, .ap-form-grid textarea, .ap-form-grid select{
-  padding:10px 12px; border-radius:10px; border:1px solid #ddd; outline:none; background:#fff;
+.ap-form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.ap-form-grid textarea,
+.ap-form-grid select{
+  padding:10px 12px; border-radius:10px; border:1px solid #d4af37 !important; outline:none; background:#fff !important;
+  box-sizing:border-box; box-shadow:none !important;
 }
-.ap-form-grid input:focus, .ap-form-grid textarea:focus, .ap-form-grid select:focus{
-  border-color:#d4af37; box-shadow:0 0 0 3px rgba(212,175,55,.18);
+.ap-form-grid input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.ap-form-grid textarea:focus,
+.ap-form-grid select:focus{
+  border-color:#d4af37 !important; box-shadow:0 0 0 3px rgba(212,175,55,.18) !important;
 }
 .ap-form-grid .check{ grid-column: span 2; flex-direction:row; align-items:center; gap:10px; }
 .ap-import-warning{ border:1px solid #ef9f00; border-radius:12px; background:#fff8e1; padding:12px; color:#4a3300; }
@@ -102,11 +113,12 @@
 .size-head{ background:#fafafa; font-weight:800; padding:8px 10px; border-bottom:1px solid #eee; }
 .size-body .size-row{ padding:8px 10px; border-bottom:1px solid #eee; }
 .size-input, .master-sku-input, .stock-input{
-  width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:8px; outline:none;
+  width:100%; padding:8px 10px; border:1px solid #d4af37 !important; border-radius:8px; outline:none;
+  box-sizing:border-box;
 }
 .master-sku-input{ background:#f7f7f7; color:#333; cursor:text; }
 .master-sku-input[value="Sin SKU Maestro"]{ color:#b3261e; font-family:inherit; font-weight:700; }
-.size-input:focus, .stock-input:focus{ border-color:#d4af37; box-shadow:0 0 0 3px rgba(212,175,55,.18); }
+.size-input:focus, .master-sku-input:focus, .stock-input:focus{ border-color:#d4af37 !important; box-shadow:0 0 0 3px rgba(212,175,55,.18) !important; }
 .var-actions{ margin-top:8px; }
 
 @media (max-width: 720px){

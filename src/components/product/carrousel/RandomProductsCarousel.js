@@ -102,7 +102,7 @@ function CarouselCard({ p }) {
     <div className="rpc-card">
       <Link to={`/products/${cat}/${pid}`} className="rpc-link">
         <div className="rpc-imgwrap">
-          <img src={src} onError={onError} alt={p.name || "Producto"} className="rpc-img" />
+          <img src={src} onError={onError} alt={p.name || "Producto"} className="rpc-img" referrerPolicy="no-referrer" loading="lazy" decoding="async" />
         </div>
         <div className="rpc-body">
           <div className="rpc-name">{p.name || "Sin nombre"}</div>

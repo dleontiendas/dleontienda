@@ -238,6 +238,9 @@ const ProductCard = ({ product }) => {
               alt={product.name || "Sin nombre"}
               className="product-image"
               onError={onError}
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
 
             {images.length > 1 && (

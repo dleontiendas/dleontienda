@@ -9,6 +9,7 @@ import Home from "./components/home/Home";
 import TechProductList from "./components/product/techProductList/techProductList";
 import ModaProductList from "./components/product/modaProductList/modaProductList";
 import BolsosProductList from "./components/product/bolsosProductList/bolsosProductList";
+import HogarProductList from "./components/product/hogarProductList/HogarProductList";
 
 import ProductList from "./components/product/ProductList";
 import ProductDetail from "./components/product/ProductDetail";
@@ -49,6 +50,7 @@ const App = () => {
                   <Route path="/moda" element={<ModaProductList />} />
                   <Route path="/bolsos" element={<BolsosProductList />} />
                   <Route path="/tecnologia" element={<TechProductList />} />
+                  <Route path="/hogar" element={<HogarProductList />} />
                   
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/:category/:productId" element={<ProductDetail />} />

@@ -74,7 +74,7 @@ export default function OrdersAdmin() {
                 apellido: cliente.apellido || cliente.last_name || "",
                 email: cliente.email || "",
                 telefono: cliente.telefono || cliente.phone || "",
-                documento: cliente.documento || cliente.id || "",
+                documento: cliente.document || cliente.documento || cliente.id || "",
                 direccion: cliente.direccion || cliente.address || "",
                 ciudad: cliente.ciudad || cliente.city || "",
               },

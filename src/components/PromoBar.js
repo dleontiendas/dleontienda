@@ -1,13 +1,11 @@
 // src/components/PromoBar.jsx
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { X } from "lucide-react";
 import "./PromoBar.css";
 
-const STORAGE_PREFIX = "promoBarDismissed:";
-
 export default function PromoBar({
-  name = "D'leon Gold",
+  name = "D'LEON GOLD STORE",
   address = "Dirección: Cra. 49 #48-31, Segovia, Antioquia, Colombia",
   sticky = true,
   theme = "brand",
@@ -15,26 +13,11 @@ export default function PromoBar({
   rightText = "Conócenos →",
   rightHref = "/nosotros",
   dismissible = true,
-  // why: distintas campañas/promos pueden usar keys distintas para que
-  // cerrar una no oculte para siempre las futuras con contenido nuevo.
-  dismissKey = "default",
 }) {
-  const storageKey = `${STORAGE_PREFIX}${dismissKey}`;
-
   const [dismissed, setDismissed] = useState(false);
   const [closing, setClosing] = useState(false);
 
-  // al montar, revisa si el usuario ya cerró esta promo antes
-  useEffect(() => {
-    if (!dismissible) return;
-    try {
-      if (window.localStorage.getItem(storageKey) === "1") {
-        setDismissed(true);
-      }
-    } catch {
-      // localStorage no disponible (ej. modo incógnito estricto) — no pasa nada, se muestra igual
-    }
-  }, [dismissible, storageKey]);
+  // El cierre dura solo esta visita; una recarga vuelve a mostrar la dirección.
 
   const handleClose = () => {
     setClosing(true); // dispara la animación de colapso vía CSS
@@ -43,11 +26,6 @@ export default function PromoBar({
   const handleTransitionEnd = () => {
     if (!closing) return;
     setDismissed(true);
-    try {
-      window.localStorage.setItem(storageKey, "1");
-    } catch {
-      // ignorar si localStorage no está disponible
-    }
   };
 
   if (dismissed) return null;
@@ -106,5 +84,4 @@ PromoBar.propTypes = {
   rightText: PropTypes.string,
   rightHref: PropTypes.string,
   dismissible: PropTypes.bool,
-  dismissKey: PropTypes.string,
 };

@@ -133,6 +133,14 @@ export default function BuyerForm({
         </div>
 
         <div className="checkout-field full">
+          <label htmlFor="buyer-postal-code">Código postal</label>
+          <input id="buyer-postal-code" type="text" inputMode="numeric"
+            name="postal_code" value={customer.postal_code || ""}
+            onChange={handleChange} placeholder="Ej. 052810" />
+          <small>Envío al código 052810: $10.000. Resto del país: $25.000. Recogida en tienda: gratis.</small>
+        </div>
+
+        <div className="checkout-field full">
           <label>Barrio / Referencia</label>
 
           <input

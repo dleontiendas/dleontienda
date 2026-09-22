@@ -147,7 +147,7 @@ const collectImages = (product, limit = 8) => {
 };
 
 /* ---------- Product Card ---------- */
-const ProductCard = ({ product }) => {
+export const ProductCard = ({ product }) => {
   const images = collectImages(product);
   const PLACEHOLDER = "https://placehold.co/600x800?text=Sin+Imagen";
 
@@ -221,6 +221,9 @@ const ProductCard = ({ product }) => {
               alt={product.name || "Sin nombre"}
               className="product-image"
               onError={onError}
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
             />
 
             {images.length > 1 && (
@@ -371,17 +374,18 @@ export default function ModaProductList() {
     const map = new Map();
 
     for (const p of base) {
-      const cat = p.category || "Otros";
-      if (!map.has(cat)) map.set(cat, new Set());
-      if (p.subcategory) map.get(cat).add(p.subcategory);
+      const department = p.depSlug || "otros";
+      if (!map.has(department)) map.set(department, new Set());
+      if (p.subcategory) map.get(department).add(p.subcategory);
     }
 
-    return Array.from(map.entries())
-      .map(([category, set]) => ({
-        category,
-        subcats: Array.from(set).sort(),
-      }))
-      .sort((a, b) => a.category.localeCompare(b.category));
+    return MODA_DEPARTMENT_GROUPS
+      .filter(({ key }) => map.has(key))
+      .map(({ key, label }) => ({
+        key,
+        label: DEPARTMENT_LABELS[key] || label,
+        subcats: Array.from(map.get(key)).sort((a, b) => a.localeCompare(b, "es")),
+      }));
   }, [enriched, dep]);
 
   const filtered = useMemo(() => {
@@ -429,6 +433,7 @@ export default function ModaProductList() {
           onClick={() => {
             setDep("");
             setSubFilter("");
+            setOpenGroup(null);
           }}
         >
           Todos <span className="count">({modaBase.length})</span>
@@ -443,6 +448,7 @@ export default function ModaProductList() {
             onClick={() => {
               setDep(key);
               setSubFilter("");
+              setOpenGroup(key);
             }}
           >
             <DepartmentChipImage slug={key} alt={DEPARTMENT_LABELS[key] || label} />
@@ -490,10 +496,10 @@ export default function ModaProductList() {
 
           <div className="row subcat-grid">
   {subcatGroups.map((g) => {
-    const isOpen = openGroup === g.category;
+    const isOpen = openGroup === g.key;
 
     return (
-      <div className="col s12 m6 l4 xl3" key={g.category}>
+      <div className="col s12 m6 l4 xl3" key={g.key}>
         <div
           className={`subcat-card text-only card-border accordion-item ${
             isOpen ? "open" : ""
@@ -503,11 +509,11 @@ export default function ModaProductList() {
             type="button"
             className="accordion-header"
             onClick={() =>
-              setOpenGroup(isOpen ? null : g.category)
+              setOpenGroup(isOpen ? null : g.key)
             }
             aria-expanded={isOpen}
           >
-            <h6 className="subcat-title">{g.category}</h6>
+            <h6 className="subcat-title">{g.label}</h6>
             <span className="accordion-arrow">⌄</span>
           </button>
 

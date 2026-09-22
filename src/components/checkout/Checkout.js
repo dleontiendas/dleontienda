@@ -20,10 +20,11 @@ import {
   openWhatsApp,
 } from "./checkout.utils";
 import { getEmailProductImage } from "../utils/productImage";
+import { getDeliveryCost, STORE_PICKUP_ADDRESS } from "../cart/delivery";
 import "./Checkout.css";
 
 const Checkout = () => {
-  const { cart, clearCart } = useContext(CartContext);
+  const { cart, clearCart, deliveryMethod } = useContext(CartContext);
 
   const navigate = useNavigate();
 
@@ -33,7 +34,7 @@ const Checkout = () => {
 
   const [paymentError, setPaymentError] = useState(null);
 
-  const [shipping] = useState(25000);
+  const isPickup = deliveryMethod === "pickup";
 
   const [paymentMethod, setPaymentMethod] = useState("");
 
@@ -69,9 +70,12 @@ const Checkout = () => {
     0,
   );
 
-  const total = subtotal + shipping;
+  const shippingInfo = isPickup
+    ? { ...customer, ...STORE_PICKUP_ADDRESS }
+    : differentRecipient ? shippingData : customer;
 
-  const shippingInfo = differentRecipient ? shippingData : customer;
+  const shipping = getDeliveryCost(deliveryMethod, shippingInfo.postal_code);
+  const total = subtotal + shipping;
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -249,12 +253,12 @@ const Checkout = () => {
       <div className="checkout-left">
         <BuyerForm customer={customer} setCustomer={setCustomer} />
 
-        <RecipientSwitch
+        {isPickup ? <p className="checkout-card">Recoger en tienda: D’LEON GOLD – Cra 49 #48-31, Segovia. Sin costo de envío.</p> : <RecipientSwitch
           checked={differentRecipient}
           onChange={setDifferentRecipient}
-        />
+        />}
 
-        {differentRecipient && (
+        {!isPickup && differentRecipient && (
           <ShippingForm shipping={shippingData} setShipping={setShippingData} />
         )}
 
@@ -275,6 +279,7 @@ const Checkout = () => {
           cart,
           subtotal,
           shipping,
+          deliveryMethod,
           total,
         }}
         actions={{

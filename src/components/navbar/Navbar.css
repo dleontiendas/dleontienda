@@ -2,6 +2,34 @@
    NAVBAR
    ========================================================== */
 
+.site-navbar .navbar-top { background: #f2f2f2; }
+.site-navbar .navbar-logo-gold { position: relative; display: block; width: 260px; height: auto; aspect-ratio: 280 / 90; overflow: hidden; }
+.site-navbar .navbar-logo-gold .brand-logo-img { position: absolute; left: -8.93%; top: 0; width: 414.643%; max-width: none; height: 100%; max-height: none; object-fit: fill; }
+.site-navbar .navbar-input { border-radius: 999px; box-shadow: 0 5px 18px #00000006; }
+.site-navbar .navbar-search-btn { width: 40px; height: 40px; right: 5px; border-radius: 50%; color: white; background: linear-gradient(135deg, #d4af37, #a77c0b); }
+.site-navbar .navbar-search-btn:hover { background: #a77c0b; }
+.site-navbar .navbar-clear-btn { right: 52px; }
+.site-navbar .nav-cart-summary { flex-direction: row; gap: 12px; min-height: 48px; }
+.site-navbar .nav-cart-symbol { position: relative; display: flex; }
+.site-navbar .nav-cart-symbol .cart-badge { top: -12px; right: -8px; background: #c69d21; min-width: 22px; height: 22px; display: grid; place-items: center; font-size: 12px; }
+.site-navbar .nav-cart-text { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; font-size: 13px; }
+.site-navbar .nav-cart-total { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (min-width: 769px) {
+  .site-navbar .navbar-top-content { grid-template-columns: minmax(180px, 260px) minmax(0, 680px) minmax(120px, 170px); }
+  .site-navbar .navbar-logo-gold { max-width: 100%; }
+}
+@media (max-width: 768px) {
+  .site-navbar .navbar-logo-gold { width: 185px; }
+  .site-navbar .navbar-menu-toggle svg { stroke: #171717; }
+  .site-navbar .navbar-right { gap: 10px; }
+}
+@media (max-width: 400px) {
+  .site-navbar .navbar-logo-gold { width: 145px; }
+  .site-navbar .nav-cart-summary { gap: 8px; }
+  .site-navbar .nav-cart-text { font-size: 11px; }
+  .site-navbar .navbar-top-content { padding-inline: 10px; gap: 6px; }
+}
+
 .site-navbar {
   position: sticky;
   top: 0;
@@ -45,6 +73,9 @@
 
 .navbar-logo {
   text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .brand-logo-text {
@@ -55,7 +86,11 @@
 }
 
 .brand-logo-img {
-  height: 28px;
+  display: block;
+  width: auto;
+  height: 96px;
+  max-width: 100%;
+  object-fit: contain;
   transition: transform 0.2s;
 }
 
@@ -455,6 +490,12 @@ mark {
 
   .navbar-left {
     order: initial;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .navbar-logo {
+    height: 100%;
   }
 
   .brand-logo-text {
@@ -462,7 +503,8 @@ mark {
   }
 
   .brand-logo-img {
-    height: 36px;
+    height: 76px;
+    max-height: calc(100% - 8px);
   }
 
   .navbar-search {

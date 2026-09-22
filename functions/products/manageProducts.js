@@ -18,17 +18,27 @@ export async function manageProductHandler(request) {
     if (!sku || sku.includes("/") || !String(product?.name || "").trim()) {
       throw new HttpsError("invalid-argument", "SKU y nombre son obligatorios.");
     }
-    const ref = request.data?.path
+    const currentRef = request.data?.path
       ? productRefFromPath(request.data.path)
       : db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(sku);
-    const snapshot = await ref.get();
-    const now = admin.firestore.FieldValue.serverTimestamp();
-    await ref.set({
-      ...product,
-      updated_at: now,
-      ...(snapshot.exists ? {} : { created_at: now }),
-    }, { merge: true });
-    return { success: true, path: ref.path, created: !snapshot.exists };
+    const destinationRef = db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(sku);
+    const result = await db.runTransaction(async (transaction) => {
+      const moving = currentRef.path !== destinationRef.path;
+      const currentSnapshot = await transaction.get(currentRef);
+      const destinationSnapshot = moving ? await transaction.get(destinationRef) : currentSnapshot;
+      if (moving && destinationSnapshot.exists) {
+        throw new HttpsError("already-exists", `Ya existe ${sku} en la categoría de destino.`);
+      }
+      const now = admin.firestore.FieldValue.serverTimestamp();
+      transaction.set(destinationRef, {
+        ...product,
+        updated_at: now,
+        ...(currentSnapshot.exists ? {} : { created_at: now }),
+      }, { merge: true });
+      if (moving && currentSnapshot.exists) transaction.delete(currentRef);
+      return { created: !currentSnapshot.exists, moved: moving && currentSnapshot.exists };
+    });
+    return { success: true, path: destinationRef.path, ...result };
   }
   if (action === "delete") {
     const ref = productRefFromPath(request.data?.path);

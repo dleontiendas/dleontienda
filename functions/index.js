@@ -14,6 +14,10 @@ import { expireInventoryReservations } from "./orders/expireReservations.js";
 import { updateOrderStatus } from "./orders/updateOrderStatus.js";
 import { getOrderStatus, listOrders } from "./orders/readOrders.js";
 import { manageProduct } from "./products/manageProducts.js";
+import {
+  productShareImageHandler,
+  productSharePreviewHandler,
+} from "./products/productSharePreview.js";
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -26,6 +30,10 @@ export const wompiWebhook = onRequest(processWompiWebhook);
 export const addiWebhook = onRequest(addiCallback);
 
 export const boldWebhook = onRequest(processBoldWebhook);
+
+export const productSharePreview = onRequest(productSharePreviewHandler);
+
+export const productShareImage = onRequest(productShareImageHandler);
 
 export {
   importProducts,

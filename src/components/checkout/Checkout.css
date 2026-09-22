@@ -192,15 +192,47 @@ position:static;
 
 .checkout-page{
 
+width:100%;
+
+max-width:100%;
+
+min-width:0;
+
+box-sizing:border-box;
+
 padding:18px;
 
 margin:25px auto;
+
+overflow-x:clip;
+
+}
+
+.checkout-left,
+.checkout-summary,
+.checkout-card,
+.checkout-grid,
+.checkout-field{
+
+min-width:0;
+
+max-width:100%;
 
 }
 
 .checkout-card{
 
+width:100%;
+
+box-sizing:border-box;
+
 padding:24px;
+
+}
+
+.checkout-card-header > div{
+
+min-width:0;
 
 }
 
@@ -213,6 +245,19 @@ grid-template-columns:1fr;
 .checkout-field.full{
 
 grid-column:auto;
+
+}
+
+.checkout-field input,
+.checkout-field select,
+.checkout-field textarea,
+.payment-card{
+
+min-width:0;
+
+max-width:100%;
+
+box-sizing:border-box;
 
 }
 
@@ -279,10 +324,10 @@ grid-column:auto;
 .checkout-card textarea:focus,
 .checkout-card select:focus{
 
-    border:1px solid #ff6b00 !important;
+    border:1px solid #d4af37 !important;
 
     box-shadow:
-        0 0 0 4px rgba(255,107,0,.12)!important;
+        0 0 0 4px rgba(212,175,55,.18)!important;
 
 }
 
@@ -419,7 +464,9 @@ grid-column:auto;
 
 .recipient-switch input:checked + .recipient-slider{
 
-    background:#ff6b00;
+    background:#d4af37;
+
+    box-shadow:0 0 0 4px rgba(212,175,55,.18);
 
 }
 
@@ -571,7 +618,7 @@ grid-column:auto;
 
     font-weight:700;
 
-    color:#ff5a00;
+    color:#000;
 
 }
 
@@ -579,7 +626,7 @@ grid-column:auto;
    BUTTONS
 =========================== */
 
-.btn-primary{
+.checkout-summary .btn-primary{
 
     width:100%;
 
@@ -589,9 +636,9 @@ grid-column:auto;
 
     border-radius:14px;
 
-    background:#111;
+    background:#d4af37;
 
-    color:#fff;
+    color:#000;
 
     font-size:16px;
 
@@ -603,9 +650,9 @@ grid-column:auto;
 
 }
 
-.btn-primary:hover{
+.checkout-summary .btn-primary:hover{
 
-    background:#000;
+    background:#c29f2f;
 
     transform:translateY(-2px);
 
@@ -725,9 +772,11 @@ grid-column:auto;
 
 .payment-option:hover{
 
-    border-color:#ff6b00;
+    border-color:#d4af37;
 
-    background:#fff9f4;
+    background:#fffaf0;
+
+    box-shadow:0 8px 20px rgba(212,175,55,.18);
 
 }
 
@@ -804,19 +853,23 @@ grid-column:auto;
 
 .payment-card:hover{
 
-    border-color:#ff6b00;
+    border-color:#d4af37;
 
     transform:translateY(-2px);
 
-    box-shadow:0 10px 24px rgba(0,0,0,.06);
+    box-shadow:0 10px 24px rgba(212,175,55,.22);
 
 }
 
 .payment-card.active{
 
-    border-color:#ff6b00;
+    border-color:#d4af37;
 
-    background:#fff8f3;
+    background:#fffaf0;
+
+    box-shadow:
+        0 0 0 3px rgba(212,175,55,.16),
+        0 12px 28px rgba(212,175,55,.24);
 
 }
 

@@ -13,6 +13,24 @@ export const toImportString = (value) =>
 export const toImportNumber = (value) =>
   Number.isFinite(Number(value)) ? Number(value) : 0;
 
+// Excel numeric cells arrive as numbers; pasted COP amounts may include separators.
+export const parseImportPrice = (value) => {
+  if (typeof value === "number") return Number.isFinite(value) ? value : NaN;
+  let text = toImportString(value).replace(/^(?:COP\s*\$?|\$\s*(?:COP)?)/i, "").replace(/\s/g, "");
+  if (!text || !/^\d+(?:[.,]\d+)*$/.test(text)) return NaN;
+  if (/^\d{1,3}(?:[.,]\d{3})+$/.test(text) && !(text.includes(".") && text.includes(","))) {
+    text = text.replace(/[.,]/g, "");
+  } else if (/^\d{1,3}(?:\.\d{3})+,\d{1,2}$/.test(text)) {
+    text = text.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d{1,3}(?:,\d{3})+\.\d{1,2}$/.test(text)) {
+    text = text.replace(/,/g, "");
+  } else if (/^\d+[.,]\d{1,2}$/.test(text)) {
+    text = text.replace(",", ".");
+  } else if (!/^\d+$/.test(text)) return NaN;
+  const number = Number(text);
+  return Number.isFinite(number) ? number : NaN;
+};
+
 export const normalizeMasterSku = (value) =>
   toImportString(value)
     .normalize("NFD")
@@ -91,6 +109,11 @@ export function parseProductRows(rows, headers = null) {
       : buildMasterSku({ brand, baseSku, color, size });
     const rawQuantity = row.Cantidad;
     const quantity = Number(rawQuantity);
+    const priceHeader = toImportString(row["Precio actual"]) ? "Precio actual" : "Precio (COL)";
+    const price = parseImportPrice(row[priceHeader]);
+    const oldPrice = toImportString(row["Precio anterior"]) ? parseImportPrice(row["Precio anterior"]) : null;
+    if (!(price > 0)) errors.push({ row: excelRow, field: priceHeader, message: "El precio actual debe ser un número mayor que cero." });
+    if (oldPrice !== null && !(oldPrice > 0)) errors.push({ row: excelRow, field: "Precio anterior", message: "El precio anterior debe estar vacío o ser un número mayor que cero." });
 
     if (!baseSku) errors.push({ row: excelRow, field: "COD Ref SKU", message: "La referencia base está vacía." });
     if (!brand) errors.push({ row: excelRow, field: "Marca", message: "La marca está vacía; se necesita para generar el SKU Maestro." });
@@ -127,7 +150,8 @@ export function parseProductRows(rows, headers = null) {
         materials: toImportString(row["Materiales y composición"]),
         care_instructions: toImportString(row["Cuidados y lavado"]),
         warranty: toImportString(row["Garantía"]),
-        price_cop: toImportNumber(row["Precio (COL)"]),
+        price_cop: price,
+        oldPrice,
         weight_grams: toImportNumber(row["Peso (Gr)"]),
         images: [],
         variants: [],
@@ -150,7 +174,9 @@ export function parseProductRows(rows, headers = null) {
       const value = toImportString(row[header]);
       if (value && !product[field]) product[field] = value;
     });
-    if (!product.price_cop) product.price_cop = toImportNumber(row["Precio (COL)"]);
+    if (product.price_cop !== price || product.oldPrice !== oldPrice) {
+      errors.push({ row: excelRow, field: "Precio actual / Precio anterior", message: "Las variaciones de una misma referencia deben tener los mismos precios." });
+    }
     if (!product.weight_grams) product.weight_grams = toImportNumber(row["Peso (Gr)"]);
 
     ["Imagen Principal", "Imagen1", "Imagen2"].forEach((header) =>

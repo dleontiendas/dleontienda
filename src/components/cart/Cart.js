@@ -1,13 +1,16 @@
 import React, { useContext } from "react";
+import { getDeliveryCost } from "./delivery";
+import { Truck, Store, Info, ReceiptText, Trash2, ArrowRight } from "lucide-react";
 import { CartContext } from "../../context/CartContext";
 import { useNavigate } from "react-router-dom";
 import { getSelectedProductImage } from "../utils/productImage";
 import "./Cart.css";
 
 const Cart = () => {
-  const { cart, removeFromCart, updateQuantity, clearCart } =
+  const { cart, removeFromCart, updateQuantity, deliveryMethod, setDeliveryMethod } =
     useContext(CartContext);
   const navigate = useNavigate();
+  const shipping = getDeliveryCost(deliveryMethod);
 
   const subtotal = cart.reduce(
     (acc, item) => acc + (item.price_cop || 0) * (item.quantity || 1),
@@ -15,7 +18,7 @@ const Cart = () => {
   );
 
   const discount = subtotal * 0; //0.1; // Ejemplo: 10% de descuento
-  const total = subtotal - discount;
+  const total = subtotal - discount + shipping;
 
   if (cart.length === 0)
     return (
@@ -26,7 +29,8 @@ const Cart = () => {
 
   return (
     <div className="cart-page container">
-      <h4 className="cart-title center-align">Carrito de compras</h4>
+      <h1 className="cart-title">Carrito de compras</h1>
+      <p className="cart-intro">Revisa tus productos y elige cómo quieres recibir tu pedido.</p>
 
       <div className="cart-content">
         {/*  Lista de productos */}
@@ -67,6 +71,7 @@ const Cart = () => {
                   <div className="cart-qty-control">
                     <button
                       className="qty-btn"
+                      aria-label={`Reducir cantidad de ${item.name}`}
                       onClick={() =>
                         updateQuantity(
                           item.id,
@@ -81,6 +86,7 @@ const Cart = () => {
                     <span>{item.quantity || 1}</span>
                     <button
                       className="qty-btn"
+                      aria-label={`Aumentar cantidad de ${item.name}`}
                       onClick={() =>
                         updateQuantity(
                           item.id,
@@ -96,6 +102,7 @@ const Cart = () => {
 
                   <button
                     className="remove-btn"
+                    aria-label={`Eliminar ${item.name}`}
                     onClick={() =>
                       removeFromCart(
                         item.id,
@@ -104,18 +111,35 @@ const Cart = () => {
                       )
                     }
                   >
-                    ✕
+                    <Trash2 size={21} aria-hidden="true" />
                   </button>
                 </div>
               </div>
             ))}
           </div>
+          <fieldset className="cart-delivery">
+            <legend>¿Cómo quieres recibir tu pedido?</legend>
+            <p>Selecciona la opción que más te convenga.</p>
+            <div className="cart-delivery-options">
+              <label className={`cart-delivery-option ${deliveryMethod === "delivery" ? "is-selected" : ""}`}>
+                <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === "delivery"} onChange={() => setDeliveryMethod("delivery")} />
+                <Truck aria-hidden="true" />
+                <span><strong>Envío a domicilio</strong><span>$10.000 para el código postal 052810; $25.000 para el resto del país. Se ajusta al ingresar el destino al pagar.</span></span>
+              </label>
+              <label className={`cart-delivery-option ${deliveryMethod === "pickup" ? "is-selected" : ""}`}>
+                <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === "pickup"} onChange={() => setDeliveryMethod("pickup")} />
+                <Store aria-hidden="true" />
+                <span><strong>Recoger en tienda</strong><span>Gratis en D’LEON GOLD – Cra 49 #48-31, Segovia.</span></span>
+              </label>
+            </div>
+            <p className="cart-delivery-note"><Info size={18} aria-hidden="true" />Si eliges recoger en tienda no se cobra envío.</p>
+          </fieldset>
         </div>
 
         {/*  Resumen lateral */}
         <div className="cart-summary">
           <div className="summary-card">
-            <h6>Resumen de compra</h6>
+            <h2><ReceiptText size={23} aria-hidden="true" /> Resumen de compra</h2>
 
             <div className="summary-row">
               <span>Subtotal:</span>
@@ -125,7 +149,9 @@ const Cart = () => {
               <span>Descuento:</span>
               <span>- ${discount.toLocaleString("es-CO")}</span>
             </div>
-            <div className="summary-total">
+            <div className="summary-row cart-delivery-summary"><span>Método de entrega:</span><strong>{deliveryMethod === "pickup" ? "Recoger en tienda" : "Envío a domicilio"}</strong></div>
+            <div className="summary-row"><span>{deliveryMethod === "pickup" ? "Recogida en tienda:" : "Costo de envío:"}</span><strong>${shipping.toLocaleString("es-CO")}</strong></div>
+            <div className="summary-total" aria-live="polite">
               <span>Total:</span>
               <span>${total.toLocaleString("es-CO")}</span>
             </div>
@@ -134,21 +160,7 @@ const Cart = () => {
               className="btn cart-checkout-btn w-100"
               onClick={() => navigate("/checkout")}
             >
-              Ir a pagar
-            </button>
-            <button
-              className="btn red darken-2 w-100"
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "¿Estás seguro de que deseas eliminar todos los productos del carrito?",
-                  )
-                ) {
-                  clearCart();
-                }
-              }}
-            >
-              Eliminar todo
+              IR A PAGAR <ArrowRight size={20} aria-hidden="true" />
             </button>
             <button
               className="btn-flat blue-text w-100"

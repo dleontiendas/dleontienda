@@ -15,8 +15,10 @@ export default function Footer() {
         <div>
           <h5 className="footer-brand">D’LEON GOLD</h5>
           <p className="footer-text">
-            Moda urbana y tecnología. Marcas seleccionadas para damas,
-            caballeros e infantil. También accesorios y básicos del día a día.
+            Tienda de Ropa y Accesorios especializada en ofrecer las Mejores
+            Marcas en todos sus productos y servicios. Contamos con Ropa para
+            Damas, Caballeros, Niños y Toda una Miscelánea de Productos para el
+            hogar y TECNOLOGIA.
           </p>
 
           <a

@@ -1,0 +1,60 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import Checkout from './Checkout';
+import Cart from '../cart/Cart';
+import { CartProvider } from '../../context/CartContext';
+import { createOrder } from '../../api/ordersApi';
+jest.mock('../../api/ordersApi', () => ({ createOrder: jest.fn() }));
+jest.mock('../../services/paymentService', () => ({ startPayment: jest.fn() }));
+jest.mock('materialize-css', () => ({ AutoInit: jest.fn(), toast: jest.fn() }));
+jest.mock('react-router-dom', () => ({ useNavigate: () => jest.fn() }));
+jest.mock('../payments/PaymentGateway', () => () => null);
+jest.mock('./checkout.utils', () => ({ buildWhatsAppMessage: jest.fn(), openWhatsApp: jest.fn() }));
+jest.mock('./BuyerForm', () => ({ setCustomer }) => <button onClick={() => setCustomer({ email: 'test@example.com', first_name: 'Prueba', last_name: 'Local', phone: '3000000000', address: 'Calle de prueba', city: 'Medellín', document: '' })}>Datos de prueba</button>);
+jest.mock('./PaymentMethods', () => ({ payment }) => <button onClick={() => payment.setPaymentMethod('contraentrega')}>Pago de prueba</button>);
+beforeEach(() => {
+  localStorage.clear();
+  localStorage.setItem('cart', JSON.stringify([{ id: 'TEST', name: 'Jeans', price_cop: 135000, quantity: 1 }]));
+  createOrder.mockReset().mockResolvedValue({ id: 'SIMULADO', accessToken: 'local-test' });
+});
+test.each([['pickup', 0, '$135.000'], ['delivery', 25000, '$160.000']])('checkout respeta %s al crear el pedido', async (method, shipping, total) => {
+  localStorage.setItem('cartDeliveryMethod', method);
+  const { container } = render(<CartProvider><Checkout /></CartProvider>);
+  expect(container.querySelector('.summary-grand-total')).toHaveTextContent(total);
+  fireEvent.click(screen.getByText('Datos de prueba'));
+  fireEvent.click(screen.getByText('Pago de prueba'));
+  fireEvent.click(screen.getByRole('button', { name: 'Finalizar compra' }));
+  await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+  const order = createOrder.mock.calls[0][0];
+  expect(order.shipping).toBe(shipping);
+  expect(order.total).toBe(135000 + shipping);
+  expect(order.shippingAddress.address).toBe(method === 'pickup' ? 'D’LEON GOLD – Cra 49 #48-31' : 'Calle de prueba');
+});
+test('selección del carrito persiste al abrir checkout y al recargar', () => {
+  const view = render(<CartProvider><Cart /></CartProvider>);
+  fireEvent.click(screen.getByRole('radio', { name: /Recoger en tienda/ }));
+  expect(localStorage.getItem('cartDeliveryMethod')).toBe('pickup');
+  view.rerender(<CartProvider><Checkout /></CartProvider>);
+  expect(view.container.querySelector('.summary-grand-total')).toHaveTextContent('$135.000');
+  view.unmount();
+  const reloaded = render(<CartProvider><Checkout /></CartProvider>);
+  expect(reloaded.container.querySelector('.summary-grand-total')).toHaveTextContent('$135.000');
+});
+
+test('tarifa local usa el código del destinatario y se envía al pedido', async () => {
+  const { container } = render(<CartProvider><Checkout /></CartProvider>);
+  fireEvent.click(screen.getByText('Datos de prueba'));
+  fireEvent.click(screen.getByRole('checkbox'));
+  fireEvent.change(screen.getByPlaceholderText('Cra 40 #48-31'), { target: { value: 'Dirección destino' } });
+  fireEvent.change(screen.getByPlaceholderText('Ciudad'), { target: { value: 'Segovia' } });
+  fireEvent.change(screen.getByLabelText('Código postal de entrega'), { target: { value: '052810' } });
+  expect(container.querySelector('.summary-grand-total')).toHaveTextContent('$145.000');
+  fireEvent.change(screen.getByLabelText('Código postal de entrega'), { target: { value: '110111' } });
+  expect(container.querySelector('.summary-grand-total')).toHaveTextContent('$160.000');
+  fireEvent.change(screen.getByLabelText('Código postal de entrega'), { target: { value: '052810' } });
+  fireEvent.click(screen.getByText('Pago de prueba'));
+  fireEvent.click(screen.getByRole('button', { name: 'Finalizar compra' }));
+  await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
+  expect(createOrder.mock.calls[0][0]).toMatchObject({ shipping: 10000, total: 145000, shippingAddress: { postal_code: '052810' } });
+});

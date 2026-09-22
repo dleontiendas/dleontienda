@@ -409,7 +409,7 @@ function BatchUploadModal({ open, onClose, onMergeRows, existingProducts }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas: <strong>COD Ref SKU, Actualizar inventario, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio (COL), Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad</strong>. El <strong>SKU Maestro se genera automáticamente</strong> para cada variación.
+          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio actual, Precio anterior, Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad, Imagen Color 1, Imagen Color 2, Actualizar inventario</strong>. Precio actual queda en K, Precio anterior en L y Peso (Gr) en M. El <strong>SKU Maestro se genera automáticamente</strong> para cada variación; si tu archivo ya contiene esa columna, consérvala. Los archivos antiguos con Precio (COL) siguen siendo compatibles; la nueva plantilla no necesita esa columna. Precio anterior es opcional; vacío elimina el precio anterior. Repite los mismos precios en todas las variaciones de una referencia.
         </div>
 
         <div className="ap-summary">
@@ -584,8 +584,14 @@ export default function AdminProducts() {
         const ref = doc(db, result.path || `productos/${categoriaId}/items/${payload.sku}`);
         setRows((prev) => [...prev, { id: payload.sku, ref, catSlug: categoriaId, ...payload }]);
       } else if (editing?.ref) {
-        await manageProduct("save", { path: editing.ref.path, product: payload });
-        setRows((prev) => prev.map((r) => (r.id === editing.id ? { ...editing, ...payload } : r)));
+        const result = await manageProduct("save", { path: editing.ref.path, product: payload });
+        const categoriaId = sanitizeId(payload.category || "sin_categoria");
+        const ref = doc(db, result.path || `productos/${categoriaId}/items/${payload.sku}`);
+        setRows((prev) => prev.map((r) => (
+          r.id === editing.id && r.catSlug === editing.catSlug
+            ? { ...editing, ...payload, ref, catSlug: categoriaId }
+            : r
+        )));
       }
       onCloseModal();
     } catch (e) {
@@ -663,7 +669,7 @@ export default function AdminProducts() {
                     </div>
                   </div>
                   <div className="ap-cell mono">{r.sku || "—"}</div>
-                  <div className="ap-cell">{r.catSlug || r.category || "—"}</div>
+                  <div className="ap-cell">{r.category || r.catSlug || "—"}</div>
                   <div className="ap-cell">{currencyCO(r.price_cop)}</div>
                   <div className="ap-cell">
                     <span className={`ap-badge ${r.active ? "ok" : "off"}`}>{r.active ? "Sí" : "No"}</span>
