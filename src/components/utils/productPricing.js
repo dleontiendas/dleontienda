@@ -27,3 +27,34 @@ export const resolveProductPricing = (product, color, size) => {
     selectedSize: selected,
   };
 };
+
+export const resolveProductCardPricing = (product) => {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const availablePrices = variants
+    .filter((variant) => variant?.active !== false)
+    .flatMap((variant) => (
+      Array.isArray(variant?.tallas)
+        ? variant.tallas
+        : Array.isArray(variant?.sizes)
+          ? variant.sizes
+          : []
+    ))
+    .filter((size) => size?.active !== false && Number(size?.stock) > 0)
+    .map((size) => positiveNumber(size?.price_cop))
+    .filter((price) => price !== null);
+
+  if (availablePrices.length) {
+    const uniquePrices = [...new Set(availablePrices)];
+    return {
+      price: Math.min(...availablePrices),
+      showFrom: uniquePrices.length > 1,
+      source: "variant",
+    };
+  }
+
+  return {
+    price: positiveNumber(product?.price_cop),
+    showFrom: false,
+    source: "general",
+  };
+};

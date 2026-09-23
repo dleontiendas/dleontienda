@@ -2,6 +2,7 @@
 import React, { useContext, useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
+import { resolveProductCardPricing } from "../../utils/productPricing";
 import "./RandomProductsCarousel.css";
 
 /* ===== Helpers compatibles con tu ProductList ===== */
@@ -55,10 +56,6 @@ const collectImages = (product) => {
   }
   return pool;
 };
-const getPrice = (p) => {
-  const n = Number(p?.price_cop);
-  return Number.isFinite(n) && n > 0 ? n : null;
-};
 const depToSlug = (p) => {
   const d = (p?.department || "").toLowerCase();
   if (d.includes("hombre") || d.includes("caballero") || d.includes("men")) return "hombre";
@@ -95,7 +92,7 @@ function CarouselCard({ p }) {
     else setSrc("https://placehold.co/600x800?text=Sin+Imagen");
   };
 
-  const price = getPrice(p);
+  const cardPricing = resolveProductCardPricing(p);
   const cat = p.catSlug || depToSlug(p) || "sin_categoria";
   const pid = p.id || p.sku || "";
   return (
@@ -107,7 +104,9 @@ function CarouselCard({ p }) {
         <div className="rpc-body">
           <div className="rpc-name">{p.name || "Sin nombre"}</div>
           <div className="rpc-price">
-            {price !== null ? `$${price.toLocaleString("es-CO")}` : "—"}
+            {cardPricing.price !== null
+              ? `${cardPricing.showFrom ? "Desde " : ""}$${cardPricing.price.toLocaleString("es-CO")}`
+              : "—"}
           </div>
         </div>
       </Link>

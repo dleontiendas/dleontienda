@@ -2,6 +2,7 @@
 import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
+import { resolveProductCardPricing } from "../../utils/productPricing";
 import "../ProductList.css";
 
 /* ---------- Helpers ---------- */
@@ -220,6 +221,7 @@ const ProductCard = ({ product }) => {
 
   const sizes = [...new Set(sizesOf(product.variants))];
   const colors = [...new Set(colorsOf(product.variants))];
+  const cardPricing = resolveProductCardPricing(product);
 
   return (
     <div className="col s12 m6 l4 xl3">
@@ -294,10 +296,10 @@ const ProductCard = ({ product }) => {
             <h6 className="product-name">{product.name || "Sin nombre"}</h6>
 
             <p className="product-price">
-              {getPrice(product) !== null ? (
+              {cardPricing.price !== null ? (
                 <>
                   {(() => {
-                    const price = getPrice(product) ?? 0;
+                    const price = cardPricing.price;
                     const old = Number(product.price_old) || 0;
                     const pct =
                       product?.discount != null
@@ -309,6 +311,7 @@ const ProductCard = ({ product }) => {
                     return (
                       <>
                         <span className="price-pill">
+                          {cardPricing.showFrom && <span className="price-from">Desde</span>}
                           <span className="currency">$</span>
                           <span className="amount">
                             {price.toLocaleString("es-CO")}
