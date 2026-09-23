@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { resolveProductPricing } from "../components/utils/productPricing";
 
 export const CartContext = createContext();
 
@@ -53,6 +54,9 @@ export const CartProvider = ({
         Number(quantity) || 1
       );
 
+    const pricing = resolveProductPricing(product, selectedColor, selectedSize);
+    const pricedProduct = { ...product, price_cop: pricing.price, oldPrice: pricing.oldPrice };
+
     setCart((prevCart) => {
       const existing =
         prevCart.find(
@@ -74,9 +78,12 @@ export const CartProvider = ({
               selectedColor
               ? {
                   ...item,
+                  ...pricedProduct,
                   quantity:
                     item.quantity +
                     safeQuantity,
+                  selectedSize,
+                  selectedColor,
                 }
               : item
         );
@@ -85,7 +92,7 @@ export const CartProvider = ({
       return [
         ...prevCart,
         {
-          ...product,
+          ...pricedProduct,
           quantity:
             safeQuantity,
           selectedSize,

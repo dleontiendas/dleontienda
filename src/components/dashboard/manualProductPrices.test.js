@@ -1,4 +1,4 @@
-import { calculateManualSavings, normalizeManualProductPrices } from './manualProductPrices';
+import { calculateManualSavings, normalizeManualProductPrices, normalizeManualVariantPrices } from './manualProductPrices';
 
 test('conserva los dos precios escritos y calcula el ahorro solo para la vista previa', () => {
   expect(normalizeManualProductPrices('110000', '135000')).toEqual({ price_cop: 110000, oldPrice: 135000 });
@@ -29,4 +29,11 @@ test('no muestra descuento cuando el precio anterior es igual o menor', () => {
 test('rechaza precios inválidos', () => {
   expect(() => normalizeManualProductPrices(0, '')).toThrow(/precio actual/i);
   expect(() => normalizeManualProductPrices(110000, 0)).toThrow(/precio anterior/i);
+});
+
+test('normaliza precios opcionales por talla sin inventar precio anterior', () => {
+  expect(normalizeManualVariantPrices('125000', '135000')).toEqual({ price_cop: 125000, oldPrice: 135000 });
+  expect(normalizeManualVariantPrices('', '')).toEqual({ oldPrice: null });
+  expect(normalizeManualVariantPrices('110000', '')).toEqual({ price_cop: 110000, oldPrice: null });
+  expect(normalizeManualVariantPrices(undefined, undefined)).toEqual({});
 });

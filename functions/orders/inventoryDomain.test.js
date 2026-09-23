@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { changeItemStock, findSizeLocation, transitionInventoryStatus } from "./inventoryDomain.js";
+import { changeItemStock, findSizeLocation, resolveItemPrice, transitionInventoryStatus } from "./inventoryDomain.js";
 
 const product = (stock = 2) => ({
   variants: [
@@ -20,6 +20,13 @@ test("identifica la variante exacta por SKU Maestro", () => {
 
 test("mantiene compatibilidad legacy por color y talla", () => {
   assert.deepEqual(findSizeLocation(product(), { color: "NEGRO", size: "32" }), { variantIndex: 1, sizeIndex: 0 });
+});
+
+test("usa el precio de la talla y conserva respaldo general para productos antiguos", () => {
+  const priced = { price_cop: 90000, variants: [{ color: "AZUL", tallas: [{ size: "32", stock: 2, sku_master: "BIXLER-584-AZUL-32", price_cop: 125000 }] }] };
+  assert.equal(resolveItemPrice(priced, { skuMaster: "BIXLER-584-AZUL-32" }), 125000);
+  delete priced.variants[0].tallas[0].price_cop;
+  assert.equal(resolveItemPrice(priced, { skuMaster: "BIXLER-584-AZUL-32" }), 90000);
 });
 
 test("reserva la cantidad comprada sin modificar otra variante", () => {

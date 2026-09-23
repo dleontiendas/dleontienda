@@ -24,6 +24,16 @@ export function findSizeLocation(product, item) {
   return null;
 }
 
+export function resolveItemPrice(product, item) {
+  const location = findSizeLocation(product, item);
+  if (!location) throw new Error("VARIANT_NOT_FOUND");
+  const size = product.variants[location.variantIndex].tallas[location.sizeIndex];
+  const hasOwnPrice = Object.prototype.hasOwnProperty.call(size, "price_cop");
+  const price = Number(hasOwnPrice ? size.price_cop : product.price_cop);
+  if (!Number.isFinite(price) || price <= 0) throw new Error("INVALID_PRICE");
+  return price;
+}
+
 export function changeItemStock(product, item, delta) {
   const quantity = Math.trunc(Number(item?.quantity));
   if (!Number.isInteger(quantity) || quantity <= 0) throw new Error("INVALID_QUANTITY");

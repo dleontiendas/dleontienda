@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import admin, { db } from "../firebasebaseAdmin.js";
-import { changeItemStock, findSizeLocation } from "./inventoryDomain.js";
+import { changeItemStock, findSizeLocation, resolveItemPrice } from "./inventoryDomain.js";
 import crypto from "node:crypto";
 
 const requireText = (value, field) => {
@@ -59,7 +59,7 @@ export async function createOrderWithReservationHandler(request) {
           productPath: ref.path,
           skuMaster: String(size.sku_master || requested.skuMaster || "").trim(),
           name: current.name || "Producto",
-          price: Math.max(0, Number(current.price_cop) || 0),
+          price: resolveItemPrice(current, requested),
           quantity,
           color: current.variants[location.variantIndex].color || requested.color || "",
           size: size.size || requested.size || "",

@@ -9,7 +9,7 @@ import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
 import { importProducts, manageProduct } from "../../api/productsApi";
 import { findExistingProductConflicts, parseProductRows } from "./productImport";
-import { calculateManualSavings, normalizeManualProductPrices } from "./manualProductPrices";
+import { calculateManualSavings, normalizeManualProductPrices, normalizeManualVariantPrices } from "./manualProductPrices";
 import "./ProductsTab.css";
 
 /* ---------- Helpers ---------- */
@@ -70,7 +70,7 @@ function Modal({ open, title, onClose, children, footer }) {
 /* ---------- Variants Editor (con imágenes por color) ---------- */
 function VariantsEditor({ value = [], onChange }) {
   const setAll = (v) => onChange(Array.isArray(v) ? v : []);
-  const addColor = () => setAll([...value, { color: "", images: [], tallas: [{ size: "", stock: "" }] }]);
+  const addColor = () => setAll([...value, { color: "", images: [], tallas: [{ size: "", price_cop: "", oldPrice: "", stock: "" }] }]);
   const removeColor = (i) => setAll(value.filter((_, idx) => idx !== i));
   const setColor = (i, color) => {
     const next = [...value];
@@ -80,13 +80,13 @@ function VariantsEditor({ value = [], onChange }) {
   const addSize = (i) => {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? next[i].tallas : [];
-    next[i] = { ...next[i], tallas: [...tallas, { size: "", stock: "" }] };
+    next[i] = { ...next[i], tallas: [...tallas, { size: "", price_cop: "", oldPrice: "", stock: "" }] };
     setAll(next);
   };
   const setSizeRow = (i, j, field, v) => {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? [...next[i].tallas] : [];
-    const row = { ...(tallas[j] || { size: "", stock: "" }), [field]: v };
+    const row = { ...(tallas[j] || { size: "", price_cop: "", oldPrice: "", stock: "" }), [field]: v };
     tallas[j] = row;
     next[i] = { ...next[i], tallas };
     setAll(next);
@@ -94,7 +94,7 @@ function VariantsEditor({ value = [], onChange }) {
   const removeSizeRow = (i, j) => {
     const next = [...value];
     const tallas = (next[i].tallas || []).filter((_, idx) => idx !== j);
-    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", stock: "" }] };
+    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", price_cop: "", oldPrice: "", stock: "" }] };
     setAll(next);
   };
 
@@ -121,7 +121,7 @@ function VariantsEditor({ value = [], onChange }) {
   return (
     <div className="var-wrap">
       <div className="var-head">
-        <h4>Variantes (Color / Imágenes / Talla / SKU Maestro / Stock)</h4>
+        <h4>Variantes (Color / Talla / Precios / Stock)</h4>
         <button type="button" className="ap-btn ap-btn--primary" onClick={addColor}>+ Color</button>
       </div>
 
@@ -166,11 +166,13 @@ function VariantsEditor({ value = [], onChange }) {
               <div className="size-head">
                 <div>Talla</div>
                 <div>SKU Maestro asociado</div>
+                <div>Precio actual</div>
+                <div>Precio anterior</div>
                 <div>Stock</div>
                 <div>Acción</div>
               </div>
               <div className="size-body">
-                {(v.tallas || [{ size: "", stock: "" }]).map((s, j) => (
+                {(v.tallas || [{ size: "", price_cop: "", oldPrice: "", stock: "" }]).map((s, j) => (
                   <div className="size-row" key={`size-${i}-${j}`}>
                     <input className="size-input" placeholder="S / 30 / Única…" value={s.size || ""} onChange={(e) => setSizeRow(i, j, "size", e.target.value)} />
                     <input
@@ -180,6 +182,8 @@ function VariantsEditor({ value = [], onChange }) {
                       title={s.sku_master || "Esta variante no tiene un SKU Maestro asociado"}
                       aria-label={`SKU Maestro de ${v.color || "color sin nombre"}, talla ${s.size || "sin talla"}`}
                     />
+                    <input type="number" min="1" step="1" className="size-price-input" value={s.price_cop ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => setSizeRow(i, j, "price_cop", e.target.value)} placeholder="Usar general" aria-label={`Precio actual de ${v.color || "color"}, talla ${s.size || "sin talla"}`} />
+                    <input type="number" min="1" step="1" className="size-price-input" value={s.oldPrice ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => setSizeRow(i, j, "oldPrice", e.target.value)} placeholder="Opcional" aria-label={`Precio anterior de ${v.color || "color"}, talla ${s.size || "sin talla"}`} />
                     <input type="number" min="0" step="1" className="stock-input" value={s.stock ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => setSizeRow(i, j, "stock", e.target.value)} placeholder="0" />
                     <button type="button" className="ap-btn ap-btn--ghost" onClick={() => removeSizeRow(i, j)}>Quitar</button>
                   </div>
@@ -230,13 +234,15 @@ function ProductForm({ value, onChange }) {
           <input value={value.subcategory || ""} onChange={(e) => set("subcategory", e.target.value)} placeholder="Jeans, Camisetas…" />
         </label>
         <label>
-          Precio actual (COP)
+          Precio actual general (respaldo)
           <input type="number" min="1" step="1" value={value.price_cop ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => set("price_cop", e.target.value)} placeholder="Ej. 110000" required />
         </label>
         <label>
-          Precio anterior (opcional)
+          Precio anterior general (opcional)
           <input type="number" min="1" step="1" value={value.oldPrice ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => set("oldPrice", e.target.value)} placeholder="Déjalo vacío si no aplica" />
         </label>
+
+        <small className="manual-price-help span-2">Estos valores mantienen compatibilidad con productos antiguos y se usan cuando una talla no tiene precio propio.</small>
 
         <div className="manual-price-preview span-2" aria-live="polite">
           <strong>Vista previa del precio</strong>
@@ -431,7 +437,7 @@ function BatchUploadModal({ open, onClose, onMergeRows, existingProducts }) {
         </label>
 
         <div className="ap-hint">
-          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio actual, Precio anterior, Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad, Imagen Color 1, Imagen Color 2, Actualizar inventario</strong>. Precio actual queda en K, Precio anterior en L y Peso (Gr) en M. El <strong>SKU Maestro se genera automáticamente</strong> para cada variación; si tu archivo ya contiene esa columna, consérvala. Los archivos antiguos con Precio (COL) siguen siendo compatibles; la nueva plantilla no necesita esa columna. Precio anterior es opcional; vacío elimina el precio anterior. Repite los mismos precios en todas las variaciones de una referencia.
+          Columnas esperadas: <strong>COD Ref SKU, Nombre, Marca, Categoría, Sub-Categoría, Departamento, Descripción, Materiales y composición, Cuidados y lavado, Garantía, Precio actual, Precio anterior, Peso (Gr), Imagen Principal, Imagen1, Imagen2, Color, Talla, Cantidad, Imagen Color 1, Imagen Color 2, Actualizar inventario</strong>. Precio actual queda en K, Precio anterior en L y Peso (Gr) en M. El <strong>SKU Maestro se genera automáticamente</strong> para cada variación; si tu archivo ya contiene esa columna, consérvala. Los archivos antiguos con Precio (COL) siguen siendo compatibles; la nueva plantilla no necesita esa columna. Precio anterior es opcional y cada fila puede tener precios distintos según su combinación de color y talla.
         </div>
 
         <div className="ap-summary">
@@ -573,6 +579,14 @@ export default function AdminProducts() {
         return alert(priceError.message);
       }
 
+      try {
+        (draft.variants || []).forEach((variant) => {
+          (variant.tallas || []).forEach((size) => normalizeManualVariantPrices(size.price_cop, size.oldPrice));
+        });
+      } catch (variantPriceError) {
+        return alert(variantPriceError.message);
+      }
+
       const variantsClean = (draft.variants || [])
         .map((v) => ({
           color: String(v.color || "").trim(),
@@ -581,6 +595,7 @@ export default function AdminProducts() {
             .map((t) => ({
               size: String(t.size || "").trim(),
               stock: Math.max(0, Number(t.stock || 0)),
+              ...normalizeManualVariantPrices(t.price_cop, t.oldPrice),
               ...(t.sku_master ? { sku_master: toStr(t.sku_master) } : {}),
             }))
             .filter((t) => t.size),

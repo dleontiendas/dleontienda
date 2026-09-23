@@ -30,3 +30,22 @@ export const calculateManualSavings = (priceValue, oldPriceValue) => {
     return null;
   }
 };
+
+export const normalizeManualVariantPrices = (priceValue, oldPriceValue) => {
+  const result = {};
+  if (!isBlank(priceValue)) {
+    const price = Number(priceValue);
+    if (!Number.isFinite(price) || price <= 0) throw new Error("El precio actual de cada talla debe quedar vacío o ser mayor que cero.");
+    result.price_cop = price;
+  }
+  if (oldPriceValue !== undefined) {
+    if (isBlank(oldPriceValue)) {
+      result.oldPrice = null;
+    } else {
+      const oldPrice = Number(oldPriceValue);
+      if (!Number.isFinite(oldPrice) || oldPrice <= 0) throw new Error("El precio anterior de cada talla debe quedar vacío o ser mayor que cero.");
+      result.oldPrice = oldPrice;
+    }
+  }
+  return result;
+};

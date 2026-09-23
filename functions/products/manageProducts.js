@@ -12,8 +12,25 @@ const productRefFromPath = (path) => {
 export const prepareManagedProductPrices = (product) => {
   validateImportedPrices(product);
   const hasOldPrice = Object.prototype.hasOwnProperty.call(product, "oldPrice");
+  const variants = Array.isArray(product.variants)
+    ? product.variants.map((variant) => ({
+        ...variant,
+        tallas: Array.isArray(variant.tallas)
+          ? variant.tallas.map((size) => ({
+              ...size,
+              ...(size.price_cop !== undefined && size.price_cop !== null && size.price_cop !== ""
+                ? { price_cop: Number(size.price_cop) }
+                : {}),
+              ...(Object.prototype.hasOwnProperty.call(size, "oldPrice")
+                ? { oldPrice: size.oldPrice === null || size.oldPrice === "" ? null : Number(size.oldPrice) }
+                : {}),
+            }))
+          : [],
+      }))
+    : product.variants;
   return {
     ...product,
+    ...(variants ? { variants } : {}),
     price_cop: Number(product.price_cop),
     ...(hasOldPrice ? {
       oldPrice: product.oldPrice === null || product.oldPrice === ""

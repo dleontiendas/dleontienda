@@ -12,6 +12,26 @@ test("crea y actualiza ambos precios numéricos sin duplicar SKU maestro", () =>
   assert.equal(updated.variants[0].tallas.length, 1);
 });
 
+test("crea y actualiza precios distintos dentro de cada talla", () => {
+  const created = mergeImportedProduct(null, incoming({
+    variants: [{ color: "SONIC", images: [], tallas: [
+      { size: "4", stock: 5, sku_master: "COOLKIDS-CKG0002-SONIC-4", price_cop: 110000, oldPrice: 120000 },
+      { size: "6", stock: 3, sku_master: "COOLKIDS-CKG0002-SONIC-6", price_cop: 125000, oldPrice: 135000 },
+    ] }],
+  }));
+  assert.deepEqual(created.variants[0].tallas.map(({ size, price_cop, oldPrice }) => ({ size, price_cop, oldPrice })), [
+    { size: "4", price_cop: 110000, oldPrice: 120000 },
+    { size: "6", price_cop: 125000, oldPrice: 135000 },
+  ]);
+  const updated = mergeImportedProduct(created, incoming({
+    variants: [{ color: "SONIC", images: [], tallas: [
+      { size: "6", stock: 9, sku_master: "COOLKIDS-CKG0002-SONIC-6", price_cop: 130000, oldPrice: null },
+    ] }],
+  }));
+  assert.equal(updated.variants[0].tallas[1].price_cop, 130000);
+  assert.equal(updated.variants[0].tallas[1].oldPrice, null);
+});
+
 test("precio anterior vacío limpia el dato y cliente antiguo conserva el dato existente", () => {
   const current = { ...existing(), oldPrice: 120000 };
   assert.equal(mergeImportedProduct(current, incoming({ oldPrice: null })).oldPrice, null);

@@ -39,9 +39,16 @@ test.each([100000, 110000])("permite precio anterior menor o igual %s", (value) 
   expect(result.products[0].oldPrice).toBe(value);
 });
 
-test("rechaza precios contradictorios entre variaciones del mismo producto", () => {
-  const result = parseProductRows([row(), row({ Talla: 6, "SKU Maestro": "OTRO-6", "Precio actual": 90000 })]);
-  expect(result.errors).toContainEqual(expect.objectContaining({ field: "Precio actual / Precio anterior" }));
+test("permite precios diferentes por talla y los guarda en cada combinación", () => {
+  const result = parseProductRows([
+    row({ Talla: 28, "SKU Maestro": "JEAN001-AZUL-28", "Precio actual": 110000, "Precio anterior": 120000 }),
+    row({ Talla: 42, "SKU Maestro": "JEAN001-AZUL-42", "Precio actual": 125000, "Precio anterior": 135000 }),
+  ]);
+  expect(result.errors).toEqual([]);
+  expect(result.products[0].variants[0].tallas).toEqual(expect.arrayContaining([
+    expect.objectContaining({ size: "28", price_cop: 110000, oldPrice: 120000 }),
+    expect.objectContaining({ size: "42", price_cop: 125000, oldPrice: 135000 }),
+  ]));
 });
 
 const row = (overrides = {}) => ({

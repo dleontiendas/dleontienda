@@ -10,6 +10,7 @@ import "./ProductDetail.css";
 import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
 import { Tag, Share2, Ruler, ShoppingCart, Truck, ShieldCheck, RefreshCw, Store, MessageCircle, ChevronRight } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import { resolveProductPricing } from "../utils/productPricing";
 
 const env = (_vite, cra) =>
   (typeof process !== "undefined" && process.env && process.env[cra]) || "";
@@ -210,6 +211,14 @@ export default function ProductDetail() {
     return getSizesArr(v);
   }, [variants, selectedColor]);
 
+  const pricing = resolveProductPricing(product, selectedColor, selectedSize);
+  const price = pricing.price;
+  const oldPrice = pricing.oldPrice;
+  const hasDiscount = pricing.hasDiscount;
+  const savings = pricing.savings;
+  const savingsPercent = pricing.percentage;
+  const formatPrice = (value) => `$${Number(value).toLocaleString("es-CO")}`;
+
   if (loading) return <p className="center">Cargando producto...</p>;
   if (error) return <p className="red-text center">{error}</p>;
   if (!product) return null;
@@ -250,7 +259,7 @@ export default function ProductDetail() {
         `¡Hola! Estoy interesado en *${product.name}*.\n` +
         `Color: ${selectedColor || "No seleccionado"}\n` +
         `Talla: ${selectedSize || "No seleccionada"}\n` +
-        `Precio: $${Number(product.price_cop).toLocaleString("es-CO")}\n\n` +
+        `Precio: ${formatPrice(price)}\n\n` +
         `${shareUrl}`
     );
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank");
@@ -274,13 +283,6 @@ export default function ProductDetail() {
 
   const canonicalUrl = toAbsoluteUrl(shareUrl);
   const ADDI_ALLY_SLUG = "247serviciosgold-ecommerce";
-  const price = Number(product.price_cop);
-  const oldPrice = Number(product.oldPrice);
-  const hasDiscount = Number.isFinite(price) && price > 0 && Number.isFinite(oldPrice) && oldPrice > price;
-  const savings = hasDiscount ? oldPrice - price : 0;
-  const savingsPercent = hasDiscount ? Math.round((savings / oldPrice) * 100) : 0;
-  const formatPrice = (value) => `$${value.toLocaleString("es-CO")}`;
-
   return (
     <div className="container section product-detail">
       {/* Meta OG/Twitter dinámicos */}

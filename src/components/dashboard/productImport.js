@@ -174,9 +174,6 @@ export function parseProductRows(rows, headers = null) {
       const value = toImportString(row[header]);
       if (value && !product[field]) product[field] = value;
     });
-    if (product.price_cop !== price || product.oldPrice !== oldPrice) {
-      errors.push({ row: excelRow, field: "Precio actual / Precio anterior", message: "Las variaciones de una misma referencia deben tener los mismos precios." });
-    }
     if (!product.weight_grams) product.weight_grams = toImportNumber(row["Peso (Gr)"]);
 
     ["Imagen Principal", "Imagen1", "Imagen2"].forEach((header) =>
@@ -194,6 +191,8 @@ export function parseProductRows(rows, headers = null) {
     variant.tallas.push({
       size,
       stock: quantity,
+      price_cop: price,
+      oldPrice,
       sku_master: masterSku,
       update_inventory: inventoryFlag === "SI",
       source_row: excelRow,

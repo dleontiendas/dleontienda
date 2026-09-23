@@ -22,6 +22,20 @@ export function validateImportedPrices(product) {
       throw new HttpsError("invalid-argument", `Precio inválido (${field}) para ${product.sku || "producto"}. Debe ser mayor que cero.`);
     }
   }
+  for (const variant of product.variants || []) {
+    for (const size of variant.tallas || []) {
+      if (size.price_cop !== undefined && size.price_cop !== null && size.price_cop !== "") {
+        if (!["number", "string"].includes(typeof size.price_cop) || !Number.isFinite(Number(size.price_cop)) || Number(size.price_cop) <= 0) {
+          throw new HttpsError("invalid-argument", `Precio actual inválido para ${product.sku || "producto"}, talla ${size.size || "sin talla"}.`);
+        }
+      }
+      if (size.oldPrice !== undefined && size.oldPrice !== null && size.oldPrice !== "") {
+        if (!["number", "string"].includes(typeof size.oldPrice) || !Number.isFinite(Number(size.oldPrice)) || Number(size.oldPrice) <= 0) {
+          throw new HttpsError("invalid-argument", `Precio anterior inválido para ${product.sku || "producto"}, talla ${size.size || "sin talla"}.`);
+        }
+      }
+    }
+  }
 }
 
 const replaceImportedImages = (current, incoming) => {
@@ -35,6 +49,12 @@ const cleanSize = (size) => ({
   size: String(size?.size || "").trim(),
   sku_master: String(size?.sku_master || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9-]/g, ""),
   stock: Math.max(0, Math.trunc(Number(size?.stock) || 0)),
+  ...(size?.price_cop !== undefined && size?.price_cop !== null && size?.price_cop !== ""
+    ? { price_cop: Number(size.price_cop) }
+    : {}),
+  ...(size?.oldPrice !== undefined
+    ? { oldPrice: size.oldPrice === null || size.oldPrice === "" ? null : Number(size.oldPrice) }
+    : {}),
 });
 
 export function mergeImportedProduct(existing, incoming) {
@@ -86,12 +106,16 @@ export function mergeImportedProduct(existing, incoming) {
           size: importedSize.size,
           sku_master: importedSize.sku_master,
           stock: shouldReplaceStock ? importedSize.stock : Math.max(0, Number(match.stock) || 0),
+          ...(Object.prototype.hasOwnProperty.call(importedSize, "price_cop") ? { price_cop: importedSize.price_cop } : {}),
+          ...(Object.prototype.hasOwnProperty.call(importedSize, "oldPrice") ? { oldPrice: importedSize.oldPrice } : {}),
         });
       } else {
         targetVariant.tallas.push({
           size: importedSize.size,
           sku_master: importedSize.sku_master,
           stock: shouldReplaceStock ? importedSize.stock : 0,
+          ...(Object.prototype.hasOwnProperty.call(importedSize, "price_cop") ? { price_cop: importedSize.price_cop } : {}),
+          ...(Object.prototype.hasOwnProperty.call(importedSize, "oldPrice") ? { oldPrice: importedSize.oldPrice } : {}),
         });
       }
     }
