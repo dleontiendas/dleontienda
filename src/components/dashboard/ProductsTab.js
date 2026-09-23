@@ -9,6 +9,7 @@ import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
 import { importProducts, manageProduct } from "../../api/productsApi";
 import { findExistingProductConflicts, parseProductRows } from "./productImport";
+import { calculateManualSavings, normalizeManualProductPrices } from "./manualProductPrices";
 import "./ProductsTab.css";
 
 /* ---------- Helpers ---------- */
@@ -20,6 +21,9 @@ const fromCsv = (s) =>
     .filter(Boolean);
 const currencyCO = (n) =>
   typeof n === "number" ? `$${n.toLocaleString("es-CO")}` : `$${Number(n || 0).toLocaleString("es-CO")}`;
+const selectZeroOnFocus = (event) => {
+  if (event.currentTarget.value === "0") event.currentTarget.select();
+};
 const emptyProduct = (over = {}) => ({
   sku: "",
   name: "",
@@ -28,11 +32,12 @@ const emptyProduct = (over = {}) => ({
   category: "",
   subcategory: "",
   description: "",
-  price_cop: 0,
+  price_cop: "",
+  oldPrice: "",
   images: [],
   active: true,
   variants: [], // [{color, images:[], tallas:[{size, stock}]}]
-  weight_grams: 0,
+  weight_grams: "",
   warranty: "",
   care_instructions: "",
   materials: "",
@@ -65,7 +70,7 @@ function Modal({ open, title, onClose, children, footer }) {
 /* ---------- Variants Editor (con imágenes por color) ---------- */
 function VariantsEditor({ value = [], onChange }) {
   const setAll = (v) => onChange(Array.isArray(v) ? v : []);
-  const addColor = () => setAll([...value, { color: "", images: [], tallas: [{ size: "", stock: 0 }] }]);
+  const addColor = () => setAll([...value, { color: "", images: [], tallas: [{ size: "", stock: "" }] }]);
   const removeColor = (i) => setAll(value.filter((_, idx) => idx !== i));
   const setColor = (i, color) => {
     const next = [...value];
@@ -75,14 +80,13 @@ function VariantsEditor({ value = [], onChange }) {
   const addSize = (i) => {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? next[i].tallas : [];
-    next[i] = { ...next[i], tallas: [...tallas, { size: "", stock: 0 }] };
+    next[i] = { ...next[i], tallas: [...tallas, { size: "", stock: "" }] };
     setAll(next);
   };
   const setSizeRow = (i, j, field, v) => {
     const next = [...value];
     const tallas = Array.isArray(next[i].tallas) ? [...next[i].tallas] : [];
-    const row = { ...(tallas[j] || { size: "", stock: 0 }), [field]: v };
-    if (field === "stock") row.stock = Math.max(0, Number(v || 0));
+    const row = { ...(tallas[j] || { size: "", stock: "" }), [field]: v };
     tallas[j] = row;
     next[i] = { ...next[i], tallas };
     setAll(next);
@@ -90,7 +94,7 @@ function VariantsEditor({ value = [], onChange }) {
   const removeSizeRow = (i, j) => {
     const next = [...value];
     const tallas = (next[i].tallas || []).filter((_, idx) => idx !== j);
-    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", stock: 0 }] };
+    next[i] = { ...next[i], tallas: tallas.length ? tallas : [{ size: "", stock: "" }] };
     setAll(next);
   };
 
@@ -166,7 +170,7 @@ function VariantsEditor({ value = [], onChange }) {
                 <div>Acción</div>
               </div>
               <div className="size-body">
-                {(v.tallas || [{ size: "", stock: 0 }]).map((s, j) => (
+                {(v.tallas || [{ size: "", stock: "" }]).map((s, j) => (
                   <div className="size-row" key={`size-${i}-${j}`}>
                     <input className="size-input" placeholder="S / 30 / Única…" value={s.size || ""} onChange={(e) => setSizeRow(i, j, "size", e.target.value)} />
                     <input
@@ -176,7 +180,7 @@ function VariantsEditor({ value = [], onChange }) {
                       title={s.sku_master || "Esta variante no tiene un SKU Maestro asociado"}
                       aria-label={`SKU Maestro de ${v.color || "color sin nombre"}, talla ${s.size || "sin talla"}`}
                     />
-                    <input type="number" min="0" step="1" className="stock-input" value={Number(s.stock || 0)} onChange={(e) => setSizeRow(i, j, "stock", e.target.value)} />
+                    <input type="number" min="0" step="1" className="stock-input" value={s.stock ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => setSizeRow(i, j, "stock", e.target.value)} placeholder="0" />
                     <button type="button" className="ap-btn ap-btn--ghost" onClick={() => removeSizeRow(i, j)}>Quitar</button>
                   </div>
                 ))}
@@ -196,6 +200,7 @@ function VariantsEditor({ value = [], onChange }) {
 /* ---------- Editor principal ---------- */
 function ProductForm({ value, onChange }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
+  const savingsPreview = calculateManualSavings(value.price_cop, value.oldPrice);
 
   return (
     <>
@@ -225,14 +230,31 @@ function ProductForm({ value, onChange }) {
           <input value={value.subcategory || ""} onChange={(e) => set("subcategory", e.target.value)} placeholder="Jeans, Camisetas…" />
         </label>
         <label>
-          Precio (COP)
-          <input type="number" min="0" step="1" value={value.price_cop ?? 0} onChange={(e) => set("price_cop", Number(e.target.value))} />
+          Precio actual (COP)
+          <input type="number" min="1" step="1" value={value.price_cop ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => set("price_cop", e.target.value)} placeholder="Ej. 110000" required />
         </label>
+        <label>
+          Precio anterior (opcional)
+          <input type="number" min="1" step="1" value={value.oldPrice ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => set("oldPrice", e.target.value)} placeholder="Déjalo vacío si no aplica" />
+        </label>
+
+        <div className="manual-price-preview span-2" aria-live="polite">
+          <strong>Vista previa del precio</strong>
+          {Number(value.price_cop) > 0
+            ? <span>Precio actual: {currencyCO(Number(value.price_cop))}</span>
+            : <span>Ingresa el precio actual para ver la vista previa.</span>}
+          {savingsPreview && (
+            <>
+              <span>Precio anterior: <s>{currencyCO(savingsPreview.oldPrice)}</s></span>
+              <span className="manual-price-saving">Ahorras: {currencyCO(savingsPreview.savings)} ({savingsPreview.percentage}%)</span>
+            </>
+          )}
+        </div>
 
         {/* NUEVOS CAMPOS */}
         <label>
           Peso (Gr)
-          <input type="number" min="0" step="1" value={value.weight_grams ?? 0} onChange={(e) => set("weight_grams", Number(e.target.value))} placeholder="0" />
+          <input type="number" min="0" step="1" value={value.weight_grams ?? ""} onFocus={selectZeroOnFocus} onChange={(e) => set("weight_grams", e.target.value)} placeholder="0" />
         </label>
         <label>
           Garantía
@@ -530,6 +552,7 @@ export default function AdminProducts() {
         care_instructions: row.care_instructions || "",
         materials: row.materials || "",
         specifications: row.specifications || "",
+        oldPrice: row.oldPrice ?? "",
       })
     );
   };
@@ -543,6 +566,12 @@ export default function AdminProducts() {
     try {
       if (!toStr(draft.sku)) return alert("El SKU es obligatorio.");
       if (!toStr(draft.name)) return alert("El nombre es obligatorio.");
+      let prices;
+      try {
+        prices = normalizeManualProductPrices(draft.price_cop, draft.oldPrice);
+      } catch (priceError) {
+        return alert(priceError.message);
+      }
 
       const variantsClean = (draft.variants || [])
         .map((v) => ({
@@ -566,7 +595,8 @@ export default function AdminProducts() {
         category: toStr(draft.category),
         subcategory: toStr(draft.subcategory),
         description: toStr(draft.description),
-        price_cop: Number(draft.price_cop || 0),
+        price_cop: prices.price_cop,
+        oldPrice: prices.oldPrice,
         images: draft.images || [],
         active: draft.active !== false,
         variants: variantsClean,

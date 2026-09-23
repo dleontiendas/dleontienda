@@ -1,12 +1,26 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import admin, { db } from "../firebasebaseAdmin.js";
 import { assertAdmin } from "../shared/authorization.js";
-import { sanitizeCategoryId } from "./importProducts.js";
+import { sanitizeCategoryId, validateImportedPrices } from "./importProducts.js";
 
 const productRefFromPath = (path) => {
   const value = String(path || "").trim();
   if (!/^productos\/[^/]+\/items\/[^/]+$/.test(value)) throw new HttpsError("invalid-argument", "Ruta de producto inválida.");
   return db.doc(value);
+};
+
+export const prepareManagedProductPrices = (product) => {
+  validateImportedPrices(product);
+  const hasOldPrice = Object.prototype.hasOwnProperty.call(product, "oldPrice");
+  return {
+    ...product,
+    price_cop: Number(product.price_cop),
+    ...(hasOldPrice ? {
+      oldPrice: product.oldPrice === null || product.oldPrice === ""
+        ? admin.firestore.FieldValue.delete()
+        : Number(product.oldPrice),
+    } : {}),
+  };
 };
 
 export async function manageProductHandler(request) {
@@ -18,6 +32,7 @@ export async function manageProductHandler(request) {
     if (!sku || sku.includes("/") || !String(product?.name || "").trim()) {
       throw new HttpsError("invalid-argument", "SKU y nombre son obligatorios.");
     }
+    const productToSave = prepareManagedProductPrices(product);
     const currentRef = request.data?.path
       ? productRefFromPath(request.data.path)
       : db.collection("productos").doc(sanitizeCategoryId(product.category)).collection("items").doc(sku);
@@ -31,7 +46,7 @@ export async function manageProductHandler(request) {
       }
       const now = admin.firestore.FieldValue.serverTimestamp();
       transaction.set(destinationRef, {
-        ...product,
+        ...productToSave,
         updated_at: now,
         ...(currentSnapshot.exists ? {} : { created_at: now }),
       }, { merge: true });
