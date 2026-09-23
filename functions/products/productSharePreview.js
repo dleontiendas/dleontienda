@@ -4,8 +4,6 @@ const STOREFRONT_INDEX_URL = "https://dleongold-10de3.web.app/index.html";
 const PUBLIC_ORIGIN = "https://dleongold.com";
 const DEFAULT_IMAGE = `${PUBLIC_ORIGIN}/og-default.jpg`;
 
-let storefrontHtmlPromise;
-
 const escapeHtml = (value = "") =>
   String(value)
     .replaceAll("&", "&amp;")
@@ -61,15 +59,14 @@ const firstProductImage = (product = {}, width = 1200) => {
 };
 
 const getStorefrontHtml = async () => {
-  if (!storefrontHtmlPromise) {
-    storefrontHtmlPromise = fetch(STOREFRONT_INDEX_URL).then(async (response) => {
-      if (!response.ok) {
-        throw new Error(`No se pudo cargar el HTML de la tienda (${response.status})`);
-      }
-      return response.text();
-    });
+  const response = await fetch(`${STOREFRONT_INDEX_URL}?preview=${Date.now()}`, {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" },
+  });
+  if (!response.ok) {
+    throw new Error(`No se pudo cargar el HTML de la tienda (${response.status})`);
   }
-  return storefrontHtmlPromise;
+  return response.text();
 };
 
 const getProduct = async (category, productId) => {
@@ -142,7 +139,7 @@ export async function productSharePreviewHandler(req, res) {
     const image = `${PUBLIC_ORIGIN}/share-image/${encodeURIComponent(category)}/${encodeURIComponent(productId)}${version}`;
     const metaTags = buildMetaTags({ title, description, image, url });
 
-    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
+    res.set("Cache-Control", "no-cache, no-store, must-revalidate");
     res.status(200).type("html").send(injectMetaTags(html, metaTags));
   } catch (error) {
     console.error("Error generando vista previa del producto", error);
