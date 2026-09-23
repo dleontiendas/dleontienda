@@ -734,7 +734,7 @@ export default function AdminProducts() {
                     <button className="ap-btn ap-btn--danger" onClick={() => onDelete(r)}>Eliminar</button>
                     <a
                       className="ap-btn ap-btn--link"
-                      href={`/products/${encodeURIComponent(r.catSlug)}/${encodeURIComponent(r.id)}`}
+                      href={`/products/${encodeURIComponent(r.catSlug)}/${encodeURIComponent(r.id)}?adminView=${encodeURIComponent(r.updated_at?.seconds || r.updated_at?._seconds || "current")}`}
                       target="_blank"
                       rel="noreferrer"
                     >
