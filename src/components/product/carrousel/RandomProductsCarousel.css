@@ -49,7 +49,21 @@
   font-weight:800; font-size:.98rem; color:#222; line-height:1.3;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
 }
-.rpc-price{ font-weight:900; color:#000; }
+.rpc-price{
+  display:inline-flex;
+  align-items:center;
+  align-self:flex-start;
+  min-height:34px;
+  margin-top:3px;
+  padding:7px 12px;
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:999px;
+  background:var(--rpc-gold);
+  color:#111;
+  font-weight:900;
+  line-height:1;
+  letter-spacing:.2px;
+}
 
 /* dots */
 .rpc-dots{ display:flex; gap:8px; justify-content:center; margin-top:10px; }
