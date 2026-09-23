@@ -732,7 +732,12 @@ export default function AdminProducts() {
                     </button>
 
                     <button className="ap-btn ap-btn--danger" onClick={() => onDelete(r)}>Eliminar</button>
-                    <a className="ap-btn ap-btn--link" href={`https://dleongold.com/products/${r.catSlug}/${r.sku || r.id}`} target="_blank" rel="noreferrer">
+                    <a
+                      className="ap-btn ap-btn--link"
+                      href={`/products/${encodeURIComponent(r.catSlug)}/${encodeURIComponent(r.id)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       Ver
                     </a>
                   </div>
