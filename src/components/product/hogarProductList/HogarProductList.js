@@ -1,4 +1,5 @@
-import React, { useContext, useMemo, useState } from "react";
+import { useCategoryHistoryState } from "../categoryHistory";
+import React, { useContext, useMemo } from "react";
 import { ProductsContext } from "../../../context/ProductContext";
 import { ProductCard } from "../modaProductList/modaProductList";
 import "../ProductList.css";
@@ -32,10 +33,10 @@ const getPrice = (product) => {
 
 export default function HogarProductList() {
   const { products, loading, error } = useContext(ProductsContext);
-  const [group, setGroup] = useState("");
-  const [subcategory, setSubcategory] = useState("");
-  const [openGroup, setOpenGroup] = useState(null);
-  const [sort, setSort] = useState("");
+  const [group, setGroup] = useCategoryHistoryState("group", "");
+  const [subcategory, setSubcategory] = useCategoryHistoryState("subcategory", "");
+  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null);
+  const [sort, setSort] = useCategoryHistoryState("sort", "");
 
   const homeProducts = useMemo(() => (products || []).filter((product) => {
     const category = normalize(`${product?.category || ""} ${product?.catSlug || ""}`);

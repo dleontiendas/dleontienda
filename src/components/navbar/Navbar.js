@@ -311,6 +311,7 @@ const Navbar = ({ onSearch }) => {
             <Link
               key={`${link.to}-${i}`}
               to={link.to}
+              state={link.to === "/" ? undefined : { showDepartments: true }}
               className={`nav-link ${link.to === "/" ? "active" : ""}`}
               onClick={() => setMobileMenuOpen(false)}
             >

@@ -10,6 +10,7 @@ import TechProductList from "./components/product/techProductList/techProductLis
 import ModaProductList from "./components/product/modaProductList/modaProductList";
 import BolsosProductList from "./components/product/bolsosProductList/bolsosProductList";
 import HogarProductList from "./components/product/hogarProductList/HogarProductList";
+import CategoryPage from "./components/product/CategoryPage";
 
 import ProductList from "./components/product/ProductList";
 import ProductDetail from "./components/product/ProductDetail";
@@ -47,10 +48,10 @@ const App = () => {
               <div className="App-content">
                 <Routes>
                   <Route path="/" element={<Home />} />
-                  <Route path="/moda" element={<ModaProductList />} />
-                  <Route path="/bolsos" element={<BolsosProductList />} />
-                  <Route path="/tecnologia" element={<TechProductList />} />
-                  <Route path="/hogar" element={<HogarProductList />} />
+                  <Route path="/moda" element={<CategoryPage><ModaProductList /></CategoryPage>} />
+                  <Route path="/bolsos" element={<CategoryPage><BolsosProductList /></CategoryPage>} />
+                  <Route path="/tecnologia" element={<CategoryPage><TechProductList /></CategoryPage>} />
+                  <Route path="/hogar" element={<CategoryPage><HogarProductList /></CategoryPage>} />
                   
                   <Route path="/products" element={<ProductList />} />
                   <Route path="/products/:category/:productId" element={<ProductDetail />} />

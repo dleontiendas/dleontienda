@@ -1,3 +1,4 @@
+import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/ModaProductList.jsx
 import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -366,11 +367,11 @@ export default function ModaProductList() {
       .filter(({ count }) => count > 0);
   }, [enriched]);
 
-  const [dep, setDep] = useState("");
-  const [subFilter, setSubFilter] = useState("");
-    const [openGroup, setOpenGroup] = useState(null); // ✅ AQUÍ
+  const [dep, setDep] = useCategoryHistoryState("dep", "");
+  const [subFilter, setSubFilter] = useCategoryHistoryState("subFilter", "");
+    const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null); // ✅ AQUÍ
 
-  const [sort, setSort] = useState("");
+  const [sort, setSort] = useCategoryHistoryState("sort", "");
 
   const subcatGroups = useMemo(() => {
     const base = enriched.filter((p) => !dep || p.depSlug === dep);

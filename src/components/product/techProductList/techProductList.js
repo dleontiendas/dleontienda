@@ -1,3 +1,4 @@
+import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/TechProductList.jsx
 import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -391,9 +392,9 @@ export default function TechProductList() {
       .map(([key, v]) => ({ key, label: v.label, count: v.count }));
   }, [enriched]);
 
-  const [dep, setDep] = useState("");
-  const [subFilter, setSubFilter] = useState("");
-  const [sort, setSort] = useState("");
+  const [dep, setDep] = useCategoryHistoryState("dep", "");
+  const [subFilter, setSubFilter] = useCategoryHistoryState("subFilter", "");
+  const [sort, setSort] = useCategoryHistoryState("sort", "");
 
   const subcatGroups = useMemo(() => {
     const base = enriched.filter((p) => !dep || p.depSlug === dep);

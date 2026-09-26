@@ -1,3 +1,4 @@
+import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/BolsosProductList.jsx
 import React, { useMemo, useState, useContext, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -411,10 +412,10 @@ export default function BolsosProductList() {
     }));
   }, [enriched]);
 
-  const [dep, setDep] = useState("");
-  const [subFilter, setSubFilter] = useState("");
-  const [openGroup, setOpenGroup] = useState(null);
-  const [sort, setSort] = useState("");
+  const [dep, setDep] = useCategoryHistoryState("dep", "");
+  const [subFilter, setSubFilter] = useCategoryHistoryState("subFilter", "");
+  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null);
+  const [sort, setSort] = useCategoryHistoryState("sort", "");
 
   const subcatGroups = useMemo(() => {
     const base = enriched.filter((p) => !dep || p.depSlug === dep);

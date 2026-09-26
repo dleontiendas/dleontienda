@@ -6,11 +6,11 @@ import { useLocation } from "react-router-dom";
 // una navegación tradicional de páginas). Este componente vive dentro
 // del Router y sube la ventana al top cada vez que cambia la ruta.
 export default function ScrollToTop() {
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (!state?.showDepartments) window.scrollTo(0, 0);
+  }, [pathname, state]);
 
   return null;
 }
