@@ -1,12 +1,13 @@
 # Catálogo y medición de D’LEON GOLD — implementación local
 
-No se ha publicado, desplegado, creado un catálogo externo ni contratado publicidad.
+La integración fue publicada con autorización el 27 de septiembre de 2026; ver `PUBLICACION-META.md`.
+No se ha creado un catálogo externo ni contratado publicidad.
 El seguimiento está desactivado por defecto. No basta con colocar el Pixel ID: también
 se necesitan las banderas de activación y una decisión explícita del futuro gestor de consentimiento.
 
 ## Feed
 
-- Ruta preparada: `https://dleongold.com/meta/catalog.xml`. NO está publicada todavía.
+- Ruta pública verificada: `https://dleongold.com/meta/catalog.xml`.
 - Función Firebase: `metaCatalog`, GET/HEAD, XML RSS con campos `g:` y UTF-8.
 - Lectura de `productos/{category}/items/{id}` mediante `collectionGroup('items')` filtrado por ruta.
 - Una entrada por color/talla, usando `variants[].tallas[]` (compatibilidad de lectura con `sizes`).
