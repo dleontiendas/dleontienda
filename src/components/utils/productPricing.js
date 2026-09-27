@@ -40,7 +40,7 @@ export const resolveProductCardPricing = (product) => {
           : []
     ))
     .filter((size) => size?.active !== false && Number(size?.stock) > 0)
-    .map((size) => positiveNumber(size?.price_cop))
+    .map((size) => positiveNumber(Object.prototype.hasOwnProperty.call(size, "price_cop") ? size.price_cop : product?.price_cop))
     .filter((price) => price !== null);
 
   if (availablePrices.length) {

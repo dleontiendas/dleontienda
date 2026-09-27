@@ -35,6 +35,13 @@
     ],
     "rewrites": [
       {
+        "source": "/meta/catalog.xml",
+        "function": {
+          "functionId": "metaCatalog",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "/share-image/**",
         "function": {
           "functionId": "productShareImage",

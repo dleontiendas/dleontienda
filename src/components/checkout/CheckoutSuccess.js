@@ -1,3 +1,4 @@
+import { trackPurchase } from "../../meta/pixel";
 // src/pages/CheckoutSuccess/CheckoutSuccess.js
 
 import React, {
@@ -66,6 +67,7 @@ export default function CheckoutSuccess() {
         ) {
           case "APPROVED":
           case "PAID":
+            trackPurchase(order);
             localStorage.removeItem(
               "lastOrderId"
             );

@@ -1,3 +1,4 @@
+import catalogContract from "../meta/catalogContract.cjs";
 import { db } from "../firebasebaseAdmin.js";
 
 const STOREFRONT_INDEX_URL = "https://dleongold-10de3.web.app/index.html";
@@ -76,17 +77,18 @@ const getProduct = async (category, productId) => {
     .collection("items")
     .doc(productId)
     .get();
-  if (direct.exists) return direct.data();
+  if (direct.exists) return { ...direct.data(), id: direct.id };
 
   const bySku = await db
     .collectionGroup("items")
     .where("sku", "==", productId)
     .limit(1)
     .get();
-  return bySku.empty ? null : bySku.docs[0].data();
+  return bySku.empty ? null : { ...bySku.docs[0].data(), id: bySku.docs[0].id };
 };
 
-const buildMetaTags = ({ title, description, image, url }) => `
+const buildMetaTags = ({ title, description, image, url, price }) => `
+    ${price ? `<meta property="product:price:amount" content="${price}" /><meta property="product:price:currency" content="COP" />` : ""}
     <title>${escapeHtml(title)} | D'LEON GOLD</title>
     <meta name="description" content="${escapeHtml(description)}" />
     <link rel="canonical" href="${escapeHtml(url)}" />
@@ -128,16 +130,19 @@ export async function productSharePreviewHandler(req, res) {
       return;
     }
 
+    const selected = req.query?.variant ? catalogContract.selectCatalogVariant(product, String(req.query.variant)) : null;
+    if (req.query?.variant && !selected) { res.status(404).send("Variante no encontrada"); return; }
     const title = plainText(product.name) || productId;
     const description =
       plainText(product.description) ||
       `${title} disponible en D'LEON GOLD.`;
-    const url = `${PUBLIC_ORIGIN}/products/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
+    const variantQuery = selected ? `?variant=${encodeURIComponent(String(req.query.variant))}` : "";
+    const url = `${PUBLIC_ORIGIN}/products/${encodeURIComponent(category)}/${encodeURIComponent(productId)}${variantQuery}`;
     const version = req.query?.v
       ? `?v=${encodeURIComponent(String(req.query.v))}`
       : "";
-    const image = `${PUBLIC_ORIGIN}/share-image/${encodeURIComponent(category)}/${encodeURIComponent(productId)}${version}`;
-    const metaTags = buildMetaTags({ title, description, image, url });
+    const image = `${PUBLIC_ORIGIN}/share-image/${encodeURIComponent(category)}/${encodeURIComponent(productId)}${variantQuery || version}${variantQuery && version ? "&" + version.slice(1) : ""}`;
+    const metaTags = buildMetaTags({ title, description, image, url, price: selected ? catalogContract.variantPrice(product, selected.size).price : null });
 
     res.set("Cache-Control", "no-cache, no-store, must-revalidate");
     res.status(200).type("html").send(injectMetaTags(html, metaTags));
@@ -163,7 +168,10 @@ export async function productShareImageHandler(req, res) {
       return;
     }
 
-    const upstreamUrl = firstProductImage(product, 400);
+    const selected = req.query?.variant ? catalogContract.selectCatalogVariant(product, String(req.query.variant)) : null;
+    if (req.query?.variant && !selected) { res.status(404).send("Variante no encontrada"); return; }
+    const source = selected ? { ...product, images: selected.variant.images?.length ? selected.variant.images : product.images } : product;
+    const upstreamUrl = firstProductImage(source, selected ? 1200 : 400);
     const upstream = await fetch(upstreamUrl);
     if (!upstream.ok) {
       throw new Error(`No se pudo cargar la imagen (${upstream.status})`);
@@ -173,7 +181,7 @@ export async function productShareImageHandler(req, res) {
     const imageBuffer = Buffer.from(await upstream.arrayBuffer());
     res.set("Content-Type", contentType);
     res.set("Content-Length", String(imageBuffer.length));
-    res.set("Cache-Control", "public, max-age=86400, s-maxage=604800, immutable");
+    res.set("Cache-Control", selected ? "public, max-age=300, s-maxage=300" : "public, max-age=86400, s-maxage=604800, immutable");
     res.status(200).send(imageBuffer);
   } catch (error) {
     console.error("Error sirviendo imagen para compartir", error);

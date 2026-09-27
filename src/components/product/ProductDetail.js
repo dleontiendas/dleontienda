@@ -1,6 +1,8 @@
+import { selectCatalogVariant } from "../../meta/catalogContract";
+import { newEventId, trackProduct } from "../../meta/pixel";
 // FILE: src/components/product/ProductDetail.jsx
-import React, { useState, useEffect, useContext, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useContext, useMemo, useRef } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { doc, getDoc, collectionGroup, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../Firebase";
@@ -71,6 +73,11 @@ const resolveFirstImageForColor = (product, color) => {
 export default function ProductDetail() {
   const { category, productId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const requestedVariant = new URLSearchParams(location.search).get("variant");
+  const viewVisit = useRef(null);
+  const loadedRoute = useRef(null);
+  if (!viewVisit.current) viewVisit.current = newEventId();
   const { addToCart } = useContext(CartContext);
 
   const [product, setProduct] = useState(null);
@@ -103,22 +110,24 @@ export default function ProductDetail() {
 
   useEffect(() => {
     let alive = true;
+    loadedRoute.current = null;
     (async () => {
       try {
         setLoading(true);
+        setError(null);
         let data = null;
 
         if (category && productId) {
           const ref = doc(db, "productos", category, "items", productId);
           const snap = await getDoc(ref);
-          if (snap.exists()) data = { id: snap.id, catSlug: category, ...snap.data() };
+          if (snap.exists()) data = { ...snap.data(), id: snap.id, catSlug: category };
         }
         if (!data && productId) {
           const q = query(collectionGroup(db, "items"), where("sku", "==", productId));
           const cg = await getDocs(q);
           if (!cg.empty) {
             const found = cg.docs[0];
-            data = { id: found.id, catSlug: found.ref.parent?.parent?.id || "sin_categoria", ...found.data() };
+            data = { ...found.data(), id: found.id, catSlug: found.ref.parent?.parent?.id || "sin_categoria" };
           }
         }
 
@@ -139,15 +148,18 @@ export default function ProductDetail() {
         setMainImage(fallbackArr[0]);
 
         const variants = getVariants(data);
-        const v =
+        const requested = requestedVariant ? selectCatalogVariant(data, requestedVariant) : null;
+        if (requestedVariant && !requested) { setError("Esta variante no está disponible. Abre el producto desde el catálogo para ver las opciones actuales."); return; }
+        const v = requested?.variant ||
           variants.find((vv) => getSizesArr(vv).some((s) => Number(s.stock) > 0)) ||
           variants[0];
 
         if (v) {
           setSelectedColor(v.color || "");
-          const s = firstAvailable(getSizesArr(v));
+          const s = requested?.size || firstAvailable(getSizesArr(v));
           if (s?.size) setSelectedSize(s.size);
         }
+        loadedRoute.current = `${category}|${productId}|${requestedVariant || ""}`;
       } catch (e) {
         console.error("❌ Error cargando producto:", e);
         setError("Error al cargar el producto");
@@ -159,7 +171,7 @@ export default function ProductDetail() {
     return () => {
       alive = false;
     };
-  }, [category, productId]);
+  }, [category, productId, requestedVariant]);
 
   const thumbItems = useMemo(() => {
     if (!product) return [];
@@ -194,7 +206,7 @@ export default function ProductDetail() {
       setMainImage(fallbacks[0]);
       setMainFallbackList(fallbacks);
     }
-  }, [selectedColor]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedColor, product]);
 
   const variants = useMemo(() => getVariants(product), [product]);
 
@@ -219,19 +231,23 @@ export default function ProductDetail() {
   const savingsPercent = pricing.percentage;
   const formatPrice = (value) => `$${Number(value).toLocaleString("es-CO")}`;
 
+  useEffect(() => {
+    if (!loading && !error && product && product.id === productId && loadedRoute.current === `${category}|${productId}|${requestedVariant || ""}`) trackProduct("ViewContent", product, selectedColor, selectedSize, 1, `view:${viewVisit.current}:${location.key}:${selectedColor}:${selectedSize}`);
+  }, [loading, error, product, productId, category, requestedVariant, selectedColor, selectedSize, location.key]);
+
   if (loading) return <p className="center">Cargando producto...</p>;
   if (error) return <p className="red-text center">{error}</p>;
   if (!product) return null;
 
   const handleAddToCart = () => {
-    if (!selectedColor || !selectedSize) return;
+    if (!selectedColor || !selectedSize || !(Number(pricing.selectedSize?.stock) > 0)) return;
     addToCart(product, 1, selectedSize, selectedColor);
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
 
   };
 
   const handleBuyNow = () => {
-    if (!selectedColor || !selectedSize) return;
+    if (!selectedColor || !selectedSize || !(Number(pricing.selectedSize?.stock) > 0)) return;
     addToCart(product, 1, selectedSize, selectedColor);
     navigate("/checkout");
   };
@@ -437,7 +453,7 @@ export default function ProductDetail() {
             <button
               className="btn-cta"
               onClick={handleAddToCart}
-              disabled={!selectedColor || !selectedSize}
+              disabled={!selectedColor || !selectedSize || !(Number(pricing.selectedSize?.stock) > 0)}
             >
               <ShoppingCart size={22} aria-hidden="true" /> AÑADIR AL CARRITO{/*} •{" "}
               {product.price_cop
@@ -450,7 +466,7 @@ export default function ProductDetail() {
              {/* <button
                 className="btn-secondary"
                 onClick={handleBuyNow}
-                disabled={!selectedColor || !selectedSize}
+                disabled={!selectedColor || !selectedSize || !(Number(pricing.selectedSize?.stock) > 0)}
               >
                 Comprar ahora
               </button>*/}

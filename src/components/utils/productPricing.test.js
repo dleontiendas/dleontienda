@@ -66,3 +66,8 @@ test('producto antiguo usa sus precios generales', () => {
   const legacy = { ...product, variants: [{ color: 'AZUL', tallas: [{ size: '30', stock: 2 }] }] };
   expect(resolveProductPricing(legacy, 'AZUL', '30')).toMatchObject({ price: 90000, oldPrice: 100000, hasDiscount: true });
 });
+
+
+test('incluye tallas que heredan el precio general junto a precios plus', () => {
+  expect(resolveProductCardPricing({ price_cop: 100000, variants: [{ tallas: [{ size: '10', stock: 1 }, { size: '42', stock: 1, price_cop: 130000 }] }] })).toMatchObject({ price: 100000, showFrom: true });
+});

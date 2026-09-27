@@ -1,3 +1,5 @@
+import catalogContract from "../meta/catalogContract.cjs";
+import { sanitizeTracking } from "../meta/conversionsDomain.js";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import admin, { db } from "../firebasebaseAdmin.js";
 import { changeItemStock, findSizeLocation, resolveItemPrice } from "./inventoryDomain.js";
@@ -59,6 +61,7 @@ export async function createOrderWithReservationHandler(request) {
           productPath: ref.path,
           skuMaster: String(size.sku_master || requested.skuMaster || "").trim(),
           name: current.name || "Producto",
+          metaCatalogId: catalogContract.catalogId({ ...current, id: snapshot.id }, current.variants[location.variantIndex], size),
           price: resolveItemPrice(current, requested),
           quantity,
           color: current.variants[location.variantIndex].color || requested.color || "",
@@ -70,6 +73,7 @@ export async function createOrderWithReservationHandler(request) {
       const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
       const shipping = Math.max(0, Number(data.shipping) || 0);
       transaction.set(orderRef, {
+        metaTracking: sanitizeTracking(data.metaTracking),
         customer: data.customer || {},
         shippingAddress: data.shippingAddress || {},
         items: orderItems,

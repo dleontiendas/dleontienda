@@ -1,4 +1,6 @@
-import React, { useContext, useEffect, useState } from "react";
+import { checkoutTracking, commerceData, trackMeta } from "../../meta/pixel";
+import { commerceItem } from "../../meta/catalogContract";
+import React, { useContext, useEffect, useState, useRef } from "react";
 
 import { useNavigate } from "react-router-dom";
 import M from "materialize-css";
@@ -27,6 +29,12 @@ const Checkout = () => {
   const { cart, clearCart, deliveryMethod } = useContext(CartContext);
 
   const navigate = useNavigate();
+  const checkoutTracked = useRef(false);
+  useEffect(() => {
+    if (checkoutTracked.current || !cart.length) return;
+    const data = commerceData(cart.map(item => commerceItem(item, item.selectedColor, item.selectedSize, item.quantity)));
+    if (data && trackMeta("InitiateCheckout", data)) checkoutTracked.current = true;
+  }, [cart]);
 
   const [loading, setLoading] = useState(false);
 
@@ -128,6 +136,7 @@ const Checkout = () => {
 
     try {
       const order = {
+        metaTracking: checkoutTracking(),
         customer,
 
         shippingAddress: shippingInfo,

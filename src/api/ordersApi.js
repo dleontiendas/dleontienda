@@ -6,7 +6,7 @@ import { functions } from "../Firebase";
 export async function createOrder(order) {
   const callable = httpsCallable(functions, "createOrderWithReservation");
   const response = await callable(order);
-  return { id: response.data.orderId };
+  return { id: response.data.orderId, accessToken: response.data.accessToken };
 }
 
 export async function updateOrderStatus(orderId, status) {

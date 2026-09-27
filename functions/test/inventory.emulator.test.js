@@ -74,6 +74,7 @@ test("importador crea, conserva con NO y actualiza con SÍ", async () => {
     name: "Pijama de prueba",
     category: "ROPA",
     images: [],
+    price_cop: 36000,
     variants: [{ color: "SONIC", images: [], tallas: [{
       size: "4", stock: 5, sku_master: "COOLKIDS-CKG0002-SONIC-4", update_inventory: false, source_row: 2,
     }] }],
@@ -108,7 +109,7 @@ test("Functions administrativas rechazan clientes y aceptan administradores", as
   );
   const managed = await manageProductHandler({
     auth: { uid: "admin-test", token: {} },
-    data: { action: "save", product: { sku: "ADMIN1", name: "Producto admin", category: "ROPA", variants: [] } },
+    data: { action: "save", product: { sku: "ADMIN1", name: "Producto admin", category: "ROPA", price_cop: 36000, variants: [] } },
   });
   assert.equal(managed.success, true);
   await assert.rejects(() => listOrdersHandler({ auth: { uid: "customer-test", token: {} }, data: {} }), /administrador/i);

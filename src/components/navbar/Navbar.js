@@ -1,3 +1,4 @@
+import { trackSearch } from "../../meta/pixel";
 // src/components/Navbar/Navbar.jsx
 import React, { useState, useContext, useMemo, useEffect, useRef, useId } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -134,11 +135,13 @@ const Navbar = ({ onSearch }) => {
       setHighlightIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       if (highlightIndex >= 0 && filtered[highlightIndex]) {
+        trackSearch(debouncedTerm, filtered);
         const prod = filtered[highlightIndex];
         navigate(`/products/${prod.catSlug || "sin_categoria"}/${prod.id}`);
         setOpen(false);
         setHighlightIndex(-1);
       } else if (debouncedTerm) {
+        trackSearch(debouncedTerm, filtered);
         // why: fallback, navega a página general si la tuvieras
         navigate(`/?q=${encodeURIComponent(debouncedTerm)}`);
         setOpen(false);
@@ -225,7 +228,7 @@ const Navbar = ({ onSearch }) => {
               type="button"
               className="navbar-search-btn"
               onClick={() => {
-                if (debouncedTerm) navigate(`/?q=${encodeURIComponent(debouncedTerm)}`);
+                if (debouncedTerm) { trackSearch(debouncedTerm, filtered); navigate(`/?q=${encodeURIComponent(debouncedTerm)}`); }
               }}
               aria-label="Buscar"
             >
@@ -251,6 +254,7 @@ const Navbar = ({ onSearch }) => {
                       className={`ac-item ${active ? "active" : ""}`}
                       onMouseEnter={() => setHighlightIndex(i)}
                       onClick={() => {
+                        trackSearch(debouncedTerm, filtered);
                         setOpen(false);
                         setHighlightIndex(-1);
                       }}

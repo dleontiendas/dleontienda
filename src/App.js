@@ -1,3 +1,4 @@
+import MetaPageView from "./meta/MetaPageView";
 // FILE: src/App.jsx
 import React from "react";
 import { Route, Routes } from "react-router-dom";
@@ -43,6 +44,7 @@ const App = () => {
           <ProductsProvider>
             <div className="App">
               <ScrollToTop />
+              <MetaPageView />
               <PromoBar />
               <Navbar />
               <div className="App-content">

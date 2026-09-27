@@ -1,3 +1,4 @@
+import { trackProduct } from "../meta/pixel";
 import React, {
   createContext,
   useEffect,
@@ -56,6 +57,7 @@ export const CartProvider = ({
 
     const pricing = resolveProductPricing(product, selectedColor, selectedSize);
     const pricedProduct = { ...product, price_cop: pricing.price, oldPrice: pricing.oldPrice };
+    trackProduct("AddToCart", product, selectedColor, selectedSize, safeQuantity);
 
     setCart((prevCart) => {
       const existing =

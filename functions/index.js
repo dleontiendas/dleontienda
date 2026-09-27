@@ -52,3 +52,6 @@ export const notifyNewSale = onDocumentWritten(
   },
   sendOrderNotification,
 );
+
+export { metaCatalog } from "./meta/feed.js";
+export { metaPurchase } from "./meta/conversions.js";

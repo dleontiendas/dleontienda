@@ -1,3 +1,4 @@
+import { purchaseData, trackingEnabled } from "../meta/conversionsDomain.js";
 import crypto from "node:crypto";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { db } from "../firebasebaseAdmin.js";
@@ -20,6 +21,7 @@ export async function getOrderStatusHandler(request) {
   if (!safeEqual(hash, order.accessTokenHash)) throw new HttpsError("permission-denied", "Token de orden inválido.");
   return {
     id: snapshot.id,
+    metaPurchase: trackingEnabled() ? purchaseData(snapshot.id, order) : null,
     status: order.status || "PENDING",
     paymentStatus: order.paymentStatus || "PENDING",
     inventoryStatus: order.inventoryStatus || null,
