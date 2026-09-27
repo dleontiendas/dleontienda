@@ -2,7 +2,7 @@ import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import admin, { db } from "../firebasebaseAdmin.js";
 import { conversionEvent, sendConversion, trackingEnabled } from "./conversionsDomain.js";
-const token = defineSecret("META_ACCESS_TOKEN");
+const token = trackingEnabled() ? defineSecret("META_ACCESS_TOKEN") : null;
 
 // A retry after an uncertain response reuses event_id. Meta deduplicates it.
 export async function deliverPurchase(orderId, { database = db, now = Date.now, send = sendConversion, config, enabled = trackingEnabled() } = {}) {
@@ -31,7 +31,7 @@ export async function deliverPurchase(orderId, { database = db, now = Date.now, 
   }
 }
 // A disabled deployment needs no Meta secret. Enabling CAPI requires a redeploy with the secret bound.
-export const metaPurchase = onDocumentWritten({ document: "orders/{orderId}", secrets: trackingEnabled() ? [token] : [], retry: true }, async event => {
+export const metaPurchase = onDocumentWritten({ document: "orders/{orderId}", secrets: token ? [token] : [], retry: true }, async event => {
   if (!trackingEnabled()) return;
   await deliverPurchase(event.params.orderId, { config: {
     pixelId: process.env.META_PIXEL_ID, token: token.value(), version: process.env.META_GRAPH_API_VERSION,
