@@ -3,7 +3,7 @@
 La integración fue publicada con autorización el 27 de septiembre de 2026; ver `PUBLICACION-META.md`.
 No se ha creado un catálogo externo ni contratado publicidad.
 El seguimiento está desactivado por defecto. No basta con colocar el Pixel ID: también
-se necesitan las banderas de activación y una decisión explícita del futuro gestor de consentimiento.
+se necesitan las banderas de activación y una decisión explícita del visitante en el gestor de consentimiento.
 
 ## Feed
 
@@ -51,6 +51,8 @@ Las vistas previas de Firebase también resuelven variante, precio e imagen. Las
   deliberadamente NO envía el texto libre, que puede contener datos personales.
 - `AddToCart`: acción de agregar, fuera del actualizador de estado de React. Importe = precio de talla × cantidad.
 - `InitiateCheckout`: entrada con carrito válido. Valor de los artículos, sin un envío todavía no confirmado.
+- `AddPaymentInfo`: se envía después de que Firebase valida inventario, variantes y precios y el comprador
+  confirma el método de pago. Usa `payment:<orderId>` y los datos comerciales recalculados por el servidor.
 - `Purchase`: respuesta autenticada del servidor con `metaPurchase`, nunca la URL de éxito por sí sola.
   Valor = total confirmado, incluido envío. Los contenidos usan los precios de los artículos del pedido.
 - Moneda COP, sin multiplicar por 100 para Meta. Cantidades, IDs, color y talla provienen del catálogo/pedido.
@@ -58,20 +60,23 @@ Las vistas previas de Firebase también resuelven variante, precio e imagen. Las
 - Inicialización asíncrona, auto-configuración de eventos desactivada y sin advanced matching de clientes.
   Un fallo de Meta no impide navegación, carrito ni pagos. El script solo se carga en `dleongold.com`, no localhost.
 
-## Consentimiento: bloqueo pendiente de resolver
+## Consentimiento implementado localmente
 
-No se añadió un banner ni se modificaron textos legales. `setMetaConsent(false)` es el estado inicial;
-la integración no lee cookies publicitarias, carga Pixel ni transmite eventos sin habilitación y consentimiento.
-El futuro gestor debe:
+`setMetaConsent(false)` continúa siendo el estado inicial. El banner ofrece aceptar, rechazar y personalizar
+marketing sin condicionar la compra; marketing no aparece preseleccionado. La elección conserva versión,
+fecha y origen en el navegador, se restaura en visitas posteriores y se sincroniza entre pestañas.
 
-1. Explicar proveedores/finalidades y ofrecer aceptar/rechazar marketing sin condicionar la compra.
-2. Registrar versión, fecha y elección; permitir retirarla y restaurar correctamente la decisión en cada visita.
-3. Llamar `setMetaConsent(true/false)` según esa decisión, limpiar cookies publicitarias al retirar si corresponde,
-   y coordinar también la retirada de atribución pendiente del servidor. La función actual revoca el permiso
-   de Pixel y elimina eventos de su cola aún no enviados; NO reemplaza un gestor completo.
-4. Revisar política de privacidad/cookies y tratamiento de `_fbp`/`_fbc`. Son identificadores publicitarios,
-   no datos anónimos. No se envían correo, teléfono, documento, dirección ni IP del cliente por CAPI.
-5. Probar rechazo, aceptación y retirada antes de cambiar las banderas. No activar solamente por tener un Pixel ID.
+La política de cookies explica las finalidades, los eventos y el tratamiento de `_fbp`/`_fbc`; la política de
+privacidad describe los datos usados para atribución. El pie de página permite retirar o cambiar la elección.
+Al retirar marketing se revoca Pixel, se eliminan sus cookies accesibles, se vacían eventos aún no enviados y
+se llama a `revokeOrderMetaConsent` con los tokens privados de pedidos pendientes. El servidor elimina la
+atribución guardada y cancela un envío CAPI que todavía no haya sido transmitido. Un evento ya enviado no puede
+recuperarse. Si se vuelve a aceptar, los pedidos nuevos vuelven a conservar atribución; un pedido antiguo
+revocado permanece sin seguimiento.
+
+Tras consentir, CAPI usa correo, teléfono e ID autenticado cuando existen: los normaliza y cifra con SHA-256.
+IP, agente de usuario, `_fbp` y `_fbc` se transmiten sin hash, según el contrato de Meta. Antes de publicar,
+revisar los textos legales y recorrer aceptación, rechazo y retirada en el entorno publicado de prueba.
 
 ## Conversions API y confirmación
 
@@ -80,16 +85,18 @@ inventario marca `metaPaymentVerified` y `metaConfirmedAt` solo tras una aprobac
 Wompi valida firma/importe/moneda, Addi autorización y monto, Sistecrédito consulta al proveedor.
 Los handlers antiguos de Firebase que solo cambian `status` NO habilitan compras para Meta.
 
-`metaPurchase` observa `orders/{orderId}`. Requiere consentimiento válido, pago aprobado,
-inventario `committed`, marca de verificación y artículos con identificadores/precios válidos.
-Si faltan `_fbp` y `_fbc`, no envía CAPI ni inventa datos de correspondencia.
-Los pedidos antiguos sin estos metadatos tampoco se envían retrospectivamente.
+El servicio central `render-backend/src/metaConversions.js` se invoca después de la confirmación verificada
+de Wompi, Addi o Sistecrédito. Requiere consentimiento válido, pago aprobado, inventario `committed`,
+marca de verificación y artículos con identificadores/precios válidos. Usa los mismos IDs y el mismo
+`purchase:<orderId>` que el navegador. No inventa `_fbp` ni `_fbc`; puede enviar otros datos de coincidencia
+válidos cuando estén disponibles. Los pedidos antiguos sin estos metadatos no se envían retrospectivamente.
 
 `metaConversionEvents/{orderId}` guarda estado, intentos, lease y fecha; su acceso público queda denegado
 por las reglas existentes. Transacción para concurrencia, reintento con event_id idéntico,
-timeout HTTP de 10 segundos y errores sanitizados. El envío ocurre DESPUÉS de confirmar la transacción
+timeout HTTP de 5 segundos y errores sanitizados. El envío ocurre DESPUÉS de confirmar la transacción
 de pago/inventario, y nunca modifica sus importes ni vuelve a descontar stock. Tras seis días se omite el envío tardío.
-El token solo se lee en servidor mediante Secret Manager. El entorno de emuladores bloquea envíos reales siempre.
+El token solo se lee en el entorno privado de Render. El entorno de pruebas usa un transporte simulado y no
+envía compras a Meta.
 
 Cambios aditivos de datos: `items[].metaCatalogId`, `orders.metaTracking` (null por defecto),
 `metaPaymentVerified`, `metaConfirmedAt` y colección privada `metaConversionEvents` cuando se active.
@@ -101,29 +108,29 @@ el `accessToken` devuelto por Firebase; su hash sigue siendo la credencial almac
 | Variable | Dónde colocarla en una futura activación |
 | --- | --- |
 | REACT_APP_META_PIXEL_ID | `.env.production.local` de la raíz o entorno de build |
-| REACT_APP_META_ENABLED | Mismo lugar; mantener `false` |
-| REACT_APP_META_CONSENT_READY | Mismo lugar; mantener `false` |
-| META_PIXEL_ID | `functions/.env.dleongold-10de3` o configuración de Functions |
-| META_ENABLED | Mismo lugar; mantener `false` |
-| META_CONSENT_READY | Mismo lugar; mantener `false` |
-| META_GRAPH_API_VERSION | Versión soportada confirmada en la aplicación de Meta al activar |
-| META_TEST_EVENT_CODE | Código de «Probar eventos», solo durante la prueba |
-| META_ACCESS_TOKEN | Secreto de Firebase Secret Manager enlazado exclusivamente a `metaPurchase` |
+| REACT_APP_META_ENABLED | Mismo lugar; `true` al publicar la integración después de revisar y validar el consentimiento |
+| META_PIXEL_ID | Entorno privado de Render |
+| META_CAPI_ACCESS_TOKEN | Secreto en el entorno privado de Render; nunca React, Git o respuestas API |
+| META_TEST_EVENT_CODE | Entorno privado de Render, solo durante «Probar eventos»; luego eliminar |
 
-Ejemplos sin credenciales: `.env.meta.example` y `functions/.env.meta.example`.
+Ejemplos sin credenciales: `.env.meta.example` y `render-backend/.env.example`.
 No se creó ningún secreto ni se cambió una configuración remota. No se necesita el token para el feed.
 
 ## Archivos de esta implementación
 
 Nuevos:
 - `src/meta/catalogContract.js`, `src/meta/pixel.js`, `src/meta/MetaPageView.js`, `src/meta/pixel.test.js`.
+- `src/consent/ConsentContext.js`, `src/consent/CookieConsent.js`, `src/consent/consentStorage.js`, estilos y pruebas.
+- `src/components/legales/Cookies.js` y `src/components/legales/Legal.css`.
 - `functions/meta/catalogContract.cjs` (copia portable comprobada por prueba de paridad), `catalog.js`, `feed.js`,
-  `conversionsDomain.js`, `conversions.js`, `catalog.test.js`, `conversions.test.js`, `integration.emulator.test.js`.
+  `conversionsDomain.js`, `catalog.test.js`, `conversions.test.js`, `integration.emulator.test.js`.
+- `render-backend/src/metaConversions.js` y `render-backend/test/metaConversions.test.js`.
 - `src/api/ordersApi.test.js`, `src/components/product/ProductDetail.meta.test.js`.
 - `scripts/meta-audit.mjs`, `scripts/test-meta-emulators.cjs`, los dos ejemplos de entorno y este documento.
 
 Modificados:
 - `src/App.js`, `src/api/ordersApi.js`, `src/context/CartContext.js`.
+- `src/components/footer/Footer.js`, `src/components/footer/Footer.css`, `src/components/legales/Privacidad.js`.
 - `src/App.test.js`, `functions/test/inventory.emulator.test.js` (actualización de pruebas heredadas).
 - `src/components/navbar/Navbar.js`, `src/components/product/ProductDetail.js`.
 - `src/components/checkout/Checkout.js`, `src/components/checkout/CheckoutSuccess.js`.
@@ -134,7 +141,8 @@ Modificados:
 
 Funciones principales: `buildCatalog`, `catalogXml`, `validateCatalogImages`, `metaCatalogHandler`, `catalogId`,
 `variantPrice`, `selectCatalogVariant`, `commerceItem`, `trackMeta`, `trackProduct`, `trackSearch`,
-`trackPurchase`, `sanitizeTracking`, `purchaseData`, `conversionEvent`, `sendConversion`, `deliverPurchase`.
+`trackPurchase`, `sanitizeTracking`, `purchaseData`, `buildPurchaseEvent`, `sendConversion`, `deliverPurchase`,
+`readConsent`, `saveConsent`, `clearMetaCookies` y `revokeOrderMetaConsentHandler`.
 
 ## Validación reproducible
 
@@ -151,7 +159,7 @@ Funciones principales: `buildCatalog`, `catalogXml`, `validateCatalogImages`, `m
 ## Pasos manuales futuros en Meta (NO realizados)
 
 Los nombres exactos de opciones pueden variar por cuenta, país y disponibilidad de Meta.
-Primero terminar consentimiento, revisión y autorización expresa de publicación; después:
+Primero revisar el consentimiento implementado y obtener autorización expresa de publicación; después:
 
 1. **Catálogo:** entrar a Commerce Manager con el negocio correcto; seleccionar un catálogo de comercio
    electrónico existente o crear uno para productos. Asignar propietario y permisos de la cuenta publicitaria.
@@ -163,7 +171,7 @@ Primero terminar consentimiento, revisión y autorización expresa de publicaci�
 4. **Pixel/dataset:** en Administrador de eventos seleccionar o crear el origen web; copiar su ID al entorno
    correspondiente. En la configuración de eventos del catálogo asociar ese mismo origen y asignar permisos.
 5. **Probar eventos:** usar la herramienta «Probar eventos» y, si procede, Pixel Helper. Aceptar consentimiento
-   y comprobar PageView, ViewContent, Search, AddToCart e InitiateCheckout con la talla de precio distinto.
+   y comprobar PageView, ViewContent, Search, AddToCart, InitiateCheckout y AddPaymentInfo con la talla de precio distinto.
    Rechazar/retirar consentimiento y comprobar ausencia de envíos. Localhost permanece bloqueado por diseño;
    esta prueba real requiere una activación y publicación autorizadas, no datos inventados en producción.
 6. **Purchase:** verificar un pago real confirmado o un entorno de integración de pruebas autorizado;

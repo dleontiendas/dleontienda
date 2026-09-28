@@ -12,7 +12,7 @@ import { importProducts } from "./products/importProducts.js";
 import { createOrderWithReservation } from "./orders/createOrder.js";
 import { expireInventoryReservations } from "./orders/expireReservations.js";
 import { updateOrderStatus } from "./orders/updateOrderStatus.js";
-import { getOrderStatus, listOrders } from "./orders/readOrders.js";
+import { getOrderStatus, listOrders, revokeOrderMetaConsent } from "./orders/readOrders.js";
 import { manageProduct } from "./products/manageProducts.js";
 import {
   productShareImageHandler,
@@ -42,6 +42,7 @@ export {
   expireInventoryReservations,
   updateOrderStatus,
   getOrderStatus,
+  revokeOrderMetaConsent,
   listOrders,
 };
 
@@ -54,4 +55,3 @@ export const notifyNewSale = onDocumentWritten(
 );
 
 export { metaCatalog } from "./meta/feed.js";
-export { metaPurchase } from "./meta/conversions.js";

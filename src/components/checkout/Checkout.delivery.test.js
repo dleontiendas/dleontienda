@@ -5,7 +5,15 @@ import Checkout from './Checkout';
 import Cart from '../cart/Cart';
 import { CartProvider } from '../../context/CartContext';
 import { createOrder } from '../../api/ordersApi';
+import { trackMeta } from '../../meta/pixel';
 jest.mock('../../api/ordersApi', () => ({ createOrder: jest.fn() }));
+jest.mock('../../consent/ConsentContext', () => ({ useCookieConsent: () => ({ marketing: false }) }));
+jest.mock('../../meta/pixel', () => ({
+  checkoutTracking: jest.fn(() => undefined),
+  commerceData: jest.fn(() => null),
+  newEventId: jest.fn(() => 'checkout-test'),
+  trackMeta: jest.fn(),
+}));
 jest.mock('../../services/paymentService', () => ({ startPayment: jest.fn() }));
 jest.mock('materialize-css', () => ({ AutoInit: jest.fn(), toast: jest.fn() }));
 jest.mock('react-router-dom', () => ({ useNavigate: () => jest.fn() }));
@@ -17,6 +25,27 @@ beforeEach(() => {
   localStorage.clear();
   localStorage.setItem('cart', JSON.stringify([{ id: 'TEST', name: 'Jeans', price_cop: 135000, quantity: 1 }]));
   createOrder.mockReset().mockResolvedValue({ id: 'SIMULADO', accessToken: 'local-test' });
+  trackMeta.mockReset();
+});
+
+test('AddPaymentInfo usa el event_id y los importes validados por el servidor', async () => {
+  createOrder.mockResolvedValue({
+    id: 'ORDEN-1',
+    accessToken: 'local-test',
+    metaPayment: {
+      eventId: 'payment:ORDEN-1',
+      data: { order_id: 'ORDEN-1', content_ids: ['v:PLUS-42'], contents: [{ id: 'v:PLUS-42', quantity: 1, item_price: 135000 }], value: 160000, currency: 'COP' },
+    },
+  });
+  render(<CartProvider><Checkout /></CartProvider>);
+  fireEvent.click(screen.getByText('Datos de prueba'));
+  fireEvent.click(screen.getByText('Pago de prueba'));
+  fireEvent.click(screen.getByRole('button', { name: 'Finalizar compra' }));
+  await waitFor(() => expect(trackMeta).toHaveBeenCalledWith(
+    'AddPaymentInfo',
+    expect.objectContaining({ content_ids: ['v:PLUS-42'], value: 160000 }),
+    'payment:ORDEN-1'
+  ));
 });
 test.each([['pickup', 0, '$135.000'], ['delivery', 25000, '$160.000']])('checkout respeta %s al crear el pedido', async (method, shipping, total) => {
   localStorage.setItem('cartDeliveryMethod', method);

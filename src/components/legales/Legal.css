@@ -1,0 +1,7 @@
+.legal-page { width: min(900px, calc(100% - 32px)); margin: 34px auto; color: #222; line-height: 1.65; }
+.legal-page h1 { font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 850; margin-bottom: 18px; }
+.legal-page h2 { font-size: 1.35rem; font-weight: 800; margin: 28px 0 8px; }
+.legal-page p { margin: 0 0 14px; }
+.legal-page code { background: #f5f1e4; padding: 2px 5px; border-radius: 4px; }
+.legal-action { border: 2px solid #bb930e; border-radius: 10px; background: #d4af37; color: #111; min-height: 44px; padding: 10px 16px; font-weight: 800; cursor: pointer; }
+.legal-action:focus-visible { outline: 3px solid #2374d8; outline-offset: 3px; }

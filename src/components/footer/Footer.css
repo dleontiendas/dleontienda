@@ -64,6 +64,17 @@
   text-decoration: none;
 }
 
+.footer-cookie-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .footer-muted {
   color: #777;
 }

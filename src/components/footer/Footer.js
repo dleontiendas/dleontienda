@@ -4,10 +4,12 @@ import { Link } from "react-router-dom";
 import { Instagram, Facebook } from "lucide-react";
 import { FaTiktok, FaWhatsapp } from "react-icons/fa";
 import "./Footer.css"; // estilos externos
+import { useCookieConsent } from "../../consent/ConsentContext";
 
 const year = new Date().getFullYear();
 
 export default function Footer() {
+  const consent = useCookieConsent();
   return (
     <footer className="footer-wrap">
       <div className="footer-container">
@@ -86,8 +88,13 @@ export default function Footer() {
             </li>
             <li>
               <Link to="/cookies" className="footer-link">
-                Cookies
+                Política de cookies
               </Link>
+            </li>
+            <li>
+              <button type="button" className="footer-cookie-button" onClick={consent.openPreferences}>
+                Cambiar preferencias de cookies
+              </button>
             </li>
             <li>
               <Link to="/aviso-legal" className="footer-link">

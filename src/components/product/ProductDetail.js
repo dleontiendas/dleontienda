@@ -13,6 +13,7 @@ import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
 import { Tag, Share2, Ruler, ShoppingCart, Truck, ShieldCheck, RefreshCw, Store, MessageCircle, ChevronRight } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { resolveProductPricing } from "../utils/productPricing";
+import { useCookieConsent } from "../../consent/ConsentContext";
 
 const env = (_vite, cra) =>
   (typeof process !== "undefined" && process.env && process.env[cra]) || "";
@@ -71,6 +72,7 @@ const resolveFirstImageForColor = (product, color) => {
 };
 
 export default function ProductDetail() {
+  const { marketing } = useCookieConsent();
   const { category, productId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -233,7 +235,7 @@ export default function ProductDetail() {
 
   useEffect(() => {
     if (!loading && !error && product && product.id === productId && loadedRoute.current === `${category}|${productId}|${requestedVariant || ""}`) trackProduct("ViewContent", product, selectedColor, selectedSize, 1, `view:${viewVisit.current}:${location.key}:${selectedColor}:${selectedSize}`);
-  }, [loading, error, product, productId, category, requestedVariant, selectedColor, selectedSize, location.key]);
+  }, [loading, error, product, productId, category, requestedVariant, selectedColor, selectedSize, location.key, marketing]);
 
   if (loading) return <p className="center">Cargando producto...</p>;
   if (error) return <p className="red-text center">{error}</p>;

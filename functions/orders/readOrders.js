@@ -1,4 +1,4 @@
-import { purchaseData, trackingEnabled } from "../meta/conversionsDomain.js";
+import { purchaseData } from "../meta/conversionsDomain.js";
 import crypto from "node:crypto";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { db } from "../firebasebaseAdmin.js";
@@ -21,13 +21,36 @@ export async function getOrderStatusHandler(request) {
   if (!safeEqual(hash, order.accessTokenHash)) throw new HttpsError("permission-denied", "Token de orden inválido.");
   return {
     id: snapshot.id,
-    metaPurchase: trackingEnabled() ? purchaseData(snapshot.id, order) : null,
+    // Safe commercial data only. The browser still enforces its own consent and enable flag.
+    metaPurchase: purchaseData(snapshot.id, order),
     status: order.status || "PENDING",
     paymentStatus: order.paymentStatus || "PENDING",
     inventoryStatus: order.inventoryStatus || null,
     paymentProvider: order.paymentProvider || null,
     total: Number(order.total || 0),
   };
+}
+
+export async function revokeOrderMetaConsentHandler(request) {
+  const orderId = String(request.data?.orderId || "").trim();
+  const accessToken = String(request.data?.accessToken || "").trim();
+  if (!orderId || !accessToken) throw new HttpsError("invalid-argument", "Faltan la orden o su token de acceso.");
+  const orderRef = db.collection("orders").doc(orderId);
+  const deliveryRef = db.collection("metaConversionEvents").doc(orderId);
+  return db.runTransaction(async transaction => {
+    const [orderSnapshot, deliverySnapshot] = await Promise.all([transaction.get(orderRef), transaction.get(deliveryRef)]);
+    if (!orderSnapshot.exists) throw new HttpsError("not-found", "La orden no existe.");
+    const order = orderSnapshot.data();
+    const hash = crypto.createHash("sha256").update(accessToken).digest("hex");
+    if (!safeEqual(hash, order.accessTokenHash)) throw new HttpsError("permission-denied", "Token de orden inválido.");
+    transaction.set(orderRef, {
+      metaTracking: null,
+      metaConsentRevokedAt: new Date(),
+    }, { merge: true });
+    const alreadySent = deliverySnapshot.exists && deliverySnapshot.data()?.status === "sent";
+    if (!alreadySent) transaction.set(deliveryRef, { status: "cancelled", leaseUntil: 0 }, { merge: true });
+    return { success: true, alreadySent };
+  });
 }
 
 export async function listOrdersHandler(request) {
@@ -48,4 +71,5 @@ export async function listOrdersHandler(request) {
 }
 
 export const getOrderStatus = onCall({ cors: true }, getOrderStatusHandler);
+export const revokeOrderMetaConsent = onCall({ cors: true }, revokeOrderMetaConsentHandler);
 export const listOrders = onCall({ cors: true }, listOrdersHandler);

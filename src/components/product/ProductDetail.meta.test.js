@@ -6,6 +6,7 @@ import { getDoc } from "firebase/firestore";
 import ProductDetail from "./ProductDetail";
 import { CartContext } from "../../context/CartContext";
 jest.mock("../../Firebase", () => ({ db: {} }));
+jest.mock("../../consent/ConsentContext", () => ({ useCookieConsent: () => ({ marketing: false }) }));
 jest.mock("firebase/firestore", () => ({ doc: jest.fn(), getDoc: jest.fn(), collectionGroup: jest.fn(), getDocs: jest.fn(), query: jest.fn(), where: jest.fn() }));
 jest.mock("./carrousel/RandomProductsCarousel", () => () => null);
 const product = { sku: "JEAN", name: "Jean de prueba", price_cop: 100000, images: ["https://dleongold.com/jean.jpg"], variants: [{ color: "AZUL", tallas: [{ size: "10", stock: 1, sku_master: "REG" }, { size: "42", stock: 2, price_cop: 130000, sku_master: "PLUS" }] }] };

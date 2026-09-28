@@ -1,40 +1,46 @@
+import { Link } from "react-router-dom";
+import "./Legal.css";
+
 export default function Privacidad() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6">Política de Privacidad</h1>
-
-      <p className="mb-4">
-        Esta política describe cómo recopilamos, usamos y protegemos tus datos
-        personales conforme a la normativa vigente.
+    <main className="legal-page">
+      <h1>Política de privacidad</h1>
+      <p><strong>Última actualización:</strong> 27 de septiembre de 2026.</p>
+      <p>
+        Esta política explica cómo D’LEON GOLD trata la información necesaria para atender consultas,
+        procesar pedidos, gestionar pagos y, cuando existe una autorización separada, medir publicidad.
       </p>
-
-      <h2 className="text-xl font-semibold mt-6 mb-2">1. Datos que
-      recopilamos</h2>
-      <p className="mb-4">
-        Recopilamos información como nombre, correo, teléfono, dirección,
-        historial de compras, cookies y datos de navegación.
+      <h2>Datos tratados</h2>
+      <p>
+        Según la función utilizada podemos tratar nombre, correo, teléfono, documento solicitado por la
+        pasarela, dirección de entrega, productos comprados, importe, estado del pedido y datos técnicos
+        básicos de conexión. No enviamos a Meta direcciones, documentos ni datos de pago.
       </p>
-
-      <h2 className="text-xl font-semibold mt-6 mb-2">2. Uso de la
-      información</h2>
-      <ul className="list-disc ml-6 mb-4">
-        <li>Procesar pedidos</li>
-        <li>Mejorar la experiencia del usuario</li>
-        <li>Enviar notificaciones y ofertas</li>
-        <li>Cumplir obligaciones legales</li>
+      <h2>Finalidades</h2>
+      <ul>
+        <li>Validar inventario, preparar y entregar pedidos.</li>
+        <li>Iniciar pagos y comprobar su aprobación con la pasarela seleccionada.</li>
+        <li>Atender solicitudes, garantías y obligaciones comerciales.</li>
+        <li>Con autorización de marketing, medir anuncios mediante Meta Pixel y Conversions API.</li>
       </ul>
-
-      <h2 className="text-xl font-semibold mt-6 mb-2">3. Seguridad</h2>
-      <p className="mb-4">
-        Tus datos son almacenados bajo estrictas medidas de seguridad técnicas y
-        administrativas.
+      <h2>Marketing y destinatarios</h2>
+      <p>
+        Cuando aceptas marketing, los eventos pueden incluir IDs de catálogo, importes, cookies de atribución,
+        IP, agente de usuario y correo o teléfono normalizados y cifrados. Meta Platforms actúa como proveedor
+        de medición publicitaria. Consulta los detalles y cambia tu elección en la <Link to="/cookies">política de cookies</Link>.
       </p>
-
-      <h2 className="text-xl font-semibold mt-6 mb-2">4. Derechos del usuario</h2>
-      <p className="mb-4">
-        Puedes modificar, eliminar u oponerte al uso de tus datos en cualquier
-        momento.
+      <h2>Derechos y contacto</h2>
+      <p>
+        Puedes solicitar información, actualización, corrección o supresión cuando corresponda, y retirar
+        el consentimiento de marketing desde “Cambiar preferencias de cookies”. Para otras solicitudes escribe
+        a dleongold@dleongold.com.
       </p>
-    </div>
+      <h2>Seguridad y conservación</h2>
+      <p>
+        Aplicamos controles de acceso y evitamos exponer tokens de pago o credenciales publicitarias al
+        navegador. Conservamos la información durante el tiempo necesario para las finalidades indicadas y
+        las obligaciones aplicables.
+      </p>
+    </main>
   );
 }

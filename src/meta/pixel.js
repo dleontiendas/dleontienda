@@ -1,8 +1,9 @@
 import { commerceItem } from "./catalogContract";
+import { readConsent } from "../consent/consentStorage";
 
 let consent = false;
 const sent = new Set();
-const permittedNames = new Set(["PageView", "ViewContent", "Search", "AddToCart", "InitiateCheckout", "Purchase"]);
+const permittedNames = new Set(["PageView", "ViewContent", "Search", "AddToCart", "InitiateCheckout", "AddPaymentInfo", "Purchase"]);
 // No UI or implicit consent: the future consent manager must call this explicitly.
 export function setMetaConsent(allowed) {
   consent = allowed === true;
@@ -13,7 +14,6 @@ export function setMetaConsent(allowed) {
 }
 export function metaAllowed() {
   return consent && process.env.REACT_APP_META_ENABLED === "true"
-    && process.env.REACT_APP_META_CONSENT_READY === "true"
     && /^\d+$/.test(process.env.REACT_APP_META_PIXEL_ID || "")
     && typeof window !== "undefined" && window.location.hostname === "dleongold.com";
 }
@@ -47,7 +47,7 @@ export function trackMeta(name, data = {}, eventId = newEventId()) {
     if (!initialize()) return false;
     // Explicit allowlist. Never forward forms, arbitrary URLs, tokens or customer data.
     const clean = { currency: "COP" };
-    for (const field of ["content_ids", "content_name", "content_type", "contents", "value", "num_items", "search_string"]) {
+    for (const field of ["content_ids", "content_name", "content_type", "contents", "value", "num_items", "search_string", "order_id", "payment_method"]) {
       if (data[field] !== undefined) clean[field] = data[field];
     }
     window.fbq("trackSingle", process.env.REACT_APP_META_PIXEL_ID, name, clean, { eventID: eventId });
@@ -79,7 +79,16 @@ export function trackSearch(term, products) {
 export function checkoutTracking() {
   if (!metaAllowed()) return undefined;
   const read = name => document.cookie.split("; ").find(v => v.startsWith(`${name}=`))?.slice(name.length + 1);
-  return { consent: true, policyVersion: "meta-v1", fbp: read("_fbp") || null, fbc: read("_fbc") || null };
+  const record = readConsent();
+  if (!record?.marketing) return undefined;
+  return {
+    consent: true,
+    policyVersion: "meta-v1",
+    consentVersion: record.version,
+    consentAt: record.decidedAt,
+    fbp: read("_fbp") || null,
+    fbc: read("_fbc") || null,
+  };
 }
 export function trackPurchase(order) {
   if (!order?.metaPurchase) return false;

@@ -29,19 +29,23 @@ import Login from "./components/login/Login";
 import Register from "./components/register/Register";
 import PromoBar from "./components/PromoBar";
 import Terminos from "./components/legales/Terminos";
-import Privacidad from "./components/legales//Privacidad";
+import Privacidad from "./components/legales/Privacidad";
 import Garantias from "./components/legales/Garantias";
 import Envios from "./components/legales/Envios";
 import AvisoLegal from "./components/legales/AvisoLegal";
+import Cookies from "./components/legales/Cookies";
+import { ConsentProvider } from "./consent/ConsentContext";
+import CookieConsent from "./consent/CookieConsent";
 
 import "./App.css";
 
 const App = () => {
   return (
     <HelmetProvider>
-      <AuthProvider>
-        <CartProvider>
-          <ProductsProvider>
+      <ConsentProvider>
+        <AuthProvider>
+          <CartProvider>
+            <ProductsProvider>
             <div className="App">
               <ScrollToTop />
               <MetaPageView />
@@ -68,9 +72,7 @@ const App = () => {
                   <Route path="/garantias" element={<Garantias />} />
                   <Route path="/envios" element={<Envios />} />
                   <Route path="/aviso-legal" element={<AvisoLegal />} />
-                  {/* TODO: crear el componente real de Cookies; usando Privacidad como
-                      placeholder temporal para que el link del footer no rompa */}
-                  <Route path="/cookies" element={<Privacidad />} />
+                  <Route path="/cookies" element={<Cookies />} />
                   <Route path="/checkout/success" element={<CheckoutSuccess />} />
 
                   <Route
@@ -84,10 +86,12 @@ const App = () => {
                 </Routes>
               </div>
               <Footer />
+              <CookieConsent />
             </div>
-          </ProductsProvider>
-        </CartProvider>
-      </AuthProvider>
+            </ProductsProvider>
+          </CartProvider>
+        </AuthProvider>
+      </ConsentProvider>
     </HelmetProvider>
   );
 };

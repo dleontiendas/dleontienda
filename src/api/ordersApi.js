@@ -6,7 +6,7 @@ import { functions } from "../Firebase";
 export async function createOrder(order) {
   const callable = httpsCallable(functions, "createOrderWithReservation");
   const response = await callable(order);
-  return { id: response.data.orderId, accessToken: response.data.accessToken };
+  return { id: response.data.orderId, accessToken: response.data.accessToken, metaPayment: response.data.metaPayment || null };
 }
 
 export async function updateOrderStatus(orderId, status) {
@@ -17,6 +17,12 @@ export async function updateOrderStatus(orderId, status) {
 
 export async function getOrderStatus(orderId, accessToken) {
   const callable = httpsCallable(functions, "getOrderStatus");
+  const response = await callable({ orderId, accessToken });
+  return response.data;
+}
+
+export async function revokeOrderMetaConsent(orderId, accessToken) {
+  const callable = httpsCallable(functions, "revokeOrderMetaConsent");
   const response = await callable({ orderId, accessToken });
   return response.data;
 }

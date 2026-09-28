@@ -1,4 +1,4 @@
-import { checkoutTracking, commerceData, trackMeta } from "../../meta/pixel";
+import { checkoutTracking, commerceData, newEventId, trackMeta } from "../../meta/pixel";
 import { commerceItem } from "../../meta/catalogContract";
 import React, { useContext, useEffect, useState, useRef } from "react";
 
@@ -24,17 +24,21 @@ import {
 import { getEmailProductImage } from "../utils/productImage";
 import { getDeliveryCost, STORE_PICKUP_ADDRESS } from "../cart/delivery";
 import "./Checkout.css";
+import { useCookieConsent } from "../../consent/ConsentContext";
 
 const Checkout = () => {
   const { cart, clearCart, deliveryMethod } = useContext(CartContext);
+  const { marketing } = useCookieConsent();
 
   const navigate = useNavigate();
   const checkoutTracked = useRef(false);
+  const checkoutEventId = useRef(null);
   useEffect(() => {
     if (checkoutTracked.current || !cart.length) return;
     const data = commerceData(cart.map(item => commerceItem(item, item.selectedColor, item.selectedSize, item.quantity)));
-    if (data && trackMeta("InitiateCheckout", data)) checkoutTracked.current = true;
-  }, [cart]);
+    checkoutEventId.current ||= `checkout:${newEventId()}`;
+    if (data && trackMeta("InitiateCheckout", data, checkoutEventId.current)) checkoutTracked.current = true;
+  }, [cart, marketing]);
 
   const [loading, setLoading] = useState(false);
 
@@ -175,6 +179,10 @@ const Checkout = () => {
       localStorage.setItem(`orderAccessToken:${orderId}`, createdOrder.accessToken);
       localStorage.setItem("lastOrderId", orderId);
 
+      if (createdOrder.metaPayment?.data) {
+        trackMeta("AddPaymentInfo", createdOrder.metaPayment.data, createdOrder.metaPayment.eventId);
+      }
+
       if (paymentMethod === "contraentrega") {
         clearCart();
 
@@ -187,6 +195,7 @@ const Checkout = () => {
 
       const paymentResponse = await startPayment(provider, {
         orderId,
+        metaConsent: Boolean(checkoutTracking()),
 
         customer,
 
