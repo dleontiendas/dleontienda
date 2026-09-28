@@ -53,6 +53,11 @@ test("sensitive query strings and local environments never track", () => {
   window.location.search = "?q=person@example.com"; expect(trackMeta("Search")).toBe(false);
   window.location.search = ""; window.location.hostname = "localhost"; expect(trackMeta("PageView")).toBe(false);
 });
+test("safe Moda campaign parameters keep PageView enabled", () => {
+  process.env.REACT_APP_META_ENABLED = "true"; setMetaConsent(true); window.fbq = jest.fn();
+  window.location.search = "?departamento=mujer&categoria=jeans&subcategoria=jeans-skinny-destroyer";
+  expect(trackMeta("PageView", {}, "campaign-moda")).toBe(true);
+});
 test("StrictMode does not duplicate PageView, but returning in history is a new visit", () => {
   process.env.REACT_APP_META_ENABLED = "true"; setMetaConsent(true); window.fbq = jest.fn();
   function Navigation() { const navigate = useNavigate(); return <><MetaPageView /><Link to="/bolsos">Bolsos</Link><button onClick={() => navigate(-1)}>Volver</button></>; }

@@ -1,11 +1,18 @@
 import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/ModaProductList.jsx
-import React, { useMemo, useState, useContext, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState, useContext, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
 import { resolveProductCardPricing } from "../../utils/productPricing";
 import "../ProductList.css";
 import { getModaDepartmentGroup, MODA_DEPARTMENT_GROUPS } from "./modaDepartment";
+import {
+  buildModaSearchParams,
+  matchesModaFilters,
+  modaCategoryFromSubcategory,
+  readModaFilters,
+  toModaFilterSlug,
+} from "./modaFilters";
 
 /* ---------- Helpers ---------- */
 const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
@@ -367,9 +374,21 @@ export default function ModaProductList() {
       .filter(({ count }) => count > 0);
   }, [enriched]);
 
-  const [dep, setDep] = useCategoryHistoryState("dep", "");
-  const [subFilter, setSubFilter] = useCategoryHistoryState("subFilter", "");
-    const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null); // ✅ AQUÍ
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
+  const { department: dep, category: categoryFilter, subcategory: subFilter } = useMemo(
+    () => readModaFilters(new URLSearchParams(searchKey), MODA_DEPARTMENT_GROUPS.map(({ key }) => key)),
+    [searchKey]
+  );
+  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", dep || null);
+
+  useEffect(() => {
+    if (dep) setOpenGroup(dep);
+  }, [dep, setOpenGroup]);
+
+  const updateFilters = (next) => {
+    setSearchParams(buildModaSearchParams(next));
+  };
 
   const [sort, setSort] = useCategoryHistoryState("sort", "");
 
@@ -394,13 +413,13 @@ export default function ModaProductList() {
 
   const filtered = useMemo(() => {
     return enriched.filter((p) => {
-      const okDep = !dep || p.depSlug === dep;
-      const okSub =
-        !subFilter ||
-        (p.subcategory || "").toLowerCase() === subFilter.toLowerCase();
-      return okDep && okSub;
+      return matchesModaFilters(p, {
+        department: dep,
+        category: categoryFilter,
+        subcategory: subFilter,
+      });
     });
-  }, [enriched, dep, subFilter]);
+  }, [enriched, dep, categoryFilter, subFilter]);
 
   const sorted = useMemo(() => {
     if (!sort) return filtered;
@@ -435,8 +454,7 @@ export default function ModaProductList() {
         <button
           className={`gender-chip ${dep === "" ? "gender-chip--active" : ""}`}
           onClick={() => {
-            setDep("");
-            setSubFilter("");
+            updateFilters({});
             setOpenGroup(null);
           }}
         >
@@ -450,8 +468,7 @@ export default function ModaProductList() {
               dep === key ? "gender-chip--active" : ""
             }`}
             onClick={() => {
-              setDep(key);
-              setSubFilter("");
+              updateFilters({ department: key });
               setOpenGroup(key);
             }}
           >
@@ -523,13 +540,27 @@ export default function ModaProductList() {
 
           <div className="subcat-chips">
             {g.subcats.slice(0, 12).map((s) => {
-              const active = subFilter === s;
+              const subcategorySlug = toModaFilterSlug(s);
+              const categorySlug = modaCategoryFromSubcategory(s);
+              const active = subFilter
+                ? subFilter === subcategorySlug
+                : categoryFilter === categorySlug && subcategorySlug === categorySlug;
               return (
                 <button
                   key={s}
                   type="button"
                   className={`subcat-chip ${active ? "active" : ""}`}
-                  onClick={() => setSubFilter(active ? "" : s)}
+                  onClick={() =>
+                    updateFilters(
+                      active
+                        ? { department: dep }
+                        : {
+                            department: dep || g.key,
+                            category: categorySlug,
+                            subcategory: subcategorySlug,
+                          }
+                    )
+                  }
                   aria-pressed={active}
                 >
                   {s}

@@ -20,7 +20,10 @@ export function metaAllowed() {
 function publicPage() {
   if (/^\/(?:dashboard|login|register)(?:\/|$)/.test(window.location.pathname)) return false;
   const params = new URLSearchParams(window.location.search);
-  return [...params].every(([key, value]) => ["variant", "ref", "v"].includes(key) && /^[A-Za-z0-9:_%_.!~*'() -]{1,200}$/.test(value));
+  return [...params].every(([key, value]) =>
+    ["variant", "ref", "v", "departamento", "categoria", "subcategoria"].includes(key) &&
+    /^[A-Za-z0-9:_%_.!~*'() -]{1,200}$/.test(value)
+  );
 }
 function initialize() {
   if (!metaAllowed()) return false;

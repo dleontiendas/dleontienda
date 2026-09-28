@@ -1,6 +1,6 @@
 import React from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { Link, MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useCategoryHistoryState } from "./categoryHistory";
 import CategoryPage from "./CategoryPage";
 import Navbar from "../navbar/Navbar";
@@ -21,11 +21,15 @@ function Product() {
   return <button onClick={() => navigate(-1)}>Atrás</button>;
 }
 
-function App({ loading = false }) {
+function CurrentSearch() {
+  return <output data-testid="category-search">{useLocation().search}</output>;
+}
+
+function App({ loading = false, initialEntries = ["/moda"] }) {
   return <ProductsContext.Provider value={{ products: [], loading }}>
     <CartContext.Provider value={{ cart: [], subtotal: 0 }}>
-      <MemoryRouter initialEntries={["/moda"]}>
-        <ScrollToTop /><Navbar />
+      <MemoryRouter initialEntries={initialEntries}>
+        <ScrollToTop /><Navbar /><CurrentSearch />
         <Routes>{["moda", "bolsos", "tecnologia", "hogar"].map(path =>
           <Route key={path} path={`/${path}`} element={<CategoryPage><Departments /></CategoryPage>} />
         )}<Route path="/products/ropa/jeans" element={<Product />} /></Routes>
@@ -84,4 +88,13 @@ test("waits for products before scrolling to departments", () => {
   rerender(<App />);
   act(() => { jest.advanceTimersByTime(20); });
   expect(window.scrollTo).toHaveBeenCalledTimes(1);
+});
+
+test("clicking the active main category clears its query filters and shows departments", () => {
+  render(<App initialEntries={["/moda?departamento=mujer&categoria=jeans"]} />);
+  window.scrollTo.mockClear();
+  fireEvent.click(screen.getByRole("link", { name: "Moda" }));
+  act(() => { jest.advanceTimersByTime(20); });
+  expect(screen.getByTestId("category-search")).toHaveTextContent("");
+  expect(window.scrollTo).toHaveBeenCalledWith({ top: expect.any(Number), behavior: "smooth" });
 });
