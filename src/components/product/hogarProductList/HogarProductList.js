@@ -1,8 +1,16 @@
 import { useCategoryHistoryState } from "../categoryHistory";
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
 import { ProductCard } from "../modaProductList/modaProductList";
 import "../ProductList.css";
+import {
+  buildCategorySearchParams,
+  categoryFromSubcategory,
+  matchesCategoryFilters,
+  readCategoryFilters,
+  toCategoryFilterSlug,
+} from "../categoryUrlFilters";
 
 const normalize = (value = "") =>
   String(value).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -33,15 +41,28 @@ const getPrice = (product) => {
 
 export default function HogarProductList() {
   const { products, loading, error } = useContext(ProductsContext);
-  const [group, setGroup] = useCategoryHistoryState("group", "");
-  const [subcategory, setSubcategory] = useCategoryHistoryState("subcategory", "");
-  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
+  const { department: group, category: categoryFilter, subcategory } = useMemo(
+    () => readCategoryFilters(new URLSearchParams(searchKey), HOME_GROUPS.map(({ key }) => key)),
+    [searchKey]
+  );
+  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", group || null);
   const [sort, setSort] = useCategoryHistoryState("sort", "");
+
+  useEffect(() => {
+    if (group) setOpenGroup(group);
+  }, [group, setOpenGroup]);
+
+  const updateFilters = (next) => setSearchParams(buildCategorySearchParams(next));
 
   const homeProducts = useMemo(() => (products || []).filter((product) => {
     const category = normalize(`${product?.category || ""} ${product?.catSlug || ""}`);
     return category.includes("hogar") || category.includes("home");
-  }).map((product) => ({ ...product, homeGroup: getGroup(product) })), [products]);
+  }).map((product) => {
+    const homeGroup = getGroup(product);
+    return { ...product, homeGroup, depSlug: homeGroup };
+  }), [products]);
 
   const counts = useMemo(() => homeProducts.reduce((result, product) => {
     result[product.homeGroup] = (result[product.homeGroup] || 0) + 1;
@@ -59,11 +80,11 @@ export default function HogarProductList() {
     );
   }, [homeProducts]);
 
-  const filtered = useMemo(() => homeProducts.filter((product) => {
-    const matchesGroup = !group || product.homeGroup === group;
-    const matchesSubcategory = !subcategory || normalize(product.subcategory) === normalize(subcategory);
-    return matchesGroup && matchesSubcategory;
-  }), [homeProducts, group, subcategory]);
+  const filtered = useMemo(() => homeProducts.filter((product) => matchesCategoryFilters(product, {
+    department: group,
+    category: categoryFilter,
+    subcategory,
+  })), [homeProducts, group, categoryFilter, subcategory]);
 
   const sorted = useMemo(() => {
     const result = [...filtered];
@@ -81,11 +102,11 @@ export default function HogarProductList() {
     <div className="container product-list-container">
       <h4 className="left-align product-list-title">Hogar</h4>
       <div className="gender-filters" aria-label="Secciones de Hogar">
-        <button className={`gender-chip ${!group ? "gender-chip--active" : ""}`} onClick={() => { setGroup(""); setSubcategory(""); }}>
+        <button className={`gender-chip ${!group ? "gender-chip--active" : ""}`} onClick={() => { updateFilters({}); setOpenGroup(null); }}>
           Todos <span className="count">({homeProducts.length})</span>
         </button>
         {HOME_GROUPS.map((item) => (
-          <button key={item.key} className={`gender-chip gender-chip--image ${group === item.key ? "gender-chip--active" : ""}`} onClick={() => { setGroup(item.key); setSubcategory(""); }}>
+          <button key={item.key} className={`gender-chip gender-chip--image ${group === item.key ? "gender-chip--active" : ""}`} onClick={() => { updateFilters({ department: item.key }); setOpenGroup(item.key); }}>
             <img src={item.image} alt={item.label} loading="lazy" />
             <span className="gender-chip-label">{item.label} <span className="count">({counts[item.key] || 0})</span></span>
           </button>
@@ -110,7 +131,14 @@ export default function HogarProductList() {
               <h6 className="subcat-title">{item.label}</h6><span className="accordion-arrow">⌄</span>
             </button>
             <div className="subcat-chips">
-              {(subcategoriesByGroup[item.key] || []).length ? (subcategoriesByGroup[item.key] || []).map((name) => <button key={name} type="button" className={`subcat-chip ${subcategory === name ? "active" : ""}`} onClick={() => setSubcategory(subcategory === name ? "" : name)} aria-pressed={subcategory === name}>{name}</button>) : <span className="subcat-empty">Las subcategorías aparecerán al cargar productos.</span>}
+              {(subcategoriesByGroup[item.key] || []).length ? (subcategoriesByGroup[item.key] || []).map((name) => {
+                const subcategorySlug = toCategoryFilterSlug(name);
+                const categorySlug = categoryFromSubcategory(name);
+                const active = subcategory
+                  ? subcategory === subcategorySlug
+                  : categoryFilter === categorySlug && subcategorySlug === categorySlug;
+                return <button key={name} type="button" className={`subcat-chip ${active ? "active" : ""}`} onClick={() => updateFilters(active ? { department: group } : { department: group || item.key, category: categorySlug, subcategory: subcategorySlug })} aria-pressed={active}>{name}</button>;
+              }) : <span className="subcat-empty">Las subcategorías aparecerán al cargar productos.</span>}
             </div>
           </div></div>;
         })}

@@ -1,10 +1,17 @@
 import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/BolsosProductList.jsx
-import React, { useMemo, useState, useContext, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useMemo, useState, useContext, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { ProductsContext } from "../../../context/ProductContext";
 import { resolveProductCardPricing } from "../../utils/productPricing";
 import "../ProductList.css";
+import {
+  buildCategorySearchParams,
+  categoryFromSubcategory,
+  matchesCategoryFilters,
+  readCategoryFilters,
+  toCategoryFilterSlug,
+} from "../categoryUrlFilters";
 
 /* ---------- Helpers ---------- */
 const isHttp = (s) => typeof s === "string" && /^https?:\/\//i.test(s);
@@ -412,10 +419,20 @@ export default function BolsosProductList() {
     }));
   }, [enriched]);
 
-  const [dep, setDep] = useCategoryHistoryState("dep", "");
-  const [subFilter, setSubFilter] = useCategoryHistoryState("subFilter", "");
-  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const searchKey = searchParams.toString();
+  const { department: dep, category: categoryFilter, subcategory: subFilter } = useMemo(
+    () => readCategoryFilters(new URLSearchParams(searchKey), BAGS_DEPARTMENT_GROUPS.map(({ key }) => key)),
+    [searchKey]
+  );
+  const [openGroup, setOpenGroup] = useCategoryHistoryState("openGroup", dep || null);
   const [sort, setSort] = useCategoryHistoryState("sort", "");
+
+  useEffect(() => {
+    if (dep) setOpenGroup(dep);
+  }, [dep, setOpenGroup]);
+
+  const updateFilters = (next) => setSearchParams(buildCategorySearchParams(next));
 
   const subcatGroups = useMemo(() => {
     const base = enriched.filter((p) => !dep || p.depSlug === dep);
@@ -437,14 +454,12 @@ export default function BolsosProductList() {
   }, [enriched, dep]);
 
   const filtered = useMemo(() => {
-    return enriched.filter((p) => {
-      const okDep = !dep || p.depSlug === dep;
-      const okSub =
-        !subFilter ||
-        (p.subcategory || "").toLowerCase() === subFilter.toLowerCase();
-      return okDep && okSub;
-    });
-  }, [enriched, dep, subFilter]);
+    return enriched.filter((product) => matchesCategoryFilters(product, {
+      department: dep,
+      category: categoryFilter,
+      subcategory: subFilter,
+    }));
+  }, [enriched, dep, categoryFilter, subFilter]);
 
   const sorted = useMemo(() => {
     if (!sort) return filtered;
@@ -479,8 +494,7 @@ export default function BolsosProductList() {
         <button
           className={`gender-chip ${dep === "" ? "gender-chip--active" : ""}`}
           onClick={() => {
-            setDep("");
-            setSubFilter("");
+            updateFilters({});
             setOpenGroup(null);
           }}
         >
@@ -494,8 +508,7 @@ export default function BolsosProductList() {
               dep === key ? "gender-chip--active" : ""
             }`}
             onClick={() => {
-              setDep(key);
-              setSubFilter("");
+              updateFilters({ department: key });
               setOpenGroup(key);
             }}
           >
@@ -554,8 +567,12 @@ export default function BolsosProductList() {
                     </button>
                     <div className="subcat-chips">
                       {g.subcats.slice(0, 12).map((s) => {
-                        const active = subFilter === s;
-                        return <button key={s} type="button" className={`subcat-chip ${active ? "active" : ""}`} onClick={() => setSubFilter(active ? "" : s)} aria-pressed={active}>{s}</button>;
+                        const subcategorySlug = toCategoryFilterSlug(s);
+                        const categorySlug = categoryFromSubcategory(s);
+                        const active = subFilter
+                          ? subFilter === subcategorySlug
+                          : categoryFilter === categorySlug && subcategorySlug === categorySlug;
+                        return <button key={s} type="button" className={`subcat-chip ${active ? "active" : ""}`} onClick={() => updateFilters(active ? { department: dep } : { department: dep || g.key, category: categorySlug, subcategory: subcategorySlug })} aria-pressed={active}>{s}</button>;
                       })}
                     </div>
                   </div>
