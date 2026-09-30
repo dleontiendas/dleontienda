@@ -10,6 +10,7 @@ import Home from "./components/home/Home";
 import TechProductList from "./components/product/techProductList/techProductList";
 import ModaProductList from "./components/product/modaProductList/modaProductList";
 import DamaProductList from "./components/product/damaProductList/damaProductList";
+import HombreProductList from "./components/product/hombreProductList/hombreProductList";
 import BolsosProductList from "./components/product/bolsosProductList/bolsosProductList";
 import HogarProductList from "./components/product/hogarProductList/HogarProductList";
 import CategoryPage from "./components/product/CategoryPage";
@@ -57,6 +58,7 @@ const App = () => {
                   <Route path="/" element={<Home />} />
                   <Route path="/moda" element={<CategoryPage><ModaProductList /></CategoryPage>} />
                   <Route path="/dama" element={<CategoryPage><DamaProductList /></CategoryPage>} />
+                  <Route path="/hombre" element={<CategoryPage><HombreProductList /></CategoryPage>} />
                   <Route path="/bolsos" element={<CategoryPage><BolsosProductList /></CategoryPage>} />
                   <Route path="/tecnologia" element={<CategoryPage><TechProductList /></CategoryPage>} />
                   <Route path="/hogar" element={<CategoryPage><HogarProductList /></CategoryPage>} />

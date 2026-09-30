@@ -8,6 +8,7 @@ import { resolveProductCardPricing } from "../../utils/productPricing";
 import "../ProductList.css";
 import { getModaDepartmentGroup, MODA_DEPARTMENT_GROUPS } from "./modaDepartment";
 import { isDamaProduct } from "../damaProductList/damaDepartment";
+import { isHombreProduct } from "../hombreProductList/hombreDepartment";
 import {
   buildModaSearchParams,
   matchesModaFilters,
@@ -358,7 +359,7 @@ export default function ModaProductList() {
       );
     };
     return (products || []).filter((p) =>
-      !isDamaProduct(p) && (isModa(p?.category) || isModa(p?.catSlug))
+      !isDamaProduct(p) && !isHombreProduct(p) && (isModa(p?.category) || isModa(p?.catSlug))
     );
   }, [products]);
 

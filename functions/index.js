@@ -15,6 +15,7 @@ import { updateOrderStatus } from "./orders/updateOrderStatus.js";
 import { getOrderStatus, listOrders, revokeOrderMetaConsent } from "./orders/readOrders.js";
 import { manageProduct } from "./products/manageProducts.js";
 import { migrateDamaProducts } from "./products/migrateDamaProducts.js";
+import { migrateHombreProducts } from "./products/migrateHombreProducts.js";
 import {
   productShareImageHandler,
   productSharePreviewHandler,
@@ -40,6 +41,7 @@ export {
   importProducts,
   manageProduct,
   migrateDamaProducts,
+  migrateHombreProducts,
   createOrderWithReservation,
   expireInventoryReservations,
   updateOrderStatus,

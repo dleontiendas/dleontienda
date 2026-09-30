@@ -16,6 +16,13 @@ test('renders the storefront category route without loading Meta tracking', () =
   expect(document.querySelector('script[src*="facebook"]')).toBeNull();
 });
 
+test('renders Hombre as a main category route', () => {
+  window.scrollTo = jest.fn();
+  render(<MemoryRouter initialEntries={['/hombre']}><App /></MemoryRouter>);
+  expect(screen.getByRole('heading', { name: 'Hombre', level: 4 })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Hombre' })).toHaveAttribute('href', '/hombre');
+});
+
 test('renders Dama as a main category route', () => {
   window.scrollTo = jest.fn();
   render(<MemoryRouter initialEntries={['/dama']}><App /></MemoryRouter>);

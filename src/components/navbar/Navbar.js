@@ -27,6 +27,7 @@ const CATEGORY_LINKS = [
   { to: "/", label: "Inicio" },
   { to: "/moda", label: "Moda" },
   { to: "/dama", label: "Dama" },
+  { to: "/hombre", label: "Hombre" },
   { to: "/bolsos", label: "Bolsos" },
   { to: "/tecnologia", label: "Tecnología" },
   { to: "/hogar", label: "Hogar" },

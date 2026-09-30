@@ -30,7 +30,7 @@ function App({ loading = false, initialEntries = ["/moda"] }) {
     <CartContext.Provider value={{ cart: [], subtotal: 0 }}>
       <MemoryRouter initialEntries={initialEntries}>
         <ScrollToTop /><Navbar /><CurrentSearch />
-        <Routes>{["moda", "dama", "bolsos", "tecnologia", "hogar"].map(path =>
+        <Routes>{["moda", "dama", "hombre", "bolsos", "tecnologia", "hogar"].map(path =>
           <Route key={path} path={`/${path}`} element={<CategoryPage><Departments /></CategoryPage>} />
         )}<Route path="/products/ropa/jeans" element={<Product />} /></Routes>
       </MemoryRouter>
@@ -44,7 +44,7 @@ beforeEach(() => {
   window.scrollTo = jest.fn();
 });
 
-test.each(["Moda", "Dama", "Bolsos", "Tecnología", "Hogar"])("back from a product restores selection and scroll in %s, while a category click resets them", name => {
+test.each(["Moda", "Dama", "Hombre", "Bolsos", "Tecnología", "Hogar"])("back from a product restores selection and scroll in %s, while a category click resets them", name => {
   render(<App />);
   fireEvent.click(screen.getByRole("link", { name }));
   act(() => { jest.advanceTimersByTime(20); });
@@ -64,7 +64,7 @@ afterEach(() => { jest.useRealTimers(); });
 
 test.each([false, true])("category links reset departments on repeat and category changes (mobile menu: %s)", mobile => {
   render(<App />);
-  for (const name of ["Moda", "Dama", "Bolsos", "Tecnología", "Hogar", "Moda"]) {
+  for (const name of ["Moda", "Dama", "Hombre", "Bolsos", "Tecnología", "Hogar", "Moda"]) {
     for (let click = 0; click < 2; click++) {
       fireEvent.click(screen.getByText("Todos los departamentos"));
       if (mobile) fireEvent.click(screen.getByLabelText("Abrir menú de categorías"));

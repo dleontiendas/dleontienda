@@ -6,6 +6,7 @@ import BolsosProductList from "./bolsosProductList/bolsosProductList";
 import TechProductList from "./techProductList/techProductList";
 import HogarProductList from "./hogarProductList/HogarProductList";
 import DamaProductList from "./damaProductList/damaProductList";
+import HombreProductList from "./hombreProductList/hombreProductList";
 
 const baseProduct = { price_cop: 100000, variants: [], images: [] };
 
@@ -62,6 +63,18 @@ test("Hogar abre directamente una sección y subcategoría desde la URL", () => 
   renderCategory("/hogar?departamento=descanso&categoria=hamacas", "/hogar", HogarProductList, products);
   expect(screen.getByText("Hamaca familiar")).toBeInTheDocument();
   expect(screen.queryByText("Toalla de baño")).not.toBeInTheDocument();
+});
+
+test("Hombre filtra departamentos y no mezcla Dama ni Moda", () => {
+  const products = [
+    { ...baseProduct, id: "h1", catSlug: "hombre", category: "Hombre", department: "Jeans", subcategory: "PANTALON CARGO", name: "Pantalón cargo hombre" },
+    { ...baseProduct, id: "h2", catSlug: "hombre", category: "Hombre", department: "Ropa deportiva", subcategory: "CAPRI", name: "Capri hombre" },
+    { ...baseProduct, id: "d1", catSlug: "dama", category: "Dama", department: "Jeans", subcategory: "SKINNY", name: "Jean dama" },
+  ];
+  renderCategory("/hombre?departamento=ropa-deportiva&categoria=capri", "/hombre", HombreProductList, products);
+  expect(screen.getByText("Capri hombre")).toBeInTheDocument();
+  expect(screen.queryByText("Pantalón cargo hombre")).not.toBeInTheDocument();
+  expect(screen.queryByText("Jean dama")).not.toBeInTheDocument();
 });
 
 test("Dama filtra departamento y subcategoría desde la URL sin mezclar Moda", () => {
