@@ -1,5 +1,5 @@
 // ========================= src/admin/ProductsTab.jsx =========================
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import {
   collectionGroup,
   getDocs,
@@ -7,6 +7,7 @@ import {
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 import { db } from "../../Firebase";
+import { ProductsContext } from "../../context/ProductContext";
 import { importProducts, manageProduct } from "../../api/productsApi";
 import { findExistingProductConflicts, parseProductRows } from "./productImport";
 import { calculateManualSavings, normalizeManualProductPrices, normalizeManualVariantPrices } from "./manualProductPrices";
@@ -499,6 +500,7 @@ function BatchUploadModal({ open, onClose, onMergeRows, existingProducts }) {
 
 /* ---------- Main ---------- */
 export default function AdminProducts() {
+  const { refresh: refreshProducts } = useContext(ProductsContext);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -641,6 +643,7 @@ export default function AdminProducts() {
             : r
         )));
       }
+      await refreshProducts();
       onCloseModal();
     } catch (e) {
       console.error("❌ Error guardando producto:", e);
@@ -653,6 +656,7 @@ export default function AdminProducts() {
     try {
       await manageProduct("delete", { path: row.ref.path });
       setRows((prev) => prev.filter((r) => r.id !== row.id));
+      await refreshProducts();
     } catch (e) {
       console.error("❌ Error eliminando:", e);
       alert("No se pudo eliminar.");
@@ -671,6 +675,7 @@ export default function AdminProducts() {
           r.id === row.id && r.catSlug === row.catSlug ? { ...r, active: nextActive } : r
         )
       );
+      await refreshProducts();
     } catch (e) {
       console.error("❌ Error actualizando estado:", e);
       alert("No se pudo actualizar el estado del producto.");
@@ -760,7 +765,7 @@ export default function AdminProducts() {
       <BatchUploadModal
         open={batchOpen}
         onClose={() => setBatchOpen(false)}
-        onMergeRows={() => { setBatchOpen(false); loadProducts(); }}
+        onMergeRows={() => { setBatchOpen(false); loadProducts(); refreshProducts(); }}
         existingProducts={rows}
       />
 
