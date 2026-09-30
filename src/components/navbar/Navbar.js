@@ -7,6 +7,7 @@ import { ProductsContext } from "../../context/ProductContext";
 import { ShoppingCart, Search, X, Menu } from "lucide-react";
 import "materialize-css/dist/css/materialize.min.css";
 import "./Navbar.css";
+import { versionProductImage } from "../utils/productImageVersion";
 
 const PLACEHOLDER = "https://placehold.co/80x80?text=No+img";
 
@@ -15,9 +16,9 @@ const normalize = (s = "") =>
   String(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 const firstImage = (p) => {
-  if (Array.isArray(p?.images) && p.images[0]) return p.images[0];
+  if (Array.isArray(p?.images) && p.images[0]) return versionProductImage(p.images[0], p);
   const v = Array.isArray(p?.variants) ? p.variants.find((x) => Array.isArray(x?.images) && x.images[0]) : null;
-  return v?.images?.[0] || PLACEHOLDER;
+  return v?.images?.[0] ? versionProductImage(v.images[0], p) : PLACEHOLDER;
 };
 
 const currencyCO = (n) => (Number.isFinite(n) ? `$${Math.round(n).toLocaleString("es-CO")}` : "");

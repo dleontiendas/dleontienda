@@ -1,3 +1,4 @@
+import { versionProductImage } from "../../utils/productImageVersion";
 import { useCategoryHistoryState } from "../categoryHistory";
 // src/pages/BolsosProductList.jsx
 import React, { useEffect, useMemo, useState, useContext, useRef } from "react";
@@ -162,7 +163,7 @@ const collectImages = (product, limit = 8) => {
   const pool = [];
   const pushUrl = (url) => {
     if (!url) return;
-    const fall = resolveImage(url);
+    const fall = resolveImage(url)?.map((source) => versionProductImage(source, product));
     if (!fall || !fall.length) return;
     const primary = fall[0];
     if (!primary) return;

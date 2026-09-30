@@ -1,3 +1,5 @@
+import { versionProductImage } from "./productImageVersion";
+
 const normalize = (value) => String(value || "").trim().toLowerCase();
 
 export const getSelectedProductImage = (product, selectedColor) => {
@@ -6,11 +8,13 @@ export const getSelectedProductImage = (product, selectedColor) => {
     ? product.variants.find((variant) => normalize(variant?.color) === color)
     : null;
 
-  return (
+  const image = (
     (Array.isArray(selectedVariant?.images) && selectedVariant.images[0]) ||
     (Array.isArray(product?.images) && product.images[0]) ||
     ""
   );
+
+  return versionProductImage(image, product);
 };
 
 export const getEmailProductImage = (product, selectedColor) => {
@@ -22,7 +26,8 @@ export const getEmailProductImage = (product, selectedColor) => {
     value.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ||
     value.match(/[?&]id=([a-zA-Z0-9_-]+)/)?.[1];
 
-  return driveId
+  const publicImage = driveId
     ? `https://lh3.googleusercontent.com/d/${driveId}=w320`
     : value;
+  return versionProductImage(publicImage, product);
 };

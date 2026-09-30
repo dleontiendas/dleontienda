@@ -13,6 +13,7 @@ import RandomProductsCarousel from "./carrousel/RandomProductsCarousel";
 import { Tag, Share2, Ruler, ShoppingCart, Truck, ShieldCheck, RefreshCw, Store, MessageCircle, ChevronRight } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { resolveProductPricing } from "../utils/productPricing";
+import { versionProductImage } from "../utils/productImageVersion";
 import { useCookieConsent } from "../../consent/ConsentContext";
 
 const env = (_vite, cra) =>
@@ -36,11 +37,11 @@ const driveThumb = (urlOrId, w = 1600) =>
 const driveLH3 = (urlOrId, w = 1600) =>
   `https://lh3.googleusercontent.com/d/${parseDriveId(urlOrId)}=w${w}`;
 
-const resolveDriveImage = (img) => {
+const resolveDriveImage = (img, product) => {
   if (!img) return null;
-  if (!/drive\.google\.com/.test(img)) return [img];
+  if (!/drive\.google\.com/.test(img)) return [versionProductImage(img, product)];
   const id = parseDriveId(img);
-  return [driveLH3(id), driveThumb(id), driveView(id)];
+  return [driveLH3(id), driveThumb(id), driveView(id)].map((source) => versionProductImage(source, product));
 };
 
 const getVariants = (p) => (Array.isArray(p?.variants) ? p.variants : []);
@@ -68,7 +69,7 @@ const resolveFirstImageForColor = (product, color) => {
   const variantImgs = getVariantImagesForColor(product, color);
   const firstRaw = variantImgs[0] || (Array.isArray(product?.images) ? product.images[0] : null);
   if (!firstRaw) return null;
-  return resolveDriveImage(firstRaw) || [firstRaw];
+  return resolveDriveImage(firstRaw, product) || [firstRaw];
 };
 
 export default function ProductDetail() {
@@ -143,7 +144,7 @@ export default function ProductDetail() {
 
         const firstGeneral = (data.images || [])[0];
         const fallbackArr =
-          resolveDriveImage(firstGeneral) ||
+          resolveDriveImage(firstGeneral, data) ||
           ["https://placehold.co/800x1000?text=Sin+Imagen"];
 
         setMainFallbackList(fallbackArr);
@@ -184,7 +185,7 @@ export default function ProductDetail() {
     const seen = new Set();
     const items = [];
     for (const raw of ordered) {
-      const fall = resolveDriveImage(raw);
+      const fall = resolveDriveImage(raw, product);
       if (!fall || !fall.length) continue;
       const primary = fall[0];
       if (seen.has(primary)) continue;

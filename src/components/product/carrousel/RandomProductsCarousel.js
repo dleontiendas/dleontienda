@@ -1,3 +1,4 @@
+import { versionProductImage } from "../../utils/productImageVersion";
 // src/components/RandomProductsCarousel.js
 import React, { useContext, useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -35,7 +36,7 @@ const collectImages = (product) => {
   const pool = [];
   const pushUrl = (url) => {
     if (!url) return;
-    const fall = resolveImage(url);
+    const fall = resolveImage(url)?.map((source) => versionProductImage(source, product));
     if (!fall || !fall.length) return;
     const primary = fall[0];
     if (!pool.some((it) => it.primary === primary)) pool.push({ primary, fallbacks: fall });
@@ -83,7 +84,7 @@ function CarouselCard({ p }) {
     setSrc(imgs[0].primary);
     setFallbacks(imgs[0].fallbacks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [p?.id]);
+  }, [p?.id, imgs[0].primary]);
 
   const onError = () => {
     const i = fallbacks.indexOf(src);
