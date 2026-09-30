@@ -15,3 +15,10 @@ test('renders the storefront category route without loading Meta tracking', () =
   expect(screen.getByRole('navigation', { name: 'Categorías' })).toBeInTheDocument();
   expect(document.querySelector('script[src*="facebook"]')).toBeNull();
 });
+
+test('renders Dama as a main category route', () => {
+  window.scrollTo = jest.fn();
+  render(<MemoryRouter initialEntries={['/dama']}><App /></MemoryRouter>);
+  expect(screen.getByRole('heading', { name: 'Dama', level: 4 })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Dama' })).toHaveAttribute('href', '/dama');
+});

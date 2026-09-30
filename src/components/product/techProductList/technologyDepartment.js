@@ -1,4 +1,9 @@
-import { toCategoryFilterSlug } from "../categoryUrlFilters";
+import {
+  buildConfiguredDepartments,
+  buildConfiguredSubcategoryGroups,
+  matchesMainCategory,
+  normalizeConfiguredDepartment,
+} from "../dynamicCategory/dynamicCategory";
 
 export const TECHNOLOGY_CORE_DEPARTMENTS = [
   { key: "bafles", label: "Bafles", image: "/images/departments/technology/bafles.jpg" },
@@ -8,90 +13,22 @@ export const TECHNOLOGY_CORE_DEPARTMENTS = [
   { key: "otros", label: "Otros", image: "/images/departments/technology/otros.jpg" },
 ];
 
-const TECHNOLOGY_CATEGORY_KEYS = new Set([
-  "tecnologia",
-  "technology",
-  "tech",
-  "electronica",
-  "electronicos",
-]);
-
-const OTHER_DEPARTMENT_PATTERNS = [
-  /^otro(?:s)?(?:-|$)/,
-  /^electronica(?:-|$)/,
-  /^electronico(?:s)?(?:-|$)/,
-  /^tecnologia(?:-|$)/,
-  /^accesorio(?:s)?(?:-|$)/,
-  /^pesa(?:s)?(?:-|$)/,
-  /^secador(?:es)?-de-zapato(?:s)?(?:-|$)/,
-];
-
-const knownDepartment = (slug) => {
-  if (/^(?:bafle|bafles|parlante|parlantes|altavoz|altavoces|speaker|speakers)(?:-|$)/.test(slug)) return "bafles";
-  if (/^(?:camara|camaras|camera|cameras)(?:-|$)/.test(slug)) return "camaras";
-  if (/^(?:reloj|relojes|watch|watches|smartwatch|smartwatches)(?:-|$)/.test(slug)) return "relojes";
-  if (/^(?:gramera|grameras|bascula|basculas|balanza|balanzas|scale|scales)(?:-|$)/.test(slug)) return "grameras";
-  if (OTHER_DEPARTMENT_PATTERNS.some((pattern) => pattern.test(slug))) return "otros";
-  return "";
+export const TECHNOLOGY_CATEGORY_CONFIG = {
+  slug: "tecnologia",
+  title: "Tecnología",
+  categoryKeys: ["tecnologia", "technology", "tech", "electronica", "electronicos"],
+  coreDepartments: TECHNOLOGY_CORE_DEPARTMENTS,
+  fallbackImage: "/images/departments/technology/otros.jpg",
+  departmentAliases: [
+    { key: "bafles", pattern: /^(?:bafle|bafles|parlante|parlantes|altavoz|altavoces|speaker|speakers)(?:-|$)/ },
+    { key: "camaras", pattern: /^(?:camara|camaras|camera|cameras)(?:-|$)/ },
+    { key: "relojes", pattern: /^(?:reloj|relojes|watch|watches|smartwatch|smartwatches)(?:-|$)/ },
+    { key: "grameras", pattern: /^(?:gramera|grameras|bascula|basculas|balanza|balanzas|scale|scales)(?:-|$)/ },
+    { key: "otros", pattern: /^(?:otro|otros|electronica|electronico|electronicos|tecnologia|accesorio|accesorios|pesa|pesas|secador|secadores)(?:-|$)/ },
+  ],
 };
 
-export const normalizeTechnologyDepartment = (value = "") => {
-  const slug = toCategoryFilterSlug(value);
-  return knownDepartment(slug) || slug || "otros";
-};
-
-const cleanDepartmentLabel = (value, fallback) => {
-  const label = String(value || "").trim().replace(/\s+/g, " ");
-  if (!label) return fallback;
-  return label.replace(/(^|\s)\S/g, (letter) => letter.toLocaleUpperCase("es"));
-};
-
-export const isTechnologyProduct = (product) => {
-  const category = toCategoryFilterSlug(product?.category || "");
-  if (category) return TECHNOLOGY_CATEGORY_KEYS.has(category);
-  return TECHNOLOGY_CATEGORY_KEYS.has(toCategoryFilterSlug(product?.catSlug || ""));
-};
-
-export function buildTechnologyDepartments(products = []) {
-  const coreByKey = new Map(TECHNOLOGY_CORE_DEPARTMENTS.map((item) => [item.key, item]));
-  const counts = new Map();
-  const dynamicLabels = new Map();
-
-  for (const product of products) {
-    const key = normalizeTechnologyDepartment(product?.department);
-    counts.set(key, (counts.get(key) || 0) + 1);
-    if (!coreByKey.has(key) && !dynamicLabels.has(key)) {
-      dynamicLabels.set(key, cleanDepartmentLabel(product?.department, key));
-    }
-  }
-
-  const other = coreByKey.get("otros");
-  const core = TECHNOLOGY_CORE_DEPARTMENTS.filter(({ key }) => key !== "otros");
-  const dynamic = [...dynamicLabels.entries()]
-    .map(([key, label]) => ({ key, label, image: other.image }))
-    .sort((a, b) => a.label.localeCompare(b.label, "es"));
-
-  return [...core, ...dynamic, other].map((item) => ({
-    ...item,
-    count: counts.get(item.key) || 0,
-  }));
-}
-
-export function buildTechnologySubcategoryGroups(products = [], departments = []) {
-  const namesByDepartment = new Map(departments.map(({ key }) => [key, new Map()]));
-  for (const product of products) {
-    const key = product?.depSlug || normalizeTechnologyDepartment(product?.department);
-    if (!namesByDepartment.has(key)) namesByDepartment.set(key, new Map());
-    const label = String(product?.subcategory || "").trim().replace(/\s+/g, " ");
-    const slug = toCategoryFilterSlug(label);
-    if (slug && !namesByDepartment.get(key).has(slug)) {
-      namesByDepartment.get(key).set(slug, label);
-    }
-  }
-  return departments.map(({ key, label }) => ({
-    key,
-    label,
-    subcats: [...(namesByDepartment.get(key)?.values() || [])]
-      .sort((a, b) => a.localeCompare(b, "es")),
-  }));
-}
+export const normalizeTechnologyDepartment = (value = "") => normalizeConfiguredDepartment(value, TECHNOLOGY_CATEGORY_CONFIG);
+export const isTechnologyProduct = (product) => matchesMainCategory(product, TECHNOLOGY_CATEGORY_CONFIG.categoryKeys);
+export const buildTechnologyDepartments = (products = []) => buildConfiguredDepartments(products, TECHNOLOGY_CATEGORY_CONFIG);
+export const buildTechnologySubcategoryGroups = (products = [], departments = []) => buildConfiguredSubcategoryGroups(products, departments);

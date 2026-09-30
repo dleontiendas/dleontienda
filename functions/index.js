@@ -14,6 +14,7 @@ import { expireInventoryReservations } from "./orders/expireReservations.js";
 import { updateOrderStatus } from "./orders/updateOrderStatus.js";
 import { getOrderStatus, listOrders, revokeOrderMetaConsent } from "./orders/readOrders.js";
 import { manageProduct } from "./products/manageProducts.js";
+import { migrateDamaProducts } from "./products/migrateDamaProducts.js";
 import {
   productShareImageHandler,
   productSharePreviewHandler,
@@ -38,6 +39,7 @@ export const productShareImage = onRequest(productShareImageHandler);
 export {
   importProducts,
   manageProduct,
+  migrateDamaProducts,
   createOrderWithReservation,
   expireInventoryReservations,
   updateOrderStatus,

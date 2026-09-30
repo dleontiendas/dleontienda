@@ -5,6 +5,7 @@ import { ProductsContext } from "../../context/ProductContext";
 import BolsosProductList from "./bolsosProductList/bolsosProductList";
 import TechProductList from "./techProductList/techProductList";
 import HogarProductList from "./hogarProductList/HogarProductList";
+import DamaProductList from "./damaProductList/damaProductList";
 
 const baseProduct = { price_cop: 100000, variants: [], images: [] };
 
@@ -61,4 +62,16 @@ test("Hogar abre directamente una sección y subcategoría desde la URL", () => 
   renderCategory("/hogar?departamento=descanso&categoria=hamacas", "/hogar", HogarProductList, products);
   expect(screen.getByText("Hamaca familiar")).toBeInTheDocument();
   expect(screen.queryByText("Toalla de baño")).not.toBeInTheDocument();
+});
+
+test("Dama filtra departamento y subcategoría desde la URL sin mezclar Moda", () => {
+  const products = [
+    { ...baseProduct, id: "d1", catSlug: "dama", category: "Dama", department: "Jeans", subcategory: "SKINNY", name: "Jean skinny dama" },
+    { ...baseProduct, id: "d2", catSlug: "dama", category: "Dama", department: "Accesorios", subcategory: "CINTURONES", name: "Cinturón dama" },
+    { ...baseProduct, id: "m1", catSlug: "ropa", category: "ROPA", department: "HOMBRE", subcategory: "JEANS", name: "Jean hombre" },
+  ];
+  renderCategory("/dama?departamento=jeans&categoria=skinny", "/dama", DamaProductList, products);
+  expect(screen.getByText("Jean skinny dama")).toBeInTheDocument();
+  expect(screen.queryByText("Cinturón dama")).not.toBeInTheDocument();
+  expect(screen.queryByText("Jean hombre")).not.toBeInTheDocument();
 });

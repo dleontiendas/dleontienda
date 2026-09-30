@@ -205,6 +205,7 @@ function VariantsEditor({ value = [], onChange }) {
 function ProductForm({ value, onChange }) {
   const set = (k, v) => onChange({ ...value, [k]: v });
   const savingsPreview = calculateManualSavings(value.price_cop, value.oldPrice);
+  const damaCategory = String(value.category || "").trim().toLowerCase() === "dama";
 
   return (
     <>
@@ -223,11 +224,13 @@ function ProductForm({ value, onChange }) {
         </label>
         <label>
           Departamento
-          <input value={value.department || ""} onChange={(e) => set("department", e.target.value)} placeholder="Hombre / Mujer / Infantil…" />
+          <input list={damaCategory ? "dama-departments" : undefined} value={value.department || ""} onChange={(e) => set("department", e.target.value)} placeholder={damaCategory ? "Jeans / Ropa deportiva / Blusas…" : "Hombre / Infantil…"} />
+          {damaCategory && <datalist id="dama-departments"><option value="Jeans" /><option value="Ropa deportiva" /><option value="Blusas" /><option value="Ropa interior" /><option value="Accesorios" /><option value="Otros" /></datalist>}
         </label>
         <label>
           Categoría
-          <input value={value.category || ""} onChange={(e) => set("category", e.target.value)} placeholder="Ropa / Calzado…" />
+          <input list="main-product-categories" value={value.category || ""} onChange={(e) => set("category", e.target.value)} placeholder="Moda / Dama / Bolsos…" />
+          <datalist id="main-product-categories"><option value="Moda" /><option value="Dama" /><option value="Bolsos" /><option value="Tecnología" /><option value="Hogar" /></datalist>
         </label>
         <label>
           Subcategoría

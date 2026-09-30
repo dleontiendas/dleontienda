@@ -6,6 +6,7 @@ import { ProductsContext } from "../../../context/ProductContext";
 import { resolveProductCardPricing } from "../../utils/productPricing";
 import "../ProductList.css";
 import { getModaDepartmentGroup, MODA_DEPARTMENT_GROUPS } from "./modaDepartment";
+import { isDamaProduct } from "../damaProductList/damaDepartment";
 import {
   buildModaSearchParams,
   matchesModaFilters,
@@ -355,7 +356,9 @@ export default function ModaProductList() {
         c.includes("prenda") // prendas
       );
     };
-    return (products || []).filter((p) => isModa(p?.category) || isModa(p?.catSlug));
+    return (products || []).filter((p) =>
+      !isDamaProduct(p) && (isModa(p?.category) || isModa(p?.catSlug))
+    );
   }, [products]);
 
   const enriched = useMemo(

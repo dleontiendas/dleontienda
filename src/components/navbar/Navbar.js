@@ -25,6 +25,7 @@ const currencyCO = (n) => (Number.isFinite(n) ? `$${Math.round(n).toLocaleString
 const CATEGORY_LINKS = [
   { to: "/", label: "Inicio" },
   { to: "/moda", label: "Moda" },
+  { to: "/dama", label: "Dama" },
   { to: "/bolsos", label: "Bolsos" },
   { to: "/tecnologia", label: "Tecnología" },
   { to: "/hogar", label: "Hogar" },
