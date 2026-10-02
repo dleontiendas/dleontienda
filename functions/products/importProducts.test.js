@@ -181,10 +181,30 @@ test("sobrescribe NEGRO por las tres variantes actualizadas sin acumular variant
       color, images: [], tallas: [{ size: "UNICA", sku_master: `SE0007-${color.replace(/ /g, "")}`, stock: 8, update_inventory }],
     })) });
     const merged = mergeImportedProduct(current, changed);
-    assert.deepEqual(merged.variants.map((v) => v.color).sort(), ["BEIGE", "NEGRO PRINT", "NEGRO RAYAS"]);
+    assert.deepEqual(merged.variants.map((v) => v.color), ["NEGRO RAYAS", "NEGRO PRINT", "BEIGE"]);
     assert.equal(merged.variants.find((v) => v.color === "BEIGE").tallas[0].stock, update_inventory ? 8 : 3);
     assert.equal(merged.variants.find((v) => v.color === "NEGRO RAYAS").tallas[0].stock, update_inventory ? 8 : 0);
     assert.deepEqual(mergeImportedProduct(merged, changed), merged);
   }
   assert.deepEqual(current, snapshot);
+});
+
+test("reordena colores y tallas existentes según el archivo conservando inventario por SKU", () => {
+  const current = incoming({ variants: ["BEIGE", "NEGRO PRINT", "NEGRO RAYAS"].map((color) => ({
+    color, images: [`${color}.jpg`], tallas: ["S", "M", "L"].map((size, index) => ({
+      size, sku_master: `${color.replace(/ /g, "")}-${size}`, stock: index + 1,
+    })),
+  })) });
+  const changed = incoming({ variants: [...current.variants].reverse().map((variant) => ({
+    ...variant, tallas: [...variant.tallas].reverse().map((size) => ({ ...size, stock: 99, update_inventory: false })),
+  })) });
+  const merged = mergeImportedProduct(current, changed);
+  assert.deepEqual(merged.variants.map((v) => v.color), ["NEGRO RAYAS", "NEGRO PRINT", "BEIGE"]);
+  for (const variant of merged.variants) {
+    assert.deepEqual(variant.tallas.map((s) => s.size), ["L", "M", "S"]);
+    assert.deepEqual(variant.tallas.map((s) => s.stock), [3, 2, 1]);
+  }
+  assert.deepEqual(mergeImportedProduct(merged, changed), merged);
+  assert.equal(current.variants[0].color, "BEIGE");
+  assert.equal(current.variants[0].tallas[0].size, "S");
 });

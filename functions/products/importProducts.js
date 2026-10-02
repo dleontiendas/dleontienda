@@ -70,6 +70,7 @@ export function mergeImportedProduct(existing, incoming) {
     : [];
 
   const importedSizes = new Set();
+  const importedVariants = new Set();
   for (const importedVariant of incoming.variants || []) {
     let targetVariant = existingVariants.find((variant) => normalizeColor(variant.color) === normalizeColor(importedVariant.color));
     if (!targetVariant) {
@@ -77,6 +78,7 @@ export function mergeImportedProduct(existing, incoming) {
       existingVariants.push(targetVariant);
     }
     targetVariant.images = replaceImportedImages(targetVariant.images, importedVariant.images);
+    importedVariants.add(targetVariant);
 
     for (const rawSize of importedVariant.tallas || []) {
       const importedSize = cleanSize(rawSize);
@@ -144,9 +146,9 @@ export function mergeImportedProduct(existing, incoming) {
   // The uploaded rows are the complete variant list for each included product.
   // Match against existing sizes first to preserve stock when inventory is NO.
   result.variants = Array.isArray(incoming.variants)
-    ? existingVariants.map((variant) => ({
+    ? Array.from(importedVariants, (variant) => ({
         ...variant,
-        tallas: variant.tallas.filter((size) => importedSizes.has(size)),
+        tallas: Array.from(importedSizes).filter((size) => variant.tallas.includes(size)),
       })).filter((variant) => variant.tallas.length > 0)
     : existingVariants;
   result.active = isNewProduct ? true : current.active !== false;
