@@ -126,15 +126,17 @@ test("reemplaza la galería principal y elimina duplicados respetando la nueva p
   assert.deepEqual(current.images, ["principal-anterior.jpg", "extra-anterior.jpg"]);
 });
 
-test("las celdas vacías o ausentes conservan las imágenes actuales", () => {
+test("las celdas vacías limpian la galería principal; un campo omitido la conserva", () => {
   for (const images of [[], undefined, [null, ""]]) {
     const current = { ...existing(), images: ["principal.jpg"] };
     current.variants[0].images = ["color.jpg"];
     const changed = incoming({ images });
     changed.variants[0].images = images;
     const merged = mergeImportedProduct(current, changed);
-    assert.deepEqual(merged.images, ["principal.jpg"]);
+    assert.deepEqual(merged.images, images === undefined ? ["principal.jpg"] : []);
     assert.deepEqual(merged.variants[0].images, ["color.jpg"]);
+    assert.deepEqual(current.images, ["principal.jpg"]);
+    assert.equal(merged.variants[0].tallas[0].stock, 2);
   }
 });
 

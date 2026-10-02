@@ -132,7 +132,11 @@ export function mergeImportedProduct(existing, incoming) {
   result.price_cop = Number(incoming.price_cop);
   // Missing oldPrice from older clients preserves existing data; an empty cell clears it.
   if (incoming.oldPrice !== undefined) result.oldPrice = incoming.oldPrice === null || incoming.oldPrice === "" ? null : Number(incoming.oldPrice);
-  result.images = replaceImportedImages(current.images, incoming.images);
+  // An explicitly empty gallery clears previous product images. Older clients
+  // that omit the field preserve them; color galleries keep their own policy.
+  result.images = Array.isArray(incoming.images)
+    ? Array.from(new Set(incoming.images.filter(Boolean)))
+    : replaceImportedImages(current.images, incoming.images);
   result.variants = existingVariants;
   result.active = isNewProduct ? true : current.active !== false;
   return result;
