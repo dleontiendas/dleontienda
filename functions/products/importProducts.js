@@ -69,6 +69,7 @@ export function mergeImportedProduct(existing, incoming) {
       }))
     : [];
 
+  const importedSizes = new Set();
   for (const importedVariant of incoming.variants || []) {
     let targetVariant = existingVariants.find((variant) => normalizeColor(variant.color) === normalizeColor(importedVariant.color));
     if (!targetVariant) {
@@ -109,14 +110,17 @@ export function mergeImportedProduct(existing, incoming) {
           ...(Object.prototype.hasOwnProperty.call(importedSize, "price_cop") ? { price_cop: importedSize.price_cop } : {}),
           ...(Object.prototype.hasOwnProperty.call(importedSize, "oldPrice") ? { oldPrice: importedSize.oldPrice } : {}),
         });
+        importedSizes.add(match);
       } else {
-        targetVariant.tallas.push({
+        const newSize = {
           size: importedSize.size,
           sku_master: importedSize.sku_master,
           stock: shouldReplaceStock ? importedSize.stock : 0,
           ...(Object.prototype.hasOwnProperty.call(importedSize, "price_cop") ? { price_cop: importedSize.price_cop } : {}),
           ...(Object.prototype.hasOwnProperty.call(importedSize, "oldPrice") ? { oldPrice: importedSize.oldPrice } : {}),
-        });
+        };
+        targetVariant.tallas.push(newSize);
+        importedSizes.add(newSize);
       }
     }
   }
@@ -137,7 +141,14 @@ export function mergeImportedProduct(existing, incoming) {
   result.images = Array.isArray(incoming.images)
     ? Array.from(new Set(incoming.images.filter(Boolean)))
     : replaceImportedImages(current.images, incoming.images);
-  result.variants = existingVariants;
+  // The uploaded rows are the complete variant list for each included product.
+  // Match against existing sizes first to preserve stock when inventory is NO.
+  result.variants = Array.isArray(incoming.variants)
+    ? existingVariants.map((variant) => ({
+        ...variant,
+        tallas: variant.tallas.filter((size) => importedSizes.has(size)),
+      })).filter((variant) => variant.tallas.length > 0)
+    : existingVariants;
   result.active = isNewProduct ? true : current.active !== false;
   return result;
 }

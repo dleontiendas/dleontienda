@@ -28,8 +28,10 @@ test("crea y actualiza precios distintos dentro de cada talla", () => {
       { size: "6", stock: 9, sku_master: "COOLKIDS-CKG0002-SONIC-6", price_cop: 130000, oldPrice: null },
     ] }],
   }));
-  assert.equal(updated.variants[0].tallas[1].price_cop, 130000);
-  assert.equal(updated.variants[0].tallas[1].oldPrice, null);
+  assert.equal(updated.variants[0].tallas.length, 1);
+  assert.equal(updated.variants[0].tallas[0].size, "6");
+  assert.equal(updated.variants[0].tallas[0].price_cop, 130000);
+  assert.equal(updated.variants[0].tallas[0].oldPrice, null);
 });
 
 test("precio anterior vacío limpia el dato y cliente antiguo conserva el dato existente", () => {
@@ -101,6 +103,7 @@ test("localiza el SKU Maestro aunque el color haya cambiado y no duplica la vari
   changed.variants[0].color = "SONIC NUEVO";
   const merged = mergeImportedProduct(current, changed);
   const sizes = merged.variants.flatMap((variant) => variant.tallas);
+  assert.equal(merged.variants.length, 1);
   assert.equal(sizes.filter((size) => size.sku_master === "COOLKIDS-CKG0002-SONIC-4").length, 1);
   assert.equal(merged.variants.find((variant) => variant.color === "SONIC NUEVO").tallas[0].stock, 3);
 });
@@ -140,7 +143,7 @@ test("las celdas vacías limpian la galería principal; un campo omitido la cons
   }
 });
 
-test("reemplaza principal y color juntos conservando las imágenes de otros colores", () => {
+test("reemplaza principal y color juntos y elimina colores ausentes del archivo", () => {
   const current = { ...existing(), images: ["principal-anterior.jpg"] };
   current.variants[0].images = ["sonic-anterior.jpg"];
   current.variants.push({ color: "ROJO", images: ["rojo.jpg"], tallas: [] });
@@ -149,7 +152,8 @@ test("reemplaza principal y color juntos conservando las imágenes de otros colo
   const merged = mergeImportedProduct(current, changed);
   assert.deepEqual(merged.images, ["principal-nueva.jpg"]);
   assert.deepEqual(merged.variants[0].images, ["sonic-nueva.jpg"]);
-  assert.deepEqual(merged.variants[1].images, ["rojo.jpg"]);
+  assert.equal(merged.variants.length, 1);
+  assert.deepEqual(current.variants[1].images, ["rojo.jpg"]);
 });
 
 test("asigna imágenes a una variante nueva sin mezclarlas con otros colores", () => {
@@ -162,5 +166,25 @@ test("asigna imágenes a una variante nueva sin mezclarlas con otros colores", (
   });
   const merged = mergeImportedProduct(existing(3), changed);
   assert.deepEqual(merged.variants.find((variant) => variant.color === "ROJO").images, ["rojo.jpg"]);
-  assert.deepEqual(merged.variants.find((variant) => variant.color === "SONIC").images, []);
+  assert.equal(merged.variants.find((variant) => variant.color === "SONIC"), undefined);
+  assert.equal(merged.variants[0].tallas[0].stock, 0);
+});
+
+test("sobrescribe NEGRO por las tres variantes actualizadas sin acumular variantes", () => {
+  const current = { ...existing(), variants: [
+    { color: "NEGRO", images: ["negro.jpg"], tallas: [{ size: "UNICA", sku_master: "SE0007-NEGRO", stock: 4 }] },
+    { color: "BEIGE", images: ["beige.jpg"], tallas: [{ size: "UNICA", sku_master: "SE0007-BEIGE", stock: 3 }] },
+  ] };
+  const snapshot = structuredClone(current);
+  for (const update_inventory of [false, true]) {
+    const changed = incoming({ variants: ["NEGRO RAYAS", "NEGRO PRINT", "BEIGE"].map((color) => ({
+      color, images: [], tallas: [{ size: "UNICA", sku_master: `SE0007-${color.replace(/ /g, "")}`, stock: 8, update_inventory }],
+    })) });
+    const merged = mergeImportedProduct(current, changed);
+    assert.deepEqual(merged.variants.map((v) => v.color).sort(), ["BEIGE", "NEGRO PRINT", "NEGRO RAYAS"]);
+    assert.equal(merged.variants.find((v) => v.color === "BEIGE").tallas[0].stock, update_inventory ? 8 : 3);
+    assert.equal(merged.variants.find((v) => v.color === "NEGRO RAYAS").tallas[0].stock, update_inventory ? 8 : 0);
+    assert.deepEqual(mergeImportedProduct(merged, changed), merged);
+  }
+  assert.deepEqual(current, snapshot);
 });
