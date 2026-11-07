@@ -228,8 +228,8 @@ function ProductForm({ value, onChange }) {
         </label>
         <label>
           Departamento
-          <input list={departmentList} value={value.department || ""} onChange={(e) => set("department", e.target.value)} placeholder={damaCategory ? "Jeans / Ropa deportiva / Blusas…" : hombreCategory ? "Jeans / Camisetas / Ropa deportiva…" : "Hombre / Infantil…"} />
-          {damaCategory && <datalist id="dama-departments"><option value="Jeans" /><option value="Ropa deportiva" /><option value="Blusas" /><option value="Ropa interior" /><option value="Accesorios" /><option value="Otros" /></datalist>}
+          <input list={departmentList} value={value.department || ""} onChange={(e) => set("department", e.target.value)} placeholder={damaCategory ? "Jeans / Short / Vestido / Blusas…" : hombreCategory ? "Jeans / Camisetas / Ropa deportiva…" : "Hombre / Infantil…"} />
+          {damaCategory && <datalist id="dama-departments"><option value="Jeans" /><option value="Short" /><option value="Vestido" /><option value="Ropa deportiva" /><option value="Blusas" /><option value="Ropa interior" /><option value="Accesorios" /><option value="Otros" /></datalist>}
           {hombreCategory && <datalist id="hombre-departments"><option value="Jeans" /><option value="Camisetas" /><option value="Ropa deportiva" /><option value="Ropa interior" /><option value="Accesorios" /><option value="Otros" /></datalist>}
         </label>
         <label>

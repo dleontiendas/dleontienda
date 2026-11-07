@@ -10,6 +10,24 @@ import HombreProductList from "./hombreProductList/hombreProductList";
 
 const baseProduct = { price_cop: 100000, variants: [], images: [] };
 
+test.each([
+  ["Short", "SHORTS", "short"],
+  ["Vestido", "VESTIDOS", "vestido"],
+])("Dama permite navegar las subcategorías de %s sin mezclar departamentos", (label, department, slug) => {
+  const products = [
+    { ...baseProduct, id: "new1", category: "Dama", department, subcategory: "Casual", name: "Prenda seleccionada" },
+    { ...baseProduct, id: "new2", category: "Dama", department, subcategory: "Elegante", name: "Otra subcategoría" },
+    { ...baseProduct, id: "jean1", category: "Dama", department: "Jeans", subcategory: "Casual", name: "Jean casual" },
+  ];
+  renderCategory("/dama", "/dama", DamaProductList, products);
+  fireEvent.click(screen.getByRole("button", { name: new RegExp(`${label}.*\\(2\\)`) }));
+  expect(screen.getByTestId("search")).toHaveTextContent(`?departamento=${slug}`);
+  fireEvent.click(screen.getByRole("button", { name: "Casual" }));
+  expect(screen.getByText("Prenda seleccionada")).toBeInTheDocument();
+  expect(screen.queryByText("Otra subcategoría")).not.toBeInTheDocument();
+  expect(screen.queryByText("Jean casual")).not.toBeInTheDocument();
+});
+
 function LocationProbe() {
   const location = useLocation();
   const navigate = useNavigate();

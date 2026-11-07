@@ -16,7 +16,7 @@ const enrich = (items) => items.map((item) => ({ ...item, depSlug: normalizeDama
 
 test("A: presenta los departamentos de Dama en el orden solicitado", () => {
   expect(buildDamaDepartments([]).map(({ key }) => key)).toEqual([
-    "jeans", "ropa-deportiva", "blusas", "ropa-interior", "accesorios", "otros",
+    "jeans", "short", "vestido", "ropa-deportiva", "blusas", "ropa-interior", "accesorios", "otros",
   ]);
 });
 
@@ -47,9 +47,9 @@ test("D: Cinturones aparece dentro de Accesorios", () => {
 });
 
 test("E: departamentos futuros son dinámicos y Otros permanece al final", () => {
-  const departments = buildDamaDepartments(enrich([product("Vestidos", "Largos"), product("Otros", "Varios")]));
+  const departments = buildDamaDepartments(enrich([product("Calzado", "Sandalias"), product("Otros", "Varios")]));
   expect(departments.map(({ key }) => key)).toEqual([
-    "jeans", "ropa-deportiva", "blusas", "ropa-interior", "accesorios", "vestidos", "otros",
+    "jeans", "short", "vestido", "ropa-deportiva", "blusas", "ropa-interior", "accesorios", "calzado", "otros",
   ]);
 });
 

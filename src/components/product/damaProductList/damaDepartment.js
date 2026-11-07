@@ -8,6 +8,8 @@ import {
 
 export const DAMA_CORE_DEPARTMENTS = [
   { key: "jeans", label: "Jeans", image: "/images/departments/dama/jeans.jpg" },
+  { key: "short", label: "Short", image: "/images/departments/dama/short.png" },
+  { key: "vestido", label: "Vestido", image: "/images/departments/dama/vestido.png" },
   { key: "ropa-deportiva", label: "Ropa deportiva", image: "/images/departments/dama/ropa-deportiva.jpg" },
   { key: "blusas", label: "Blusas", image: "/images/departments/dama/blusas.jpg" },
   { key: "ropa-interior", label: "Ropa interior", image: "/images/departments/dama/ropa-interior.jpg" },
@@ -23,6 +25,8 @@ export const DAMA_CATEGORY_CONFIG = {
   fallbackImage: "/images/departments/dama/otros.jpg",
   departmentAliases: [
     { key: "jeans", pattern: /^(?:jean|jeans|denim)(?:-|$)/ },
+    { key: "short", pattern: /^(?:short|shorts)(?:-|$)/ },
+    { key: "vestido", pattern: /^(?:vestido|vestidos)(?:-|$)/ },
     { key: "ropa-deportiva", pattern: /^(?:ropa-)?(?:deportiva|deportivo|fitness|activewear)(?:-|$)/ },
     { key: "blusas", pattern: /^(?:blusa|blusas)(?:-|$)/ },
     { key: "ropa-interior", pattern: /^(?:ropa-interior|interior|lenceria|lingerie)(?:-|$)/ },
